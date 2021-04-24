@@ -1,24 +1,32 @@
-[gd_scene load_steps=6 format=2]
+[gd_scene load_steps=12 format=2]
 
 [ext_resource path="res://scenes/Minion.tscn" type="PackedScene" id=1]
 [ext_resource path="res://scripts/Game.gd" type="Script" id=2]
 [ext_resource path="res://tiles/Tileset32.tres" type="TileSet" id=3]
-[ext_resource path="res://scenes/TileHighlight.tscn" type="PackedScene" id=4]
+[ext_resource path="res://scenes/DigHighlight.tscn" type="PackedScene" id=4]
 [ext_resource path="res://sprites/CursorHighlight.png" type="Texture" id=5]
+[ext_resource path="res://sprites/DigButton.png" type="Texture" id=6]
+[ext_resource path="res://sprites/RallyButton.png" type="Texture" id=7]
+[ext_resource path="res://sprites/RallyButtonHover.png" type="Texture" id=8]
+[ext_resource path="res://sprites/DigButtonHover.png" type="Texture" id=9]
+[ext_resource path="res://sprites/DigButtonPressed.png" type="Texture" id=10]
+[ext_resource path="res://sprites/RallyButtonPressed.png" type="Texture" id=11]
 
 [node name="Game" type="Node2D"]
 script = ExtResource( 2 )
 minion_scene = ExtResource( 1 )
-tile_highlight_scene = ExtResource( 4 )
+dig_highlight_scene = ExtResource( 4 )
 
-[node name="TileMap32" type="TileMap" parent="."]
+[node name="Navigation2D" type="Navigation2D" parent="."]
+
+[node name="TileMap32" type="TileMap" parent="Navigation2D"]
 tile_set = ExtResource( 3 )
 cell_size = Vector2( 32, 32 )
 format = 1
 
 [node name="EntityContainer" type="YSort" parent="."]
 
-[node name="TileHighlightContainer" type="Node2D" parent="."]
+[node name="DigHighlightContainer" type="Node2D" parent="."]
 
 [node name="CursorHighlight" type="Node2D" parent="."]
 visible = false
@@ -28,3 +36,50 @@ position = Vector2( 16, 16 )
 texture = ExtResource( 5 )
 
 [node name="GameCamera" type="Camera2D" parent="."]
+current = true
+zoom = Vector2( 0.5, 0.5 )
+
+[node name="HUD" type="CanvasLayer" parent="."]
+
+[node name="MarginContainer" type="MarginContainer" parent="HUD"]
+anchor_right = 1.0
+anchor_bottom = 1.0
+margin_left = 20.0
+margin_top = 20.0
+margin_right = 20.0
+margin_bottom = 20.0
+__meta__ = {
+"_edit_use_anchors_": false
+}
+
+[node name="HBoxContainer" type="HBoxContainer" parent="HUD/MarginContainer"]
+margin_left = 428.0
+margin_right = 596.0
+margin_bottom = 64.0
+size_flags_horizontal = 4
+size_flags_vertical = 0
+custom_constants/separation = 40
+
+[node name="DigButton" type="TextureButton" parent="HUD/MarginContainer/HBoxContainer"]
+margin_right = 64.0
+margin_bottom = 64.0
+toggle_mode = true
+texture_normal = ExtResource( 6 )
+texture_pressed = ExtResource( 10 )
+texture_hover = ExtResource( 9 )
+
+[node name="RallyButton" type="TextureButton" parent="HUD/MarginContainer/HBoxContainer"]
+margin_left = 104.0
+margin_right = 168.0
+margin_bottom = 64.0
+toggle_mode = true
+texture_normal = ExtResource( 7 )
+texture_pressed = ExtResource( 11 )
+texture_hover = ExtResource( 8 )
+
+[connection signal="mouse_entered" from="HUD/MarginContainer/HBoxContainer/DigButton" to="." method="_on_Button_mouse_entered"]
+[connection signal="mouse_exited" from="HUD/MarginContainer/HBoxContainer/DigButton" to="." method="_on_Button_mouse_exited"]
+[connection signal="toggled" from="HUD/MarginContainer/HBoxContainer/DigButton" to="." method="_on_DigButton_toggled"]
+[connection signal="mouse_entered" from="HUD/MarginContainer/HBoxContainer/RallyButton" to="." method="_on_Button_mouse_entered"]
+[connection signal="mouse_exited" from="HUD/MarginContainer/HBoxContainer/RallyButton" to="." method="_on_Button_mouse_exited"]
+[connection signal="toggled" from="HUD/MarginContainer/HBoxContainer/RallyButton" to="." method="_on_RallyButton_toggled"]

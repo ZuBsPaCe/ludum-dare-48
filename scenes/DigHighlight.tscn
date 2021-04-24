@@ -1,6 +1,6 @@
 [gd_scene load_steps=2 format=2]
 
-[ext_resource path="res://sprites/TileHighlight.png" type="Texture" id=1]
+[ext_resource path="res://sprites/DigHighlight.png" type="Texture" id=1]
 
 [node name="TileHighlight" type="Node2D"]
 

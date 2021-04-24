@@ -4,33 +4,63 @@ const GameState = preload("res://scripts/GameState.gd").GameState
 const TileType = preload("res://scripts/TileType.gd").TileType
 
 export(PackedScene) var minion_scene
-export(PackedScene) var tile_highlight_scene
+export(PackedScene) var dig_highlight_scene
 
-onready var _tilemap32 := $TileMap32
+onready var _navigation := $Navigation2D
+onready var _tilemap32 := $Navigation2D/TileMap32
 onready var _entity_container := $EntityContainer
-onready var _tile_highlight_container := $TileHighlightContainer
+onready var _dig_highlight_container := $DigHighlightContainer
 onready var _camera := $GameCamera
 onready var _cursor_highlight := $CursorHighlight
+onready var _dig_button := $HUD/MarginContainer/HBoxContainer/DigButton
+onready var _rally_button := $HUD/MarginContainer/HBoxContainer/RallyButton
 
 
 var _fullscreen_cooldown := Cooldown.new(0.5)
+var _dig_traverse_cooldown := Cooldown.new(1.0)
 
 
 var _map := Map.new()
 
+var _offsets4 := [
+	Coord.new(0, -1),
+	Coord.new(-1, 0),
+	Coord.new(1, 0),
+	Coord.new(0, 1)]
+
+var _offsets8 := [
+	Coord.new(0, -1),
+	Coord.new(-1, 0),
+	Coord.new(1, 0),
+	Coord.new(0, 1),
+	Coord.new(-1, -1),
+	Coord.new(1, -1),
+	Coord.new(-1, 1),
+	Coord.new(1, 1)]
+
+enum ToolType {
+	DIG,
+	RALLY
+}
+
 
 enum CommandType {
 	NONE,
-	ADD_BUILD,
-	REMOVE_BUILD
+	ADD_DIG,
+	REMOVE_DIG
 }
 
+
+var _tool_type = ToolType.DIG
 var _command_type = CommandType.NONE
+var _mouse_on_button := false
 
 
 func _ready() -> void:
 	State.map = _map
 	Helper.map = _map
+
+	State.tilemap32 = _tilemap32
 
 	world_reset()
 	game_reset()
@@ -38,6 +68,7 @@ func _ready() -> void:
 
 func _process(delta: float) -> void:
 	_fullscreen_cooldown.step(delta)
+	_dig_traverse_cooldown.step(delta)
 
 	if OS.get_name() == "Windows":
 		if !_fullscreen_cooldown.running && Input.is_key_pressed(KEY_ALT) && Input.is_key_pressed(KEY_ENTER):
@@ -54,38 +85,49 @@ func _process(delta: float) -> void:
 		if _map.is_valid(mouse_coord.x, mouse_coord.y):
 			mouse_tile = _map.get_tile_type(mouse_coord.x, mouse_coord.y)
 
-		if mouse_tile == TileType.ROCK:
-			_cursor_highlight.position = mouse_coord.to_pos()
-			_cursor_highlight.visible = true
 
-			if _command_type == CommandType.NONE:
-				if Input.is_action_just_pressed("command"):
-					var tile : Tile = _map.get_tile(mouse_coord.x, mouse_coord.y)
-					if tile.tile_highlight == null:
-						_command_type = CommandType.ADD_BUILD
-					else:
-						_command_type = CommandType.REMOVE_BUILD
-			else:
-				if Input.is_action_just_released("command"):
-					_command_type = CommandType.NONE
 
-			if _command_type == CommandType.ADD_BUILD:
-				var tile : Tile = _map.get_tile(mouse_coord.x, mouse_coord.y)
-				if tile.tile_highlight == null:
-					_map.build_tiles.append(tile)
-					var tile_highlight : Node2D = tile_highlight_scene.instance()
-					tile_highlight.position = mouse_coord.to_pos()
-					_tile_highlight_container.add_child(tile_highlight)
-					tile.tile_highlight = tile_highlight
-			elif _command_type == CommandType.REMOVE_BUILD:
-				var tile : Tile = _map.get_tile(mouse_coord.x, mouse_coord.y)
-				if tile.tile_highlight != null:
-					_map.build_tiles.erase(tile)
-					tile.tile_highlight.queue_free()
-					tile.tile_highlight = null
+		if _tool_type == ToolType.DIG:
+			if mouse_tile == TileType.ROCK:
+				if mouse_tile == TileType.ROCK && !_mouse_on_button:
+					_cursor_highlight.position = mouse_coord.to_pos()
+					_cursor_highlight.visible = true
+				else:
+					_cursor_highlight.visible = false
 
-		else:
-			_cursor_highlight.visible = false
+
+				if _command_type == CommandType.NONE:
+					if Input.is_action_just_pressed("command") && !_mouse_on_button:
+						var tile : Tile = _map.get_tile(mouse_coord.x, mouse_coord.y)
+						if tile.dig_highlight == null:
+							_command_type = CommandType.ADD_DIG
+						else:
+							_command_type = CommandType.REMOVE_DIG
+				else:
+					if Input.is_action_just_released("command"):
+						_command_type = CommandType.NONE
+
+				if !_mouse_on_button:
+					if _command_type == CommandType.ADD_DIG:
+						var tile : Tile = _map.get_tile(mouse_coord.x, mouse_coord.y)
+						if tile.dig_highlight == null:
+							_map.dig_tiles.append(tile)
+							var dig_highlight : Node2D = dig_highlight_scene.instance()
+							dig_highlight.position = mouse_coord.to_pos()
+							_dig_highlight_container.add_child(dig_highlight)
+							tile.dig_highlight = dig_highlight
+					elif _command_type == CommandType.REMOVE_DIG:
+						var tile : Tile = _map.get_tile(mouse_coord.x, mouse_coord.y)
+						if tile.dig_highlight != null:
+							_map.dig_tiles.erase(tile)
+							tile.dig_highlight.queue_free()
+							tile.dig_highlight = null
+
+
+		if _dig_traverse_cooldown.done:
+			_dig_traverse_cooldown.restart()
+			game_traverse_dig_tiles()
+
 
 func world_reset() -> void:
 	State.world_reset()
@@ -93,6 +135,12 @@ func world_reset() -> void:
 func game_reset() -> void:
 	State.game_state = GameState.TITLE_SCREEN
 	_cursor_highlight.visible = false
+	_dig_button.pressed = true
+	_rally_button.pressed = false
+
+	_tool_type = ToolType.DIG
+	_command_type = CommandType.NONE
+	_mouse_on_button = false
 
 func game_start() -> void:
 	randomize()
@@ -139,4 +187,65 @@ func map_fill() -> void:
 			_camera.position = coord.to_random_pos()
 
 
+func game_traverse_dig_tiles():
+	if _map.dig_tiles.size() == 0:
+		return
 
+	var seen_tiles := {}
+
+	for dig_tile in _map.dig_tiles:
+		for offset in _offsets8:
+			var x : int = dig_tile.x + offset.x
+			var y : int = dig_tile.y + offset.y
+
+			if !_map.is_valid(x, y):
+				continue
+
+			var next_tile : Tile = _map.get_tile(x, y)
+			if next_tile.tile_type != TileType.GROUND:
+				continue
+
+			if offset.x != 0 && offset.y != 0:
+				var check_tile1 : Tile = _map.get_tile(x, dig_tile.y)
+				var check_tile2 : Tile = _map.get_tile(dig_tile.x, y)
+				if check_tile2.tile_type != TileType.GROUND && check_tile2.tile_type != TileType.GROUND:
+					continue
+
+			if seen_tiles.has(next_tile):
+				continue
+
+			seen_tiles[next_tile] = 1
+
+			for minion in next_tile.minions:
+				if minion.can_start_digging():
+
+					var path = _navigation.get_simple_path(
+						minion.position,
+						Vector2(
+							dig_tile.x * 32 + 16,
+							dig_tile.y * 32 + 16))
+
+					if path.size() > 0:
+						minion.dig(path, dig_tile)
+					else:
+						printerr("No path found...")
+
+
+func _on_Button_mouse_entered() -> void:
+	_mouse_on_button = true
+
+func _on_Button_mouse_exited() -> void:
+	_mouse_on_button = false
+
+func _on_DigButton_toggled(button_pressed: bool) -> void:
+	if button_pressed:
+		_rally_button.pressed = false
+		set_tool(ToolType.DIG)
+
+func _on_RallyButton_toggled(button_pressed: bool) -> void:
+	if button_pressed:
+		_dig_button.pressed = false
+		set_tool(ToolType.RALLY)
+
+func set_tool(tool_type) -> void:
+	_tool_type = tool_type

@@ -2,15 +2,15 @@
 
 importer="texture"
 type="StreamTexture"
-path="res://.import/TileHighlight.png-cbcb085332f58d4d19b7d48cd1050b43.stex"
+path="res://.import/MinionRight.png-45d34ba4f1a30813e094237b540578b9.stex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://sprites/TileHighlight.png"
-dest_files=[ "res://.import/TileHighlight.png-cbcb085332f58d4d19b7d48cd1050b43.stex" ]
+source_file="res://sprites/MinionRight.png"
+dest_files=[ "res://.import/MinionRight.png-45d34ba4f1a30813e094237b540578b9.stex" ]
 
 [params]
 

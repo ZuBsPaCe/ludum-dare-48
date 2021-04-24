@@ -1,17 +1,405 @@
-[gd_scene load_steps=4 format=2]
+[gd_scene load_steps=18 format=2]
 
 [ext_resource path="res://sprites/Minion.png" type="Texture" id=1]
 [ext_resource path="res://scripts/Minion.gd" type="Script" id=2]
+[ext_resource path="res://sprites/Pickaxe.png" type="Texture" id=3]
 
 [sub_resource type="CircleShape2D" id=1]
 radius = 4.12614
 
-[node name="Minion" type="KinematicBody2D"]
-script = ExtResource( 2 )
+[sub_resource type="Animation" id=2]
+resource_name = "Idle"
+length = 3.0
+loop = true
+step = 0.5
+tracks/0/type = "value"
+tracks/0/path = NodePath("Minion:frame")
+tracks/0/interp = 1
+tracks/0/loop_wrap = true
+tracks/0/imported = false
+tracks/0/enabled = true
+tracks/0/keys = {
+"times": PoolRealArray( 0, 1.5 ),
+"transitions": PoolRealArray( 1, 1 ),
+"update": 1,
+"values": [ 0, 1 ]
+}
 
-[node name="Sprite" type="Sprite" parent="."]
-position = Vector2( 0, -8 )
-texture = ExtResource( 1 )
+[sub_resource type="Animation" id=3]
+resource_name = "IdleLeft"
+length = 3.0
+loop = true
+step = 0.5
+tracks/0/type = "value"
+tracks/0/path = NodePath("Minion:frame")
+tracks/0/interp = 1
+tracks/0/loop_wrap = true
+tracks/0/imported = false
+tracks/0/enabled = true
+tracks/0/keys = {
+"times": PoolRealArray( 0, 1.5 ),
+"transitions": PoolRealArray( 1, 1 ),
+"update": 1,
+"values": [ 15, 16 ]
+}
+
+[sub_resource type="Animation" id=4]
+resource_name = "IdleRight"
+length = 3.0
+loop = true
+step = 0.5
+tracks/0/type = "value"
+tracks/0/path = NodePath("Minion:frame")
+tracks/0/interp = 1
+tracks/0/loop_wrap = true
+tracks/0/imported = false
+tracks/0/enabled = true
+tracks/0/keys = {
+"times": PoolRealArray( 0, 1.5 ),
+"transitions": PoolRealArray( 1, 1 ),
+"update": 1,
+"values": [ 20, 21 ]
+}
+
+[sub_resource type="Animation" id=5]
+resource_name = "StrikeLeft"
+step = 0.05
+tracks/0/type = "value"
+tracks/0/path = NodePath("Minion:frame")
+tracks/0/interp = 1
+tracks/0/loop_wrap = true
+tracks/0/imported = false
+tracks/0/enabled = true
+tracks/0/keys = {
+"times": PoolRealArray( 0, 0.25, 0.5 ),
+"transitions": PoolRealArray( 1, 1, 1 ),
+"update": 1,
+"values": [ 25, 26, 25 ]
+}
+
+[sub_resource type="Animation" id=6]
+resource_name = "StrikeRight"
+step = 0.05
+tracks/0/type = "value"
+tracks/0/path = NodePath("Minion:frame")
+tracks/0/interp = 1
+tracks/0/loop_wrap = true
+tracks/0/imported = false
+tracks/0/enabled = true
+tracks/0/keys = {
+"times": PoolRealArray( 0, 0.25, 0.7 ),
+"transitions": PoolRealArray( 1, 1, 1 ),
+"update": 1,
+"values": [ 30, 31, 30 ]
+}
+
+[sub_resource type="Animation" id=7]
+length = 0.5
+loop = true
+tracks/0/type = "value"
+tracks/0/path = NodePath("Minion:frame")
+tracks/0/interp = 1
+tracks/0/loop_wrap = true
+tracks/0/imported = false
+tracks/0/enabled = true
+tracks/0/keys = {
+"times": PoolRealArray( 0, 0.1, 0.2, 0.3, 0.4 ),
+"transitions": PoolRealArray( 1, 1, 1, 1, 1 ),
+"update": 1,
+"values": [ 5, 6, 7, 8, 9 ]
+}
+
+[sub_resource type="Animation" id=8]
+length = 0.5
+loop = true
+tracks/0/type = "value"
+tracks/0/path = NodePath("Minion:frame")
+tracks/0/interp = 1
+tracks/0/loop_wrap = true
+tracks/0/imported = false
+tracks/0/enabled = true
+tracks/0/keys = {
+"times": PoolRealArray( 0, 0.1, 0.2, 0.3, 0.4 ),
+"transitions": PoolRealArray( 1, 1, 1, 1, 1 ),
+"update": 1,
+"values": [ 10, 11, 12, 13, 14 ]
+}
+
+[sub_resource type="Animation" id=9]
+resource_name = "IdleLeft"
+tracks/0/type = "value"
+tracks/0/path = NodePath("Pickaxe:rotation_degrees")
+tracks/0/interp = 1
+tracks/0/loop_wrap = true
+tracks/0/imported = false
+tracks/0/enabled = true
+tracks/0/keys = {
+"times": PoolRealArray( 0 ),
+"transitions": PoolRealArray( 1 ),
+"update": 0,
+"values": [ 110.0 ]
+}
+tracks/1/type = "value"
+tracks/1/path = NodePath("Pickaxe:offset")
+tracks/1/interp = 1
+tracks/1/loop_wrap = true
+tracks/1/imported = false
+tracks/1/enabled = true
+tracks/1/keys = {
+"times": PoolRealArray( 0 ),
+"transitions": PoolRealArray( 1 ),
+"update": 0,
+"values": [ Vector2( 0, -6 ) ]
+}
+tracks/2/type = "value"
+tracks/2/path = NodePath("Pickaxe:position")
+tracks/2/interp = 1
+tracks/2/loop_wrap = true
+tracks/2/imported = false
+tracks/2/enabled = true
+tracks/2/keys = {
+"times": PoolRealArray( 0 ),
+"transitions": PoolRealArray( 1 ),
+"update": 0,
+"values": [ Vector2( 0, 0 ) ]
+}
+
+[sub_resource type="Animation" id=10]
+resource_name = "IdleRight"
+length = 0.5
+tracks/0/type = "value"
+tracks/0/path = NodePath("Pickaxe:rotation_degrees")
+tracks/0/interp = 1
+tracks/0/loop_wrap = true
+tracks/0/imported = false
+tracks/0/enabled = true
+tracks/0/keys = {
+"times": PoolRealArray( 0 ),
+"transitions": PoolRealArray( 1 ),
+"update": 0,
+"values": [ -110.0 ]
+}
+tracks/1/type = "value"
+tracks/1/path = NodePath("Pickaxe:offset")
+tracks/1/interp = 1
+tracks/1/loop_wrap = true
+tracks/1/imported = false
+tracks/1/enabled = true
+tracks/1/keys = {
+"times": PoolRealArray( 0 ),
+"transitions": PoolRealArray( 1 ),
+"update": 0,
+"values": [ Vector2( 0, -6 ) ]
+}
+tracks/2/type = "value"
+tracks/2/path = NodePath("Pickaxe:position")
+tracks/2/interp = 1
+tracks/2/loop_wrap = true
+tracks/2/imported = false
+tracks/2/enabled = true
+tracks/2/keys = {
+"times": PoolRealArray( 0 ),
+"transitions": PoolRealArray( 1 ),
+"update": 0,
+"values": [ Vector2( 0, 0 ) ]
+}
+
+[sub_resource type="Animation" id=11]
+resource_name = "StrikeLeft"
+step = 0.05
+tracks/0/type = "value"
+tracks/0/path = NodePath("Pickaxe:offset")
+tracks/0/interp = 1
+tracks/0/loop_wrap = true
+tracks/0/imported = false
+tracks/0/enabled = true
+tracks/0/keys = {
+"times": PoolRealArray( 0 ),
+"transitions": PoolRealArray( 1 ),
+"update": 1,
+"values": [ Vector2( 0, -12 ) ]
+}
+tracks/1/type = "value"
+tracks/1/path = NodePath("Pickaxe:position")
+tracks/1/interp = 1
+tracks/1/loop_wrap = true
+tracks/1/imported = false
+tracks/1/enabled = true
+tracks/1/keys = {
+"times": PoolRealArray( 0, 0.2, 0.5 ),
+"transitions": PoolRealArray( 1, 1, 1 ),
+"update": 1,
+"values": [ Vector2( 0, 0 ), Vector2( 0, -2 ), Vector2( 0, 0 ) ]
+}
+tracks/2/type = "value"
+tracks/2/path = NodePath("Pickaxe:rotation_degrees")
+tracks/2/interp = 1
+tracks/2/loop_wrap = true
+tracks/2/imported = false
+tracks/2/enabled = true
+tracks/2/keys = {
+"times": PoolRealArray( 0, 0.05, 0.1, 0.15, 0.2, 0.25, 0.5, 0.55, 0.6, 0.65, 0.7 ),
+"transitions": PoolRealArray( 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1 ),
+"update": 1,
+"values": [ 60.0, 28.0, -4.0, -36.0, -68.0, -100.0, -68.0, -36.0, -4.0, 28.0, 60.0 ]
+}
+
+[sub_resource type="Animation" id=12]
+resource_name = "StrikeRight"
+loop = true
+step = 0.05
+tracks/0/type = "value"
+tracks/0/path = NodePath("Pickaxe:offset")
+tracks/0/interp = 1
+tracks/0/loop_wrap = true
+tracks/0/imported = false
+tracks/0/enabled = true
+tracks/0/keys = {
+"times": PoolRealArray( 0 ),
+"transitions": PoolRealArray( 1 ),
+"update": 1,
+"values": [ Vector2( 0, -12 ) ]
+}
+tracks/1/type = "value"
+tracks/1/path = NodePath("Pickaxe:position")
+tracks/1/interp = 1
+tracks/1/loop_wrap = true
+tracks/1/imported = false
+tracks/1/enabled = true
+tracks/1/keys = {
+"times": PoolRealArray( 0, 0.2, 0.5 ),
+"transitions": PoolRealArray( 1, 1, 1 ),
+"update": 1,
+"values": [ Vector2( 0, 0 ), Vector2( 0, -2 ), Vector2( 0, 0 ) ]
+}
+tracks/2/type = "value"
+tracks/2/path = NodePath("Pickaxe:rotation_degrees")
+tracks/2/interp = 1
+tracks/2/loop_wrap = true
+tracks/2/imported = false
+tracks/2/enabled = true
+tracks/2/keys = {
+"times": PoolRealArray( 0, 0.05, 0.1, 0.15, 0.2, 0.25, 0.5, 0.55, 0.6, 0.65, 0.7 ),
+"transitions": PoolRealArray( 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1 ),
+"update": 1,
+"values": [ -60.0, -28.0, 4.0, 36.0, 68.0, 100.0, 68.0, 36.0, 4.0, -28.0, -60.0 ]
+}
+
+[sub_resource type="Animation" id=13]
+length = 0.5
+loop = true
+tracks/0/type = "value"
+tracks/0/path = NodePath("Pickaxe:rotation_degrees")
+tracks/0/interp = 1
+tracks/0/loop_wrap = true
+tracks/0/imported = false
+tracks/0/enabled = true
+tracks/0/keys = {
+"times": PoolRealArray( 0, 0.2, 0.4 ),
+"transitions": PoolRealArray( 1, 1, 1 ),
+"update": 1,
+"values": [ 60.0, 70.0, 60.0 ]
+}
+tracks/1/type = "value"
+tracks/1/path = NodePath("Pickaxe:offset")
+tracks/1/interp = 1
+tracks/1/loop_wrap = true
+tracks/1/imported = false
+tracks/1/enabled = true
+tracks/1/keys = {
+"times": PoolRealArray( 0, 0.4 ),
+"transitions": PoolRealArray( 1, 1 ),
+"update": 1,
+"values": [ Vector2( 0, -8 ), Vector2( 0, -8 ) ]
+}
+tracks/2/type = "value"
+tracks/2/path = NodePath("Pickaxe:position")
+tracks/2/interp = 1
+tracks/2/loop_wrap = true
+tracks/2/imported = false
+tracks/2/enabled = true
+tracks/2/keys = {
+"times": PoolRealArray( 0, 0.2, 0.4 ),
+"transitions": PoolRealArray( 1, 1, 1 ),
+"update": 1,
+"values": [ Vector2( 0, 0 ), Vector2( 0, -2 ), Vector2( 0, 0 ) ]
+}
+
+[sub_resource type="Animation" id=14]
+length = 0.5
+loop = true
+tracks/0/type = "value"
+tracks/0/path = NodePath("Pickaxe:rotation_degrees")
+tracks/0/interp = 1
+tracks/0/loop_wrap = true
+tracks/0/imported = false
+tracks/0/enabled = true
+tracks/0/keys = {
+"times": PoolRealArray( 0, 0.2, 0.4 ),
+"transitions": PoolRealArray( 1, 1, 1 ),
+"update": 1,
+"values": [ -60.0, -70.0, -60.0 ]
+}
+tracks/1/type = "value"
+tracks/1/path = NodePath("Pickaxe:offset")
+tracks/1/interp = 1
+tracks/1/loop_wrap = true
+tracks/1/imported = false
+tracks/1/enabled = true
+tracks/1/keys = {
+"times": PoolRealArray( 0, 0.4 ),
+"transitions": PoolRealArray( 1, 1 ),
+"update": 1,
+"values": [ Vector2( 0, -8 ), Vector2( 0, -8 ) ]
+}
+tracks/2/type = "value"
+tracks/2/path = NodePath("Pickaxe:position")
+tracks/2/interp = 1
+tracks/2/loop_wrap = true
+tracks/2/imported = false
+tracks/2/enabled = true
+tracks/2/keys = {
+"times": PoolRealArray( 0, 0.2, 0.4 ),
+"transitions": PoolRealArray( 1, 1, 1 ),
+"update": 1,
+"values": [ Vector2( 0, 0 ), Vector2( 0, -2 ), Vector2( 0, 0 ) ]
+}
+
+[node name="Minion" type="KinematicBody2D"]
+collision_layer = 2
+script = ExtResource( 2 )
 
 [node name="CollisionShape2D" type="CollisionShape2D" parent="."]
 shape = SubResource( 1 )
+
+[node name="Sprites" type="Node2D" parent="."]
+position = Vector2( 0, -8 )
+
+[node name="Pickaxe" type="Sprite" parent="Sprites"]
+rotation = 1.18682
+texture = ExtResource( 3 )
+offset = Vector2( 0, -12 )
+
+[node name="Minion" type="Sprite" parent="Sprites"]
+texture = ExtResource( 1 )
+hframes = 5
+vframes = 7
+frame = 31
+
+[node name="AnimationMinion" type="AnimationPlayer" parent="Sprites"]
+autoplay = "Idle"
+anims/Idle = SubResource( 2 )
+anims/IdleLeft = SubResource( 3 )
+anims/IdleRight = SubResource( 4 )
+anims/StrikeLeft = SubResource( 5 )
+anims/StrikeRight = SubResource( 6 )
+anims/WalkLeft = SubResource( 7 )
+anims/WalkRight = SubResource( 8 )
+
+[node name="AnimationPickaxe" type="AnimationPlayer" parent="Sprites"]
+anims/IdleLeft = SubResource( 9 )
+anims/IdleRight = SubResource( 10 )
+anims/StrikeLeft = SubResource( 11 )
+anims/StrikeRight = SubResource( 12 )
+anims/WalkLeft = SubResource( 13 )
+anims/WalkRight = SubResource( 14 )
