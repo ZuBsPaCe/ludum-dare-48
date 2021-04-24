@@ -7,10 +7,18 @@ var width : int
 var height : int
 var size : int
 
+var tiles_types := []
 var tiles := []
 
+var build_tiles := []
 
-func _init(width : int, height : int, default_value) -> void:
+func _init() -> void:
+	pass
+
+func setup(width : int, height : int, default_value) -> void:
+	tiles_types.clear()
+	tiles.clear()
+
 	self.width = width
 	self.height = height
 
@@ -18,30 +26,20 @@ func _init(width : int, height : int, default_value) -> void:
 
 	for x in range(height):
 		for y in range(width):
-			tiles.append(default_value)
+			tiles_types.append(default_value)
+			tiles.append(Tile.new())
 
 func is_valid(x : int, y : int) -> bool:
 	return x >= 0 && x < width && y >= 0 && y < height
 
-func is_tile(x : int, y : int, value) -> bool:
-	return x >= 0 && x < width && y >= 0 && y < height && tiles[y * width + x] == value
+func is_tile_type(x : int, y : int, value) -> bool:
+	return x >= 0 && x < width && y >= 0 && y < height && tiles_types[y * width + x] == value
 
-func set_tiles(value) -> void:
-	for x in range(height):
-		for y in range(width):
-			tiles[y * width + x] = value
+func set_tile_type(x : int, y : int, value) -> void:
+	tiles_types[y * width + x] = value
 
-func set_tile(x : int, y : int, value) -> void:
-	tiles[y * width + x] = value
+func get_tile_type(x : int, y : int):
+	return tiles_types[y * width + x]
 
-func get_tile(x : int, y : int):
+func get_tile(x : int, y : int) -> Tile:
 	return tiles[y * width + x]
-
-func get_index(x : int, y : int) -> int:
-	return y * width + x
-
-func get_tile_indexed(index : int):
-	return tiles[index]
-
-func set_tile_indexed(index : int, value) -> void:
-	tiles[index] = value

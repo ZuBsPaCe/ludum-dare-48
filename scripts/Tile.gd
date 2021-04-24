@@ -2,7 +2,8 @@ extends Reference
 
 class_name Tile
 
-var tile_type
+var minions = []
+var tile_highlight
 
-func _init(tile_type) -> void:
-	self.tile_type = tile_type
+func _init() -> void:
+	pass

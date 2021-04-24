@@ -9,7 +9,10 @@ enum MinionTask {
 
 var speed := 16.0
 
+var tile : Tile
 var coord := Coord.new()
+var check_coord := Coord.new()
+
 var task = MinionTask.IDLE
 var task_cooldown := Cooldown.new()
 
@@ -17,11 +20,21 @@ var target_pos := Vector2()
 var target_vec := Vector2()
 
 func _ready() -> void:
+	coord.set_vector(position)
+	tile = State.map.get_tile(coord.x, coord.y)
+	tile.minions.append(self)
+
 	set_task(MinionTask.IDLE)
 
 func _physics_process(delta: float) -> void:
 	task_cooldown.step(delta)
-	coord.set_vector(position)
+
+	check_coord.set_vector(position)
+	if check_coord.x != coord.x || check_coord.y != coord.y:
+		tile.minions.erase(self)
+		coord.set_vector(position)
+		tile = State.map.get_tile(coord.x, coord.y)
+		tile.minions.append(self)
 
 	match task:
 		MinionTask.IDLE:
