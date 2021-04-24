@@ -10,6 +10,11 @@ config_version=4
 
 _global_script_classes=[ {
 "base": "Reference",
+"class": "Cooldown",
+"language": "GDScript",
+"path": "res://scripts/Cooldown.gd"
+}, {
+"base": "Reference",
 "class": "Coord",
 "language": "GDScript",
 "path": "res://scripts/Coord.gd"
@@ -19,15 +24,22 @@ _global_script_classes=[ {
 "language": "GDScript",
 "path": "res://scripts/Map.gd"
 }, {
-"base": "RigidBody2D",
+"base": "KinematicBody2D",
 "class": "Minion",
 "language": "GDScript",
 "path": "res://scripts/Minion.gd"
+}, {
+"base": "Reference",
+"class": "Tile",
+"language": "GDScript",
+"path": "res://scripts/Tile.gd"
 } ]
 _global_script_class_icons={
+"Cooldown": "",
 "Coord": "",
 "Map": "",
-"Minion": ""
+"Minion": "",
+"Tile": ""
 }
 
 [application]
@@ -37,10 +49,17 @@ config/description="Game entry for ludum-dare-48 \"Deeper and deeper\""
 run/main_scene="res://scenes/Game.tscn"
 config/icon="res://icon.png"
 
+[autoload]
+
+State="*res://scripts/State.gd"
+Helper="*res://scripts/Helper.gd"
+
 [display]
 
 window/size/height=576
 window/vsync/use_vsync=false
+window/stretch/mode="2d"
+window/stretch/aspect="keep"
 
 [global]
 
@@ -68,6 +87,10 @@ texture={
 "stream": false,
 "svg/scale": 1.0
 }
+
+[network]
+
+limits/debugger_stdout/max_chars_per_second=20000
 
 [physics]
 

@@ -6,7 +6,7 @@
 [sub_resource type="CircleShape2D" id=1]
 radius = 4.12614
 
-[node name="Minion" type="RigidBody2D"]
+[node name="Minion" type="KinematicBody2D"]
 script = ExtResource( 2 )
 
 [node name="Sprite" type="Sprite" parent="."]

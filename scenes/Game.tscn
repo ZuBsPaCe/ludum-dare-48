@@ -1,8 +1,9 @@
-[gd_scene load_steps=4 format=2]
+[gd_scene load_steps=5 format=2]
 
 [ext_resource path="res://scenes/Minion.tscn" type="PackedScene" id=1]
 [ext_resource path="res://scripts/Game.gd" type="Script" id=2]
 [ext_resource path="res://tiles/Tileset32.tres" type="TileSet" id=3]
+[ext_resource path="res://sprites/TileHighlight.png" type="Texture" id=4]
 
 [node name="Game" type="Node2D"]
 script = ExtResource( 2 )
@@ -13,4 +14,13 @@ tile_set = ExtResource( 3 )
 cell_size = Vector2( 32, 32 )
 format = 1
 
-[node name="EntityContainer" type="Node2D" parent="."]
+[node name="EntityContainer" type="YSort" parent="."]
+
+[node name="TileHighlight" type="Node2D" parent="."]
+visible = false
+
+[node name="TileHightlightSprite" type="Sprite" parent="TileHighlight"]
+position = Vector2( 16, 16 )
+texture = ExtResource( 4 )
+
+[node name="GameCamera" type="Camera2D" parent="."]
