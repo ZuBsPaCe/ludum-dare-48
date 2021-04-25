@@ -4,6 +4,10 @@ class_name Minion
 
 const TileType = preload("res://scripts/TileType.gd").TileType
 
+# Collider radius is 4 -> double it + margin
+const attack_start_distance_sq := 10 * 10
+const attack_hit_distance_sq := 12 * 12
+
 enum MinionTask {
 	IDLE,
 	ROAM,
@@ -36,6 +40,8 @@ var striking := false
 var strike_hit := false
 var strike_cooldown := Cooldown.new(1.0)
 var strike_hit_cooldown := Cooldown.new(0.25)
+var attack_cooldown := Cooldown.new(0.2)
+var victim_lost_cooldown := Cooldown.new(8.0)
 
 var target_pos := Vector2()
 var target_vec := Vector2()
@@ -47,17 +53,18 @@ var dig_tile : Tile
 
 var faction := 0
 
+var health := 1
+
 var _path_variation_x := 0.0
 var _path_variation_y := 0.0
 
 var _rally_immune := 0.0
 
+var _victim : Minion
+var _last_victim_pos := Vector2.ZERO
+
 
 func _ready() -> void:
-	coord.set_vector(position)
-	tile = State.map.get_tile(coord.x, coord.y)
-	tile.minions.append(self)
-
 	_set_next_task(MinionTask.IDLE)
 
 	_path_variation_x += randf() * 28.0 - 14.0
@@ -66,10 +73,19 @@ func _ready() -> void:
 
 func setup(faction : int) -> void:
 	self.faction = faction
-	if faction == 1:
+	if faction == 0:
+		State.minions.append(self)
+
+		health = State.minion_health
+
+	elif faction == 1:
+		State.monsters.append(self)
+
+		health = State.monster_health
+
 		modulate = Color.crimson
 
-		collision_layer = 3
+		collision_layer = 1 << 2
 		collision_mask = 0
 		set_collision_mask_bit(0, true)
 		set_collision_mask_bit(1, true)
@@ -79,6 +95,8 @@ func _process(delta: float) -> void:
 	task_cooldown.step(delta)
 	strike_cooldown.step(delta)
 	strike_hit_cooldown.step(delta)
+	attack_cooldown.step(delta)
+	victim_lost_cooldown.step(delta)
 
 	if _rally_immune > 0.0:
 		_rally_immune -= delta
@@ -88,10 +106,17 @@ func _process(delta: float) -> void:
 func _physics_process(delta: float) -> void:
 	check_coord.set_vector(position)
 	if check_coord.x != coord.x || check_coord.y != coord.y:
-		tile.minions.erase(self)
+		if tile:
+			if faction == 0:
+				tile.minions.erase(self)
+			else:
+				tile.monsters.erase(self)
 		coord.set_vector(position)
 		tile = State.map.get_tile(coord.x, coord.y)
-		tile.minions.append(self)
+		if faction == 0:
+			tile.minions.append(self)
+		else:
+			tile.monsters.append(self)
 
 	if striking:
 		if !strike_hit:
@@ -112,6 +137,15 @@ func _physics_process(delta: float) -> void:
 				elif dig_tile.health < 0:
 					_move_near(dig_tile.x, dig_tile.y)
 					dig_tile = null
+			elif task == MinionTask.ATTACK || task == MinionTask.FIGHT:
+				if _victim:
+					if position.distance_squared_to(_victim.position) < attack_hit_distance_sq:
+						_victim.health -= 1
+						if _victim.health == 0:
+							_victim.die()
+							_set_next_task(MinionTask.ROAM)
+						else:
+							_set_next_task(MinionTask.FIGHT)
 
 		if strike_cooldown.running:
 			return
@@ -174,6 +208,18 @@ func _physics_process(delta: float) -> void:
 				task = MinionTask.RALLY
 				_rally_immune = 0.0
 
+			MinionTask.ATTACK:
+				task = MinionTask.ATTACK
+				_set_target(_last_victim_pos)
+				attack_cooldown.restart()
+				victim_lost_cooldown.restart()
+
+			MinionTask.FIGHT:
+				task = MinionTask.FIGHT
+				_set_target(_last_victim_pos)
+				attack_cooldown.restart()
+				victim_lost_cooldown.restart()
+
 		next_task = null
 
 	match task:
@@ -212,6 +258,16 @@ func _physics_process(delta: float) -> void:
 
 			if task_cooldown.done:
 				_set_next_task(MinionTask.IDLE)
+
+		MinionTask.ATTACK:
+			# ATTACK can be interrupted. After first successful
+			# Strike it switches to FIGHT which can't be interrupted anymore
+			_attack()
+
+		MinionTask.FIGHT:
+			_attack()
+
+
 
 func _set_next_task(new_task):
 	next_task = new_task
@@ -285,6 +341,47 @@ func dig(path : PoolVector2Array, dig_tile : Tile):
 	self.path = path
 	self.dig_tile = dig_tile
 	_set_next_task(MinionTask.GO_DIG)
+
+func attack(victim : Minion):
+	if task == MinionTask.ATTACK && _victim == victim:
+		return
+
+	_victim = victim
+	_last_victim_pos = victim.position
+	_set_next_task(MinionTask.ATTACK)
+
+func _attack():
+	if attack_cooldown.done:
+		if _victim:
+			if Helper.raycast_minion(self, _victim):
+				_last_victim_pos = _victim.position
+				victim_lost_cooldown.restart()
+				_set_target(_last_victim_pos)
+
+		attack_cooldown.restart()
+
+	if strike_cooldown.done && _victim && position.distance_squared_to(_victim.position) < attack_start_distance_sq:
+		_strike()
+	else:
+		if task_cooldown.running:
+			_move()
+
+	if victim_lost_cooldown.done:
+		_victim = null
+		_set_next_task(MinionTask.IDLE)
+
+func die():
+	if faction == 0:
+		State.minions.erase(self)
+		tile.minions.erase(self)
+	else:
+		State.monsters.erase(self)
+		tile.monsters.erase(self)
+
+	set_process(false)
+	set_physics_process(false)
+
+	queue_free()
 
 func _move_near(coord_x : int, coord_y : int):
 	path = PoolVector2Array()

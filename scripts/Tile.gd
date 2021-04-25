@@ -2,7 +2,9 @@ extends Reference
 
 class_name Tile
 
-var minions = []
+var minions := []
+var monsters := []
+
 var dig_highlight
 var rally_highlight
 
@@ -12,7 +14,7 @@ var coord : Coord
 var id : int
 var tile_type
 
-var health := 3
+var health : int
 var rally := 0.0
 
 func _init(id : int, x : int, y : int, tile_type) -> void:
@@ -21,3 +23,4 @@ func _init(id : int, x : int, y : int, tile_type) -> void:
 	self.y = y
 	self.coord = Coord.new(x, y)
 	self.tile_type = tile_type
+	health = State.dirt_health

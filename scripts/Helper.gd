@@ -4,6 +4,8 @@ const TileType = preload("res://scripts/TileType.gd").TileType
 
 var map : Map
 
+var raycast : RayCast2D
+
 func _ready() -> void:
 	pass
 
@@ -90,4 +92,18 @@ func get_walkable_pos(coord : Coord, include_current = true) -> Vector2:
 
 	return coord.to_random_pos()
 
+func raycast_minion(from_minion : Minion, to_minion : Minion) -> bool:
+	var diff_vec := to_minion.position - from_minion.position
+#	raycast.clear_exceptions()
+#	raycast.add_exception(from_minion)
+	raycast.position = from_minion.position
+	raycast.cast_to = diff_vec
+	raycast.collision_mask = from_minion.collision_mask
 
+	raycast.force_raycast_update()
+
+	var collider := raycast.get_collider()
+	if collider == null:
+		return false
+
+	return collider == to_minion

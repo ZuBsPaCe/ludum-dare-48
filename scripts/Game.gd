@@ -18,10 +18,12 @@ onready var _camera := $GameCamera
 onready var _cursor_highlight := $CursorHighlight
 onready var _dig_button := $HUD/MarginContainer/HBoxContainer/DigButton
 onready var _rally_button := $HUD/MarginContainer/HBoxContainer/RallyButton
+onready var _raycast := $RayCast2D
 
 
 var _fullscreen_cooldown := Cooldown.new(0.5)
 var _dig_traverse_cooldown := Cooldown.new(1.0)
+var _start_battle_cooldown := Cooldown.new()
 
 var _map := Map.new()
 
@@ -69,6 +71,7 @@ var _mouse_on_button := false
 func _ready() -> void:
 	State.map = _map
 	Helper.map = _map
+	Helper.raycast = _raycast
 
 	State.tilemap32 = _tilemap32
 
@@ -79,6 +82,7 @@ func _ready() -> void:
 func _process(delta: float) -> void:
 	_fullscreen_cooldown.step(delta)
 	_dig_traverse_cooldown.step(delta)
+	_start_battle_cooldown.step(delta)
 
 	if OS.get_name() == "Windows":
 		if !_fullscreen_cooldown.running && Input.is_key_pressed(KEY_ALT) && Input.is_key_pressed(KEY_ENTER):
@@ -160,6 +164,7 @@ func _process(delta: float) -> void:
 			game_traverse_dig_tiles()
 
 		game_traverse_rally_tiles(delta)
+		game_start_battles()
 
 
 func world_reset() -> void:
@@ -310,6 +315,7 @@ func map_fill() -> void:
 		for i in range(State.minion_count):
 			var tile : Tile = minion_tiles[randi() % minion_tiles.size()]
 			var minion : Minion = minion_scene.instance()
+			minion.setup(0)
 			minion.position = tile.coord.to_random_pos()
 			_entity_container.add_child(minion)
 
@@ -335,7 +341,7 @@ func game_traverse_dig_tiles():
 	for dig_tile in _map.dig_tiles:
 		_map.astar.set_point_disabled(dig_tile.id, false)
 
-		var tiles := Helper.get_tile_circle(dig_tile.x, dig_tile.y, 5)
+		var tiles := Helper.get_tile_circle(dig_tile.x, dig_tile.y, State.minion_view_distance)
 
 		for from_tile in tiles:
 			if from_tile.tile_type != TileType.GROUND:
@@ -346,7 +352,7 @@ func game_traverse_dig_tiles():
 
 					var path = _map.astar.get_point_path(minion.tile.id, dig_tile.id)
 
-					if path.size() == 0 || path.size() > 4:
+					if path.size() == 0 || path.size() > State.minion_view_distance:
 						continue
 
 					if !minion_to_path.has(minion):
@@ -381,6 +387,50 @@ func game_traverse_rally_tiles(delta : float):
 			rally_tile.rally_highlight.modulate = Color(1, 1, 1, rally_tile.rally / State.rally_duration)
 
 
+func game_start_battles():
+	if _start_battle_cooldown.running:
+		return
+
+	var entity_count := State.monsters.size() + State.monsters.size()
+
+	if entity_count == 0:
+		_start_battle_cooldown.restart(1.0)
+		return
+
+	_start_battle_cooldown.restart(1.0 / entity_count)
+
+	if State.monsters.size() > 0:
+		State.monster_check_index += 1
+		if State.monster_check_index >= State.monsters.size():
+			State.monster_check_index = 0
+
+		var monster : Minion = State.monsters[State.monster_check_index]
+		game_start_battle(monster, State.minions, State.monster_view_distance)
+
+	if State.minions.size() > 0:
+		State.minion_check_index += 1
+		if State.minion_check_index >= State.minions.size():
+			State.minion_check_index = 0
+
+		var minion : Minion = State.minions[State.minion_check_index]
+		game_start_battle(minion, State.monsters, State.minion_view_distance)
+
+func game_start_battle(attacker : Minion, target_list : Array, view_distance : int):
+	if attacker.can_interupt():
+		var target_distance := view_distance
+		var target = null
+
+		for check_target in target_list:
+			var current_distance = attacker.coord.distance_to(check_target.coord)
+			if current_distance > target_distance:
+				continue
+
+			if Helper.raycast_minion(attacker, check_target):
+				target_distance = current_distance
+				target = check_target
+
+		if target != null:
+			attacker.attack(target)
 
 func _on_Button_mouse_entered() -> void:
 	_mouse_on_button = true

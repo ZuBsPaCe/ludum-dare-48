@@ -88,6 +88,9 @@ texture_normal = ExtResource( 7 )
 texture_pressed = ExtResource( 11 )
 texture_hover = ExtResource( 8 )
 
+[node name="RayCast2D" type="RayCast2D" parent="."]
+collision_mask = 0
+
 [connection signal="mouse_entered" from="HUD/MarginContainer/HBoxContainer/DigButton" to="." method="_on_Button_mouse_entered"]
 [connection signal="mouse_exited" from="HUD/MarginContainer/HBoxContainer/DigButton" to="." method="_on_Button_mouse_exited"]
 [connection signal="toggled" from="HUD/MarginContainer/HBoxContainer/DigButton" to="." method="_on_DigButton_toggled"]
