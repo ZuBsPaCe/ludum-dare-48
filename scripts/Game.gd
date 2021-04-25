@@ -9,6 +9,7 @@ var cursor_rally = preload("res://sprites/CursorRally.png")
 export(PackedScene) var minion_scene
 export(PackedScene) var dig_highlight_scene
 export(PackedScene) var rally_highlight_scene
+export(PackedScene) var portal_scene
 
 onready var _tilemap32 := $TileMap32
 onready var _entity_container := $EntityContainer
@@ -62,6 +63,7 @@ var _map_type = MapType.CAVES
 var _tool_type = ToolType.DIG
 var _command_type = CommandType.NONE
 var _mouse_on_button := false
+
 
 
 func _ready() -> void:
@@ -189,15 +191,17 @@ func map_generate(width : int, height : int) -> void:
 
 	_map.setup(width, height, TileType.DIRT)
 
-	var start_radius := randi() % 3 + 2
+	var start_radius := randi() % 4 + 3
 	var start_x := width / 2
 	var start_y := start_radius + 2
 	var start_coord := Coord.new(start_x, start_y)
 
-	#start_radius = 2
+	#start_radius = 3
 
-	var center_tiles := Helper.get_tile_circle(start_x, start_y, start_radius)
-	for tile in center_tiles:
+	_map.set_tile_type(start_coord.x, start_coord.y, TileType.START_PORTAL)
+
+	var start_tiles := Helper.get_tile_circle(start_x, start_y, start_radius, false)
+	for tile in start_tiles:
 		_map.set_tile_type(tile.x, tile.y, TileType.MINION_START)
 
 	for x in range(0, width):
@@ -221,10 +225,26 @@ func map_generate(width : int, height : int) -> void:
 			_map.set_tile_type(width - 2, y, TileType.ROCK)
 
 	if _map_type == MapType.CAVES:
+		var end_radius := randi() % 4 + 3
+		var end_x := width / 2
+		var end_y := height - end_radius - 2
+		var end_coord := Coord.new(end_x, end_y)
+
+		#start_radius = 3
+
+		_map.set_tile_type(end_coord.x, end_coord.y, TileType.END_PORTAL)
+
+		var end_tiles := Helper.get_tile_circle(end_x, end_y, end_radius, false)
+		for tile in end_tiles:
+			_map.set_tile_type(tile.x, tile.y, TileType.MONSTER_START)
+
+
 		var total_cave_count := randi() % 8 + 8
 		var cave_count := 0
 
-		while cave_count < total_cave_count:
+		var monster_tiles := []
+
+		while cave_count < total_cave_count || monster_tiles.size() == 0:
 			var radius := randi() % 10 + 1
 
 			var center := Coord.new(randi() % (width - 4) + 2, randi() % (height - 4) + 2)
@@ -233,18 +253,21 @@ func map_generate(width : int, height : int) -> void:
 
 			var cave_tiles := Helper.get_tile_circle(center.x, center.y, radius)
 			for tile in cave_tiles:
-				if tile.tile_type != TileType.DIRT:
-					center.distance_to(start_coord)
-				_map.set_tile_type(tile.x, tile.y, TileType.GROUND)
+				if tile.tile_type == TileType.DIRT:
+					_map.set_tile_type(tile.x, tile.y, TileType.MONSTER_START)
+					monster_tiles.append(tile)
 
 			cave_count += 1
 
+
 func map_fill() -> void:
-	var minion_coords := []
+	var minion_tiles := []
+	var monster_tiles := []
 
 	for y in range(_map.height):
 		for x in range(_map.width):
 			var tile = _map.get_tile_type(x, y)
+			var coord := Coord.new(x, y)
 
 			match tile:
 				TileType.DIRT:
@@ -253,23 +276,53 @@ func map_fill() -> void:
 				TileType.ROCK:
 					_tilemap32.set_cell(x, y, 2)
 
+				TileType.START_PORTAL:
+					_tilemap32.set_cell(x, y, 0)
+
+					var start_portal = portal_scene.instance()
+					start_portal.position = coord.to_center_pos()
+					_entity_container.add_child(start_portal)
+					State.start_portals.append(start_portal)
+
+				TileType.END_PORTAL:
+					_tilemap32.set_cell(x, y, 0)
+
+					var end_portal = portal_scene.instance()
+					end_portal.position = coord.to_center_pos()
+					_entity_container.add_child(end_portal)
+					end_portal.set_active(true)
+					State.end_portals.append(end_portal)
+
 				TileType.GROUND:
 					_tilemap32.set_cell(x, y, 0)
 
 				TileType.MINION_START:
 					_tilemap32.set_cell(x, y, 0)
-					minion_coords.append(Coord.new(x, y))
-
 					_map.set_tile_type(x, y, TileType.GROUND)
+					minion_tiles.append(_map.get_tile(x, y))
 
-	for i in range(State.minion_count):
-		var coord : Coord = minion_coords[randi() % minion_coords.size()]
-		var minion : Minion = minion_scene.instance()
-		minion.position = coord.to_random_pos()
-		_entity_container.add_child(minion)
+				TileType.MONSTER_START:
+					_tilemap32.set_cell(x, y, 0)
+					_map.set_tile_type(x, y, TileType.GROUND)
+					monster_tiles.append(_map.get_tile(x, y))
 
-		if i == 0:
-			_camera.position = coord.to_random_pos()
+	if minion_tiles.size() > 0:
+		for i in range(State.minion_count):
+			var tile : Tile = minion_tiles[randi() % minion_tiles.size()]
+			var minion : Minion = minion_scene.instance()
+			minion.position = tile.coord.to_random_pos()
+			_entity_container.add_child(minion)
+
+			if i == 0:
+				_camera.position = tile.coord.to_center_pos()
+
+	if monster_tiles.size() > 0:
+		for i in range(State.level_monster_count):
+			var tile : Tile = monster_tiles[randi() % monster_tiles.size()]
+			var monster : Minion = minion_scene.instance()
+			monster.setup(1)
+			monster.position = tile.coord.to_random_pos()
+			_entity_container.add_child(monster)
 
 
 func game_traverse_dig_tiles():

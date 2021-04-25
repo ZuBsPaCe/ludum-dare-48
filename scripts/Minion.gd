@@ -69,6 +69,11 @@ func setup(faction : int) -> void:
 	if faction == 1:
 		modulate = Color.crimson
 
+		collision_layer = 3
+		collision_mask = 0
+		set_collision_mask_bit(0, true)
+		set_collision_mask_bit(1, true)
+
 
 func _process(delta: float) -> void:
 	task_cooldown.step(delta)

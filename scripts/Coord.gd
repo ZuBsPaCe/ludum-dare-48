@@ -23,6 +23,11 @@ func to_random_pos() -> Vector2:
 		x * 32.0 + randf() * 32.0,
 		y * 32.0 + randf() * 32.0)
 
+func to_center_pos() -> Vector2:
+	return Vector2(
+		x * 32.0 + 16.0,
+		y * 32.0 + 16.0)
+
 func distance_to(other : Coord) -> float:
 	var diff_x := other.x - x
 	var diff_y := other.y - y
