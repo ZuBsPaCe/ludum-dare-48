@@ -75,16 +75,16 @@ func _ready() -> void:
 
 	State.tilemap32 = _tilemap32
 
-	world_reset()
-	game_reset()
-	game_start()
+	if OS.get_name() == "HTML5":
+		$Screens/Title/ExitButton.visible = false
+
 
 func _process(delta: float) -> void:
 	_fullscreen_cooldown.step(delta)
 	_dig_traverse_cooldown.step(delta)
 	_start_battle_cooldown.step(delta)
 
-	if OS.get_name() == "Windows":
+	if OS.get_name() != "HTML5":
 		if !_fullscreen_cooldown.running && Input.is_key_pressed(KEY_ALT) && Input.is_key_pressed(KEY_ENTER):
 			OS.window_fullscreen = !OS.window_fullscreen
 			_fullscreen_cooldown.restart()
@@ -456,3 +456,24 @@ func set_tool(tool_type) -> void:
 			Input.set_custom_mouse_cursor(cursor_dig, 0, Vector2(16, 16))
 		ToolType.RALLY:
 			Input.set_custom_mouse_cursor(cursor_rally, 0, Vector2(16, 16))
+
+
+func _on_StartButton_pressed() -> void:
+	world_reset()
+	game_reset()
+	game_start()
+
+	$Screens/Title.visible = false
+
+
+
+func _on_MusicSlider_value_changed(value: float) -> void:
+	AudioServer.set_bus_volume_db(AudioServer.get_bus_index("Music"), -80.0 + value / 100.0 * 80.0)
+
+
+func _on_SoundSlider_value_changed(value: float) -> void:
+	AudioServer.set_bus_volume_db(AudioServer.get_bus_index("Sounds"), -80.0 + value / 100.0 * 80.0)
+
+
+func _on_ExitButton_pressed() -> void:
+	get_tree().quit()
