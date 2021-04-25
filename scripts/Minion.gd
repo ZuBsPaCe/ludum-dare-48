@@ -6,17 +6,17 @@ const TileType = preload("res://scripts/TileType.gd").TileType
 
 enum MinionTask {
 	IDLE,
-	ROAMING,
+	ROAM,
 
-	RALLYING,
+	RALLY,
 
-	GO_DIGGING,
-	DIGGING,
+	GO_DIG,
+	DIG,
 
 	MOVE,
 
-	ATTACKING,
-	FIGHTING
+	ATTACK,
+	FIGHT
 }
 
 onready var _animation_minion := $Sprites/AnimationMinion
@@ -47,6 +47,11 @@ var dig_tile : Tile
 
 var faction := 0
 
+var _path_variation_x := 0.0
+var _path_variation_y := 0.0
+
+var _rally_immune := 0.0
+
 
 func _ready() -> void:
 	coord.set_vector(position)
@@ -55,10 +60,25 @@ func _ready() -> void:
 
 	_set_next_task(MinionTask.IDLE)
 
+	_path_variation_x += randf() * 28.0 - 14.0
+	_path_variation_y += randf() * 28.0 - 14.0
+
+
+func setup(faction : int) -> void:
+	self.faction = faction
+	if faction == 1:
+		modulate = Color.crimson
+
+
 func _process(delta: float) -> void:
 	task_cooldown.step(delta)
 	strike_cooldown.step(delta)
 	strike_hit_cooldown.step(delta)
+
+	if _rally_immune > 0.0:
+		_rally_immune -= delta
+		if _rally_immune < 0.0:
+			_rally_immune = 0.0
 
 func _physics_process(delta: float) -> void:
 	check_coord.set_vector(position)
@@ -73,25 +93,43 @@ func _physics_process(delta: float) -> void:
 			if strike_hit_cooldown.running:
 				return
 			strike_hit = true
-			if task == MinionTask.DIGGING:
+			if task == MinionTask.DIG:
 				dig_tile.health -= 1
 				if dig_tile.health == 0:
-					dig_tile.dig_highlight.queue_free()
-					dig_tile.dig_highlight = null
+					if dig_tile.dig_highlight != null:
+						dig_tile.dig_highlight.queue_free()
+						dig_tile.dig_highlight = null
 					State.map.set_tile_type(dig_tile.x, dig_tile.y, TileType.GROUND)
 					State.tilemap32.set_cell(dig_tile.x, dig_tile.y, 0)
 					State.map.dig_tiles.erase(dig_tile)
-					var coord := Coord.new(dig_tile.x, dig_tile.y)
-					move_near(coord.to_random_pos())
+					_move_near(dig_tile.x, dig_tile.y)
 					dig_tile = null
 				elif dig_tile.health < 0:
-					var coord := Coord.new(dig_tile.x, dig_tile.y)
-					move_near(coord.to_random_pos())
+					_move_near(dig_tile.x, dig_tile.y)
 					dig_tile = null
 
 		if strike_cooldown.running:
 			return
 		striking = false
+
+	if _rally_immune > 0.0:
+		_rally_immune = max(_rally_immune - delta, 0.0)
+
+	if faction == 0:
+		if can_interupt():
+			if tile.rally > _rally_immune:
+				var tiles = Helper.get_tile_circle(tile.x, tile.y, 2, true)
+				var max_rally = tile.rally
+				var max_tile = tile
+				for tile in tiles:
+					if tile.rally > max_rally:
+						max_rally = tile.rally
+						max_tile = tile
+				if max_tile != tile:
+					_rally_near(max_tile.x, max_tile.y)
+				else:
+					# Reached highest rally point
+					_rally_immune = tile.rally
 
 	if next_task != null:
 		match next_task:
@@ -111,47 +149,60 @@ func _physics_process(delta: float) -> void:
 				else:
 					_animation_pickaxe.play("IdleLeft")
 
-			MinionTask.ROAMING:
+			MinionTask.ROAM:
 				_set_target(Helper.get_walkable_pos(coord))
-				task = MinionTask.ROAMING
+				task = MinionTask.ROAM
 
-			MinionTask.GO_DIGGING:
+			MinionTask.GO_DIG:
 				_start_path()
-				task = MinionTask.GO_DIGGING
+				task = MinionTask.GO_DIG
 
-			MinionTask.DIGGING:
-				task = MinionTask.DIGGING
+			MinionTask.DIG:
+				task = MinionTask.DIG
 
 			MinionTask.MOVE:
 				_start_path()
 				task = MinionTask.MOVE
+
+			MinionTask.RALLY:
+				_start_path()
+				task = MinionTask.RALLY
+				_rally_immune = 0.0
+
 		next_task = null
 
 	match task:
 		MinionTask.IDLE:
 			if task_cooldown.done:
-				_set_next_task(MinionTask.ROAMING)
+				_set_next_task(MinionTask.ROAM)
 
-		MinionTask.ROAMING:
+		MinionTask.ROAM:
 			_move()
 
 			if task_cooldown.done:
 				_set_next_task(MinionTask.IDLE)
 
-		MinionTask.GO_DIGGING:
+		MinionTask.GO_DIG:
 			_move()
 
 			if task_cooldown.done:
 				if !_advance_path():
-					_set_next_task(MinionTask.DIGGING)
+					_set_next_task(MinionTask.DIG)
 
-		MinionTask.DIGGING:
-			if dig_tile:
+		MinionTask.DIG:
+			if dig_tile.health > 0:
 				_strike()
 			else:
-				_set_next_task(MinionTask.IDLE)
+				_move_near(dig_tile.x, dig_tile.y)
+				dig_tile = null
 
 		MinionTask.MOVE:
+			_move()
+
+			if task_cooldown.done:
+				_set_next_task(MinionTask.IDLE)
+
+		MinionTask.RALLY:
 			_move()
 
 			if task_cooldown.done:
@@ -205,44 +256,58 @@ func _advance_path() -> bool:
 		return false
 
 	var pos : Vector2 = path[path_index]
-	var remainder_x = fmod(abs(pos.x), 32.0)
-	var remainder_y = fmod(abs(pos.y), 32.0)
 
-	if remainder_x < 0.1:
-		pos.x = floor(pos.x) + 0.1
-	elif remainder_x > 0.9:
-		pos.x = floor(pos.x) + 0.9
+	var coord_x = int(pos.x / 32.0)
+	var coord_y = int(pos.y / 32.0)
 
-	if remainder_y < 0.1:
-		pos.y = floor(pos.y) + 0.1
-	elif remainder_y > 0.9:
-		pos.y = floor(pos.y) + 0.9
-
-	_set_target(pos)
+	_set_target(_vary_pos_from_coord(coord_x, coord_y))
 	return true
 
-
-func set_faction(faction : int) -> void:
-	self.faction = faction
-	if faction == 1:
-		modulate = Color.crimson
-
+func can_interupt() -> bool:
+	return (
+		task != MinionTask.RALLY &&
+		task != MinionTask.DIG &&
+		task != MinionTask.FIGHT)
 
 func can_start_digging() -> bool:
 	return (
-		task != MinionTask.GO_DIGGING &&
-		task != MinionTask.DIGGING &&
-		task != MinionTask.ATTACKING &&
-		task != MinionTask.FIGHTING)
+		task != MinionTask.GO_DIG &&
+		task != MinionTask.DIG &&
+		task != MinionTask.ATTACK &&
+		task != MinionTask.FIGHT)
 
 func dig(path : PoolVector2Array, dig_tile : Tile):
 	self.path = path
 	self.dig_tile = dig_tile
-	_set_next_task(MinionTask.GO_DIGGING)
+	_set_next_task(MinionTask.GO_DIG)
 
-func move_near(pos : Vector2):
+func _move_near(coord_x : int, coord_y : int):
 	path = PoolVector2Array()
-	path.append(pos)
+	path.append(_vary_pos_from_coord(coord_x, coord_y))
 	_set_next_task(MinionTask.MOVE)
 
+func _rally_near(coord_x : int, coord_y : int):
+	path = PoolVector2Array()
+	path.append(_vary_pos_from_coord(coord_x, coord_y))
+	_set_next_task(MinionTask.RALLY)
 
+func _vary_pos_from_coord(coord_x : int, coord_y : int) -> Vector2:
+	var pos_x := coord_x * 32.0 + 16.0
+	var pos_y := coord_y * 32.0 + 16.0
+
+	_path_variation_x += randf() * 4.0 - 2.0
+	_path_variation_y += randf() * 4.0 - 2.0
+
+	if _path_variation_x > 15.0:
+		_path_variation_x = 14.0
+	elif _path_variation_x < -15.0:
+		_path_variation_x = -14.0
+
+	if _path_variation_y > 15.0:
+		_path_variation_y = 14.0
+	elif _path_variation_y < -15.0:
+		_path_variation_y = -14.0
+
+	return Vector2(
+		pos_x + _path_variation_x,
+		pos_y + _path_variation_y)

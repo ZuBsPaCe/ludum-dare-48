@@ -28,5 +28,10 @@ func distance_to(other : Coord) -> float:
 	var diff_y := other.y - y
 	return sqrt(diff_x * diff_x + diff_y * diff_y)
 
+func distance_to_squared(other : Coord) -> float:
+	var diff_x := other.x - x
+	var diff_y := other.y - y
+	return float(diff_x * diff_x + diff_y * diff_y)
+
 func _to_string() -> String:
 	return "%d/%d" % [x, y]

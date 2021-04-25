@@ -7,12 +7,15 @@ var map : Map
 func _ready() -> void:
 	pass
 
-func get_tile_circle(center_x : int, center_y : int, radius : int) -> Array:
+func get_tile_circle(center_x : int, center_y : int, radius : int, return_self = true) -> Array:
 	var tiles := []
 	var radius_sq := radius * radius
 	for y in range(center_y - radius, center_y + radius + 1):
 		for x in range(center_x - radius, center_x + radius + 1):
 			if !map.is_valid(x, y):
+				continue
+
+			if !return_self && y == center_y && x == center_x:
 				continue
 
 			var diff_x := center_x - x
