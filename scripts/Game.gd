@@ -66,6 +66,8 @@ var _tool_type = ToolType.DIG
 var _command_type = CommandType.NONE
 var _mouse_on_button := false
 
+var _drag_start_mouse_pos := Vector2()
+var _drag_start_camera_pos := Vector2()
 
 
 func _ready() -> void:
@@ -94,7 +96,41 @@ func _process(delta: float) -> void:
 		var mouse_coord := Coord.new()
 		mouse_coord.set_vector(mouse_pos)
 
-		_camera.position = mouse_pos
+		if Input.is_action_just_pressed("alternate"):
+			_drag_start_mouse_pos = get_viewport().get_mouse_position()
+			_drag_start_camera_pos = _camera.position
+
+
+		var new_camera_position = null
+
+
+		if Input.is_action_pressed("alternate"):
+			var drag_vec = (_drag_start_mouse_pos - get_viewport().get_mouse_position()) * _camera.zoom
+			new_camera_position = _drag_start_camera_pos + drag_vec
+		else:
+			var drag_vec := Vector2()
+			if Input.is_action_pressed("up"):
+				drag_vec.y -= 1
+			if Input.is_action_pressed("down"):
+				drag_vec.y = 1
+			if Input.is_action_pressed("left"):
+				drag_vec.x -= 1
+			if Input.is_action_pressed("right"):
+				drag_vec.x = 1
+			new_camera_position = _camera.position + drag_vec * 768.0 * delta
+
+
+		print("%s    %s" % [_camera.position, get_viewport().size])
+		if new_camera_position != null:
+			var screen_size = get_viewport().size
+			var screen_half = screen_size * 0.5 * _camera.zoom
+			new_camera_position.x = max(new_camera_position.x, screen_half.x)
+			new_camera_position.x = min(new_camera_position.x, _camera.limit_right - screen_half.x)
+			new_camera_position.y = max(new_camera_position.y, screen_half.y)
+			new_camera_position.y = min(new_camera_position.y, _camera.limit_bottom - screen_half.y)
+			_camera.position = new_camera_position
+
+
 
 		var mouse_tile = -1
 
