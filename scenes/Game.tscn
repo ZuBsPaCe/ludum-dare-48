@@ -1,4 +1,4 @@
-[gd_scene load_steps=25 format=2]
+[gd_scene load_steps=41 format=2]
 
 [ext_resource path="res://scenes/Minion.tscn" type="PackedScene" id=1]
 [ext_resource path="res://scripts/Game.gd" type="Script" id=2]
@@ -21,6 +21,21 @@
 [ext_resource path="res://art/music/title.ogg" type="AudioStream" id=19]
 [ext_resource path="res://art/fullscreen/Vignette.png" type="Texture" id=20]
 [ext_resource path="res://art/music/track1.ogg" type="AudioStream" id=21]
+[ext_resource path="res://art/fullscreen/intro/Mouth 2.png" type="Texture" id=22]
+[ext_resource path="res://art/fullscreen/intro/Mouth 3.png" type="Texture" id=23]
+[ext_resource path="res://art/fullscreen/intro/Mouth 1.png" type="Texture" id=24]
+[ext_resource path="res://art/fullscreen/intro/Background.png" type="Texture" id=25]
+[ext_resource path="res://art/fullscreen/intro/Body.png" type="Texture" id=26]
+[ext_resource path="res://art/fullscreen/intro/Head Top.png" type="Texture" id=27]
+[ext_resource path="res://art/fullscreen/intro/Head Bottom.png" type="Texture" id=28]
+[ext_resource path="res://art/fullscreen/intro/Dots.png" type="Texture" id=29]
+[ext_resource path="res://art/fullscreen/intro/Eyes3.png" type="Texture" id=30]
+[ext_resource path="res://art/fullscreen/intro/Eyes2.png" type="Texture" id=31]
+[ext_resource path="res://art/fullscreen/intro/Mouth 4.png" type="Texture" id=32]
+[ext_resource path="res://art/fullscreen/intro/Eyes1.png" type="Texture" id=33]
+[ext_resource path="res://art/fullscreen/intro/Ground Front.png" type="Texture" id=34]
+[ext_resource path="res://scenes/SpecialIntro.gd" type="Script" id=35]
+[ext_resource path="res://art/fullscreen/intro/Mouth Base.png" type="Texture" id=36]
 
 [sub_resource type="StyleBoxLine" id=1]
 color = Color( 0.278431, 0.278431, 0.278431, 1 )
@@ -44,6 +59,228 @@ void fragment() {
 [sub_resource type="ShaderMaterial" id=3]
 shader = SubResource( 2 )
 shader_param/vignette = ExtResource( 20 )
+
+[sub_resource type="Animation" id=4]
+resource_name = "Default"
+length = 30.0
+tracks/0/type = "method"
+tracks/0/path = NodePath(".")
+tracks/0/interp = 1
+tracks/0/loop_wrap = true
+tracks/0/imported = false
+tracks/0/enabled = true
+tracks/0/keys = {
+"times": PoolRealArray( 0, 2, 4.4, 6, 7.6, 8.9, 11.1, 12.2, 14, 15.9, 18.6, 19.9, 21.3, 23.1, 24.1, 25.5, 29.9 ),
+"transitions": PoolRealArray( 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1 ),
+"values": [ {
+"args": [  ],
+"method": "minion_walk_left"
+}, {
+"args": [  ],
+"method": "minion_idle_left"
+}, {
+"args": [  ],
+"method": "start_talking"
+}, {
+"args": [  ],
+"method": "stop_talking"
+}, {
+"args": [  ],
+"method": "start_talking"
+}, {
+"args": [  ],
+"method": "stop_talking"
+}, {
+"args": [  ],
+"method": "start_talking"
+}, {
+"args": [  ],
+"method": "stop_talking"
+}, {
+"args": [  ],
+"method": "start_talking"
+}, {
+"args": [  ],
+"method": "stop_talking"
+}, {
+"args": [  ],
+"method": "start_talking"
+}, {
+"args": [  ],
+"method": "stop_talking"
+}, {
+"args": [  ],
+"method": "start_talking"
+}, {
+"args": [  ],
+"method": "stop_talking"
+}, {
+"args": [  ],
+"method": "start_talking"
+}, {
+"args": [  ],
+"method": "stop_talking"
+}, {
+"args": [  ],
+"method": "switch_scene"
+} ]
+}
+tracks/1/type = "value"
+tracks/1/path = NodePath("Minion:position")
+tracks/1/interp = 1
+tracks/1/loop_wrap = true
+tracks/1/imported = false
+tracks/1/enabled = true
+tracks/1/keys = {
+"times": PoolRealArray( 0, 1, 2 ),
+"transitions": PoolRealArray( 1, 1, 1 ),
+"update": 0,
+"values": [ Vector2( 1071.88, 510.638 ), Vector2( 877.497, 520.576 ), Vector2( 685.359, 499.085 ) ]
+}
+tracks/2/type = "value"
+tracks/2/path = NodePath("CanvasLayer/VBoxContainer:rect_position")
+tracks/2/interp = 1
+tracks/2/loop_wrap = true
+tracks/2/imported = false
+tracks/2/enabled = true
+tracks/2/keys = {
+"times": PoolRealArray( 2, 30 ),
+"transitions": PoolRealArray( 1, 1 ),
+"update": 0,
+"values": [ Vector2( 509.909, 483.121 ), Vector2( 509.909, -1200 ) ]
+}
+tracks/3/type = "value"
+tracks/3/path = NodePath("CanvasLayer/VBoxContainer/Label:modulate")
+tracks/3/interp = 1
+tracks/3/loop_wrap = true
+tracks/3/imported = false
+tracks/3/enabled = true
+tracks/3/keys = {
+"times": PoolRealArray( 2, 4.1, 5.5, 9, 10.1 ),
+"transitions": PoolRealArray( 1, 1, 1, 1, 1 ),
+"update": 0,
+"values": [ Color( 1, 1, 1, 0 ), Color( 1, 1, 1, 0 ), Color( 1, 1, 1, 1 ), Color( 1, 1, 1, 1 ), Color( 1, 1, 1, 0 ) ]
+}
+tracks/4/type = "value"
+tracks/4/path = NodePath("CanvasLayer/VBoxContainer/Label2:modulate")
+tracks/4/interp = 1
+tracks/4/loop_wrap = true
+tracks/4/imported = false
+tracks/4/enabled = true
+tracks/4/keys = {
+"times": PoolRealArray( 2, 7.1, 8.4, 10.2, 11.2 ),
+"transitions": PoolRealArray( 1, 1, 1, 1, 1 ),
+"update": 0,
+"values": [ Color( 1, 1, 1, 0 ), Color( 1, 1, 1, 0 ), Color( 1, 1, 1, 1 ), Color( 1, 1, 1, 1 ), Color( 1, 1, 1, 0 ) ]
+}
+tracks/5/type = "value"
+tracks/5/path = NodePath("CanvasLayer/VBoxContainer/Label3:modulate")
+tracks/5/interp = 1
+tracks/5/loop_wrap = true
+tracks/5/imported = false
+tracks/5/enabled = true
+tracks/5/keys = {
+"times": PoolRealArray( 2, 10.3, 11.8, 13.8, 14.9 ),
+"transitions": PoolRealArray( 1, 1, 1, 1, 1 ),
+"update": 0,
+"values": [ Color( 1, 1, 1, 0 ), Color( 1, 1, 1, 0 ), Color( 1, 1, 1, 1 ), Color( 1, 1, 1, 1 ), Color( 1, 1, 1, 0 ) ]
+}
+tracks/6/type = "value"
+tracks/6/path = NodePath("CanvasLayer/VBoxContainer/Label4:modulate")
+tracks/6/interp = 1
+tracks/6/loop_wrap = true
+tracks/6/imported = false
+tracks/6/enabled = true
+tracks/6/keys = {
+"times": PoolRealArray( 2 ),
+"transitions": PoolRealArray( 1 ),
+"update": 0,
+"values": [ Color( 1, 1, 1, 0 ) ]
+}
+tracks/7/type = "value"
+tracks/7/path = NodePath("CanvasLayer/VBoxContainer/Label5:modulate")
+tracks/7/interp = 1
+tracks/7/loop_wrap = true
+tracks/7/imported = false
+tracks/7/enabled = true
+tracks/7/keys = {
+"times": PoolRealArray( 2, 13.1, 15.3, 17.8, 18.9 ),
+"transitions": PoolRealArray( 1, 1, 1, 1, 1 ),
+"update": 0,
+"values": [ Color( 1, 1, 1, 0 ), Color( 1, 1, 1, 0 ), Color( 1, 1, 1, 1 ), Color( 1, 1, 1, 1 ), Color( 1, 1, 1, 0 ) ]
+}
+tracks/8/type = "value"
+tracks/8/path = NodePath("CanvasLayer/VBoxContainer/Label6:modulate")
+tracks/8/interp = 1
+tracks/8/loop_wrap = true
+tracks/8/imported = false
+tracks/8/enabled = true
+tracks/8/keys = {
+"times": PoolRealArray( 2 ),
+"transitions": PoolRealArray( 1 ),
+"update": 0,
+"values": [ Color( 1, 1, 1, 0 ) ]
+}
+tracks/9/type = "value"
+tracks/9/path = NodePath("CanvasLayer/VBoxContainer/Label7:modulate")
+tracks/9/interp = 1
+tracks/9/loop_wrap = true
+tracks/9/imported = false
+tracks/9/enabled = true
+tracks/9/keys = {
+"times": PoolRealArray( 2, 17.8, 19.6, 20.7, 21.7 ),
+"transitions": PoolRealArray( 1, 1, 1, 1, 1 ),
+"update": 0,
+"values": [ Color( 1, 1, 1, 0 ), Color( 1, 1, 1, 0 ), Color( 1, 1, 1, 1 ), Color( 1, 1, 1, 1 ), Color( 1, 1, 1, 0 ) ]
+}
+tracks/10/type = "value"
+tracks/10/path = NodePath("CanvasLayer/VBoxContainer/Label8:modulate")
+tracks/10/interp = 1
+tracks/10/loop_wrap = true
+tracks/10/imported = false
+tracks/10/enabled = true
+tracks/10/keys = {
+"times": PoolRealArray( 2 ),
+"transitions": PoolRealArray( 1 ),
+"update": 0,
+"values": [ Color( 1, 1, 1, 0 ) ]
+}
+tracks/11/type = "value"
+tracks/11/path = NodePath("CanvasLayer/VBoxContainer/Label9:modulate")
+tracks/11/interp = 1
+tracks/11/loop_wrap = true
+tracks/11/imported = false
+tracks/11/enabled = true
+tracks/11/keys = {
+"times": PoolRealArray( 2, 20.6, 22, 25.3, 26.4 ),
+"transitions": PoolRealArray( 1, 1, 1, 1, 1 ),
+"update": 0,
+"values": [ Color( 1, 1, 1, 0 ), Color( 1, 1, 1, 0 ), Color( 1, 1, 1, 1 ), Color( 1, 1, 1, 1 ), Color( 1, 1, 1, 0 ) ]
+}
+tracks/12/type = "value"
+tracks/12/path = NodePath("CanvasLayer/VBoxContainer/Label10:modulate")
+tracks/12/interp = 1
+tracks/12/loop_wrap = true
+tracks/12/imported = false
+tracks/12/enabled = true
+tracks/12/keys = {
+"times": PoolRealArray( 2, 23.3, 24.5, 26.6, 27.7 ),
+"transitions": PoolRealArray( 1, 1, 1, 1, 1 ),
+"update": 0,
+"values": [ Color( 1, 1, 1, 0 ), Color( 1, 1, 1, 0 ), Color( 1, 1, 1, 1 ), Color( 1, 1, 1, 1 ), Color( 1, 1, 1, 0 ) ]
+}
+tracks/13/type = "value"
+tracks/13/path = NodePath("CanvasLayer/VBoxContainer:visible")
+tracks/13/interp = 1
+tracks/13/loop_wrap = true
+tracks/13/imported = false
+tracks/13/enabled = true
+tracks/13/keys = {
+"times": PoolRealArray( 0, 2, 30 ),
+"transitions": PoolRealArray( 1, 1, 1 ),
+"update": 1,
+"values": [ false, true, false ]
+}
 
 [node name="Game" type="Node2D"]
 script = ExtResource( 2 )
@@ -121,6 +358,7 @@ collision_mask = 0
 [node name="Screens" type="CanvasLayer" parent="."]
 
 [node name="Title" type="TextureRect" parent="Screens"]
+visible = false
 margin_right = 40.0
 margin_bottom = 40.0
 texture = ExtResource( 14 )
@@ -129,14 +367,14 @@ __meta__ = {
 }
 
 [node name="StartButton" type="Button" parent="Screens/Title"]
-anchor_left = -0.105796
-anchor_top = 0.038241
-anchor_right = 0.120766
-anchor_bottom = 0.119838
+anchor_left = -0.0904598
+anchor_top = 0.104551
+anchor_right = 0.136103
+anchor_bottom = 0.186149
 margin_left = 476.631
-margin_top = 295.778
-margin_right = 526.631
-margin_bottom = 315.778
+margin_top = 291.778
+margin_right = 500.631
+margin_bottom = 308.778
 custom_styles/hover = ExtResource( 17 )
 custom_styles/pressed = ExtResource( 17 )
 custom_styles/focus = ExtResource( 17 )
@@ -147,15 +385,35 @@ __meta__ = {
 "_edit_use_anchors_": true
 }
 
-[node name="ExitButton" type="Button" parent="Screens/Title"]
-anchor_left = -0.105796
-anchor_top = 0.186557
-anchor_right = 0.120766
-anchor_bottom = 0.268154
+[node name="NewGameButton" type="Button" parent="Screens/Title"]
+anchor_left = -0.0435848
+anchor_top = 0.236496
+anchor_right = 0.182978
+anchor_bottom = 0.318093
 margin_left = 476.631
 margin_top = 295.778
-margin_right = 526.631
-margin_bottom = 315.778
+margin_right = 404.631
+margin_bottom = 296.778
+rect_min_size = Vector2( 100, 0 )
+custom_styles/hover = ExtResource( 17 )
+custom_styles/pressed = ExtResource( 17 )
+custom_styles/focus = ExtResource( 17 )
+custom_styles/normal = ExtResource( 16 )
+custom_fonts/font = ExtResource( 18 )
+text = "NEW GAME"
+__meta__ = {
+"_edit_use_anchors_": true
+}
+
+[node name="ExitButton" type="Button" parent="Screens/Title"]
+anchor_left = -0.0435848
+anchor_top = 0.347607
+anchor_right = 0.182978
+anchor_bottom = 0.429204
+margin_left = 476.631
+margin_top = 295.778
+margin_right = 404.631
+margin_bottom = 296.778
 rect_min_size = Vector2( 100, 0 )
 custom_styles/hover = ExtResource( 17 )
 custom_styles/pressed = ExtResource( 17 )
@@ -222,6 +480,9 @@ __meta__ = {
 "_edit_use_anchors_": false
 }
 
+[node name="WorldMap" type="CanvasLayer" parent="."]
+follow_viewport_enable = true
+
 [node name="TitleMusic" type="AudioStreamPlayer" parent="."]
 stream = ExtResource( 19 )
 autoplay = true
@@ -231,6 +492,189 @@ bus = "Music"
 stream = ExtResource( 21 )
 bus = "Music"
 
+[node name="SpecialIntro" type="Node2D" parent="."]
+visible = false
+script = ExtResource( 35 )
+
+[node name="Background" type="Sprite" parent="SpecialIntro"]
+position = Vector2( 512, 288 )
+texture = ExtResource( 25 )
+
+[node name="Head Top" type="Sprite" parent="SpecialIntro"]
+position = Vector2( 256, 208 )
+texture = ExtResource( 27 )
+
+[node name="Dots" type="Sprite" parent="SpecialIntro"]
+position = Vector2( 234.96, 136.44 )
+texture = ExtResource( 29 )
+
+[node name="Head Bottom" type="Sprite" parent="SpecialIntro"]
+position = Vector2( 272, 240 )
+texture = ExtResource( 28 )
+
+[node name="Body" type="Sprite" parent="SpecialIntro"]
+position = Vector2( 304, 384 )
+texture = ExtResource( 26 )
+
+[node name="MouthBase" type="Sprite" parent="SpecialIntro"]
+position = Vector2( 309.941, 419.981 )
+texture = ExtResource( 36 )
+
+[node name="Mouth1" type="Sprite" parent="SpecialIntro"]
+visible = false
+position = Vector2( 309.941, 413.254 )
+texture = ExtResource( 24 )
+
+[node name="Mouth2" type="Sprite" parent="SpecialIntro"]
+visible = false
+position = Vector2( 328.839, 410.734 )
+texture = ExtResource( 22 )
+
+[node name="Mouth3" type="Sprite" parent="SpecialIntro"]
+visible = false
+position = Vector2( 326.32, 401.915 )
+texture = ExtResource( 23 )
+
+[node name="Mouth4" type="Sprite" parent="SpecialIntro"]
+visible = false
+position = Vector2( 316.24, 422.074 )
+texture = ExtResource( 32 )
+
+[node name="Eyes1" type="Sprite" parent="SpecialIntro"]
+position = Vector2( 325.06, 325.06 )
+texture = ExtResource( 33 )
+
+[node name="Eyes2" type="Sprite" parent="SpecialIntro"]
+visible = false
+position = Vector2( 313.72, 330.099 )
+texture = ExtResource( 31 )
+
+[node name="Eyes3" type="Sprite" parent="SpecialIntro"]
+visible = false
+position = Vector2( 318.76, 307.421 )
+texture = ExtResource( 30 )
+
+[node name="Ground Front" type="Sprite" parent="SpecialIntro"]
+position = Vector2( 480, 592 )
+texture = ExtResource( 34 )
+
+[node name="AnimationPlayer" type="AnimationPlayer" parent="SpecialIntro"]
+anims/Default = SubResource( 4 )
+
+[node name="Minion" parent="SpecialIntro" instance=ExtResource( 1 )]
+position = Vector2( 685.359, 499.085 )
+scale = Vector2( 5, 5 )
+in_animation = true
+
+[node name="CanvasLayer" type="CanvasLayer" parent="SpecialIntro"]
+
+[node name="VBoxContainer" type="VBoxContainer" parent="SpecialIntro/CanvasLayer"]
+visible = false
+margin_left = 509.909
+margin_top = -1200.0
+margin_right = 1005.91
+margin_bottom = -10.0
+custom_constants/separation = 40
+__meta__ = {
+"_edit_use_anchors_": false
+}
+
+[node name="Label" type="Label" parent="SpecialIntro/CanvasLayer/VBoxContainer"]
+modulate = Color( 1, 1, 1, 0 )
+margin_right = 495.0
+margin_bottom = 40.0
+custom_fonts/font = ExtResource( 15 )
+text = "Hi Adventurer"
+align = 1
+
+[node name="Label2" type="Label" parent="SpecialIntro/CanvasLayer/VBoxContainer"]
+modulate = Color( 1, 1, 1, 0 )
+margin_top = 80.0
+margin_right = 495.0
+margin_bottom = 249.0
+custom_fonts/font = ExtResource( 15 )
+text = "You and your
+friends have 
+come for the
+treasure."
+align = 1
+
+[node name="Label3" type="Label" parent="SpecialIntro/CanvasLayer/VBoxContainer"]
+modulate = Color( 1, 1, 1, 0 )
+margin_top = 289.0
+margin_right = 495.0
+margin_bottom = 415.0
+custom_fonts/font = ExtResource( 15 )
+text = "You desire
+insight, riches,
+eternal fame."
+align = 1
+
+[node name="Label4" type="Label" parent="SpecialIntro/CanvasLayer/VBoxContainer"]
+modulate = Color( 1, 1, 1, 0 )
+margin_top = 455.0
+margin_right = 495.0
+margin_bottom = 495.0
+custom_fonts/font = ExtResource( 15 )
+align = 1
+
+[node name="Label5" type="Label" parent="SpecialIntro/CanvasLayer/VBoxContainer"]
+modulate = Color( 1, 1, 1, 0 )
+margin_top = 535.0
+margin_right = 495.0
+margin_bottom = 575.0
+custom_fonts/font = ExtResource( 15 )
+text = "You fool..."
+align = 1
+
+[node name="Label6" type="Label" parent="SpecialIntro/CanvasLayer/VBoxContainer"]
+modulate = Color( 1, 1, 1, 0 )
+margin_top = 615.0
+margin_right = 495.0
+margin_bottom = 655.0
+custom_fonts/font = ExtResource( 15 )
+align = 1
+
+[node name="Label7" type="Label" parent="SpecialIntro/CanvasLayer/VBoxContainer"]
+modulate = Color( 1, 1, 1, 0 )
+margin_top = 695.0
+margin_right = 495.0
+margin_bottom = 864.0
+custom_fonts/font = ExtResource( 15 )
+text = "Only hard work,
+endless nights
+and bugs await
+you down there."
+align = 1
+
+[node name="Label8" type="Label" parent="SpecialIntro/CanvasLayer/VBoxContainer"]
+modulate = Color( 1, 1, 1, 0 )
+margin_top = 904.0
+margin_right = 495.0
+margin_bottom = 944.0
+custom_fonts/font = ExtResource( 15 )
+align = 1
+
+[node name="Label9" type="Label" parent="SpecialIntro/CanvasLayer/VBoxContainer"]
+modulate = Color( 1, 1, 1, 0 )
+margin_top = 984.0
+margin_right = 495.0
+margin_bottom = 1024.0
+custom_fonts/font = ExtResource( 15 )
+text = "Go then..."
+align = 1
+
+[node name="Label10" type="Label" parent="SpecialIntro/CanvasLayer/VBoxContainer"]
+modulate = Color( 1, 1, 1, 0 )
+margin_top = 1064.0
+margin_right = 495.0
+margin_bottom = 1190.0
+custom_fonts/font = ExtResource( 15 )
+text = "... and may the
+deep swallow
+you."
+align = 1
+
 [connection signal="mouse_entered" from="HUD/MarginContainer/HBoxContainer/DigButton" to="." method="_on_Button_mouse_entered"]
 [connection signal="mouse_exited" from="HUD/MarginContainer/HBoxContainer/DigButton" to="." method="_on_Button_mouse_exited"]
 [connection signal="toggled" from="HUD/MarginContainer/HBoxContainer/DigButton" to="." method="_on_DigButton_toggled"]
@@ -238,6 +682,8 @@ bus = "Music"
 [connection signal="mouse_exited" from="HUD/MarginContainer/HBoxContainer/RallyButton" to="." method="_on_Button_mouse_exited"]
 [connection signal="toggled" from="HUD/MarginContainer/HBoxContainer/RallyButton" to="." method="_on_RallyButton_toggled"]
 [connection signal="pressed" from="Screens/Title/StartButton" to="." method="_on_StartButton_pressed"]
+[connection signal="pressed" from="Screens/Title/NewGameButton" to="." method="_on_NewGameButton_pressed"]
 [connection signal="pressed" from="Screens/Title/ExitButton" to="." method="_on_ExitButton_pressed"]
 [connection signal="value_changed" from="Screens/Title/MusicSlider" to="." method="_on_MusicSlider_value_changed"]
 [connection signal="value_changed" from="Screens/Title/SoundSlider" to="." method="_on_SoundSlider_value_changed"]
+[connection signal="stop_intro" from="SpecialIntro" to="." method="_on_SpecialIntro_stop_intro"]

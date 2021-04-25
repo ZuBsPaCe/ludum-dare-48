@@ -1,5 +1,13 @@
 
 enum GameState {
 	TITLE_SCREEN,
-	GAME_RUNNING
+
+	LEVEL_START,
+
+	INTRO,
+
+	GAME,
+
+	NEW_GAME,
+	GAME_PAUSED
 }

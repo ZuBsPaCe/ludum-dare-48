@@ -385,7 +385,6 @@ offset = Vector2( 0, -12 )
 texture = ExtResource( 1 )
 hframes = 5
 vframes = 7
-frame = 31
 
 [node name="AnimationMinion" type="AnimationPlayer" parent="Sprites"]
 autoplay = "Idle"

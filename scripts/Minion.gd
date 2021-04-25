@@ -23,8 +23,10 @@ enum MinionTask {
 	FIGHT
 }
 
-onready var _animation_minion := $Sprites/AnimationMinion
-onready var _animation_pickaxe := $Sprites/AnimationPickaxe
+onready var animation_minion := $Sprites/AnimationMinion
+onready var animation_pickaxe := $Sprites/AnimationPickaxe
+
+export var in_animation := false
 
 var speed := 32.0
 
@@ -65,6 +67,11 @@ var _last_victim_pos := Vector2.ZERO
 
 
 func _ready() -> void:
+	if in_animation:
+		set_process(false)
+		set_physics_process(false)
+		return
+
 	_set_next_task(MinionTask.IDLE)
 
 	_path_variation_x += randf() * 28.0 - 14.0
@@ -177,16 +184,16 @@ func _physics_process(delta: float) -> void:
 				task_cooldown.restart(randf() * 4.0)
 				var rand := randi() % 3
 				if rand == 0:
-					_animation_minion.play("Idle")
+					animation_minion.play("Idle")
 				elif rand == 1:
-					_animation_minion.play("IdleLeft")
+					animation_minion.play("IdleLeft")
 				else:
-					_animation_minion.play("IdleRight")
+					animation_minion.play("IdleRight")
 
 				if target_vec.x >= 0.0:
-					_animation_pickaxe.play("IdleRight")
+					animation_pickaxe.play("IdleRight")
 				else:
-					_animation_pickaxe.play("IdleLeft")
+					animation_pickaxe.play("IdleLeft")
 
 			MinionTask.ROAM:
 				_set_target(Helper.get_walkable_pos(coord))
@@ -275,11 +282,11 @@ func _set_next_task(new_task):
 func _move() -> void:
 	move_and_slide(target_vec)
 	if target_vec.x >= 0.0:
-		_animation_minion.play("WalkRight")
-		_animation_pickaxe.play("WalkRight")
+		animation_minion.play("WalkRight")
+		animation_pickaxe.play("WalkRight")
 	else:
-		_animation_minion.play("WalkLeft")
-		_animation_pickaxe.play("WalkLeft")
+		animation_minion.play("WalkLeft")
+		animation_pickaxe.play("WalkLeft")
 
 func _strike() -> void:
 	strike_cooldown.restart()
@@ -289,11 +296,11 @@ func _strike() -> void:
 	strike_hit = false
 
 	if target_vec.x >= 0.0:
-		_animation_minion.play("StrikeRight")
-		_animation_pickaxe.play("StrikeRight")
+		animation_minion.play("StrikeRight")
+		animation_pickaxe.play("StrikeRight")
 	else:
-		_animation_minion.play("StrikeLeft")
-		_animation_pickaxe.play("StrikeLeft")
+		animation_minion.play("StrikeLeft")
+		animation_pickaxe.play("StrikeLeft")
 
 func _set_target(new_target_pos : Vector2) -> void:
 	target_pos = new_target_pos

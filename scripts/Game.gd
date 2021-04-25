@@ -60,6 +60,12 @@ enum MapType{
 }
 
 
+enum SpecialType {
+	INTRO
+}
+
+
+
 var _map_type = MapType.CAVES
 
 var _tool_type = ToolType.DIG
@@ -80,18 +86,23 @@ func _ready() -> void:
 	if OS.get_name() == "HTML5":
 		$Screens/Title/ExitButton.visible = false
 
+	$Screens/PostProcess.visible = true
+
+	switch_state(GameState.TITLE_SCREEN)
+
 
 func _process(delta: float) -> void:
-	_fullscreen_cooldown.step(delta)
-	_dig_traverse_cooldown.step(delta)
-	_start_battle_cooldown.step(delta)
-
 	if OS.get_name() != "HTML5":
 		if !_fullscreen_cooldown.running && Input.is_key_pressed(KEY_ALT) && Input.is_key_pressed(KEY_ENTER):
 			OS.window_fullscreen = !OS.window_fullscreen
 			_fullscreen_cooldown.restart()
 
-	if State.game_state == GameState.GAME_RUNNING:
+	if State.game_state == GameState.GAME:
+		_fullscreen_cooldown.step(delta)
+		_dig_traverse_cooldown.step(delta)
+		_start_battle_cooldown.step(delta)
+
+
 		var mouse_pos := get_global_mouse_position()
 		var mouse_coord := Coord.new()
 		mouse_coord.set_vector(mouse_pos)
@@ -112,15 +123,13 @@ func _process(delta: float) -> void:
 			if Input.is_action_pressed("up"):
 				drag_vec.y -= 1
 			if Input.is_action_pressed("down"):
-				drag_vec.y = 1
+				drag_vec.y += 1
 			if Input.is_action_pressed("left"):
 				drag_vec.x -= 1
 			if Input.is_action_pressed("right"):
-				drag_vec.x = 1
+				drag_vec.x += 1
 			new_camera_position = _camera.position + drag_vec * 768.0 * delta
 
-
-		print("%s    %s" % [_camera.position, get_viewport().size])
 		if new_camera_position != null:
 			var screen_size = get_viewport().size
 			var screen_half = screen_size * 0.5 * _camera.zoom
@@ -224,7 +233,6 @@ func game_start() -> void:
 	map_generate(32, 32)
 	map_fill()
 
-	State.game_state = GameState.GAME_RUNNING
 
 func map_generate(width : int, height : int) -> void:
 	_camera.limit_right = width * 32
@@ -493,13 +501,55 @@ func set_tool(tool_type) -> void:
 		ToolType.RALLY:
 			Input.set_custom_mouse_cursor(cursor_rally, 0, Vector2(16, 16))
 
+func switch_state(new_game_state):
+	var old_game_state = State.game_state
+	State.game_state  = new_game_state
+
+	match State.game_state:
+		GameState.TITLE_SCREEN:
+			$Screens/Title.visible = true
+			$HUD/MarginContainer.visible = false
+
+
+		GameState.INTRO:
+			$Screens/Title.visible = false
+			$HUD/MarginContainer.visible = false
+			$SpecialIntro.visible = true
+			_camera.zoom = Vector2(1.0, 1.0)
+			Input.set_mouse_mode(Input.MOUSE_MODE_HIDDEN)
+			$SpecialIntro/AnimationPlayer.play("Default")
+
+		GameState.GAME:
+			_camera.zoom = Vector2(0.6, 0.6)
+			Input.set_mouse_mode(Input.MOUSE_MODE_VISIBLE)
+			$Screens/Title.visible = false
+			game_start()
+			$HUD/MarginContainer.visible = true
+
+		GameState.NEW_GAME:
+			world_reset()
+			game_reset()
+			switch_state(GameState.INTRO)
+
+		GameState.GAME_PAUSED:
+			$HUD/MarginContainer.visible = true
+
 
 func _on_StartButton_pressed() -> void:
-	world_reset()
-	game_reset()
-	game_start()
+	switch_state(GameState.NEW_GAME)
 
-	$Screens/Title.visible = false
+func _on_NewGameButton_pressed() -> void:
+	switch_state(GameState.NEW_GAME)
+
+
+func _on_ExitButton_pressed() -> void:
+	get_tree().quit()
+
+
+func _on_SpecialIntro_stop_intro() -> void:
+	switch_state(GameState.GAME)
+
+
 
 
 
@@ -511,5 +561,6 @@ func _on_SoundSlider_value_changed(value: float) -> void:
 	AudioServer.set_bus_volume_db(AudioServer.get_bus_index("Sounds"), -80.0 + value / 100.0 * 80.0)
 
 
-func _on_ExitButton_pressed() -> void:
-	get_tree().quit()
+
+
+
