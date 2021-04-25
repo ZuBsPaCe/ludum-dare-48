@@ -3,6 +3,9 @@ extends Node2D
 const GameState = preload("res://scripts/GameState.gd").GameState
 const TileType = preload("res://scripts/TileType.gd").TileType
 
+var cursor_dig = preload("res://sprites/CursorDig.png")
+var cursor_rally = preload("res://sprites/CursorRally.png")
+
 export(PackedScene) var minion_scene
 export(PackedScene) var dig_highlight_scene
 
@@ -18,7 +21,6 @@ onready var _rally_button := $HUD/MarginContainer/HBoxContainer/RallyButton
 
 var _fullscreen_cooldown := Cooldown.new(0.5)
 var _dig_traverse_cooldown := Cooldown.new(1.0)
-
 
 var _map := Map.new()
 
@@ -50,6 +52,12 @@ enum CommandType {
 	REMOVE_DIG
 }
 
+enum MapType{
+	CAVES
+}
+
+
+var _map_type = MapType.CAVES
 
 var _tool_type = ToolType.DIG
 var _command_type = CommandType.NONE
@@ -80,6 +88,8 @@ func _process(delta: float) -> void:
 		var mouse_coord := Coord.new()
 		mouse_coord.set_vector(mouse_pos)
 
+		_camera.position = mouse_pos
+
 		var mouse_tile = -1
 
 		if _map.is_valid(mouse_coord.x, mouse_coord.y):
@@ -88,8 +98,8 @@ func _process(delta: float) -> void:
 
 
 		if _tool_type == ToolType.DIG:
-			if mouse_tile == TileType.ROCK:
-				if mouse_tile == TileType.ROCK && !_mouse_on_button:
+			if mouse_tile == TileType.DIRT:
+				if mouse_tile == TileType.DIRT && !_mouse_on_button:
 					_cursor_highlight.position = mouse_coord.to_pos()
 					_cursor_highlight.visible = true
 				else:
@@ -144,18 +154,64 @@ func game_reset() -> void:
 
 func game_start() -> void:
 	randomize()
+
+	_map_type = MapType.CAVES
+
 	map_generate(32, 32)
 	map_fill()
 
 	State.game_state = GameState.GAME_RUNNING
 
 func map_generate(width : int, height : int) -> void:
-	_map.setup(width, height, TileType.ROCK)
+	_map.setup(width, height, TileType.DIRT)
 
-	var half_width = width / 2
-	for y in range(8, 11):
-		for x in range(half_width - 1, half_width + 2):
-			_map.set_tile_type(x, y, TileType.MINION_START)
+	var start_radius := randi() % 3 + 2
+	var start_x := width / 2
+	var start_y := start_radius + 2
+	var start_coord := Coord.new(start_x, start_y)
+
+	var center_tiles := Helper.get_tile_circle(start_x, start_y, start_radius)
+	for tile in center_tiles:
+		_map.set_tile_type(tile.x, tile.y, TileType.MINION_START)
+
+	for x in range(0, width):
+		_map.set_tile_type(x, 0, TileType.ROCK)
+		_map.set_tile_type(x, height - 1, TileType.ROCK)
+
+		if randi() % 2 == 0:
+			_map.set_tile_type(x, 1, TileType.ROCK)
+
+		if randi() % 2 == 0:
+			_map.set_tile_type(x, height - 2, TileType.ROCK)
+
+	for y in range(0, height):
+		_map.set_tile_type(0, y, TileType.ROCK)
+		_map.set_tile_type(width - 1, y, TileType.ROCK)
+
+		if randi() % 2 == 0:
+			_map.set_tile_type(1, y, TileType.ROCK)
+
+		if randi() % 2 == 0:
+			_map.set_tile_type(width - 2, y, TileType.ROCK)
+
+	if _map_type == MapType.CAVES:
+		var total_cave_count := randi() % 8 + 8
+		var cave_count := 0
+
+		while cave_count < total_cave_count:
+			var radius := randi() % 10 + 1
+
+			var center := Coord.new(randi() % (width - 4) + 2, randi() % (height - 4) + 2)
+			if center.distance_to(start_coord) <= radius + start_radius + 3:
+				continue
+
+			var cave_tiles := Helper.get_tile_circle(center.x, center.y, radius)
+			for tile in cave_tiles:
+				if tile.tile_type != TileType.DIRT:
+					center.distance_to(start_coord)
+				_map.set_tile_type(tile.x, tile.y, TileType.GROUND)
+
+			cave_count += 1
 
 func map_fill() -> void:
 	var minion_coords := []
@@ -165,8 +221,11 @@ func map_fill() -> void:
 			var tile = _map.get_tile_type(x, y)
 
 			match tile:
-				TileType.ROCK:
+				TileType.DIRT:
 					_tilemap32.set_cell(x, y, 1)
+
+				TileType.ROCK:
+					_tilemap32.set_cell(x, y, 2)
 
 				TileType.GROUND:
 					_tilemap32.set_cell(x, y, 0)
@@ -219,11 +278,11 @@ func game_traverse_dig_tiles():
 			for minion in next_tile.minions:
 				if minion.can_start_digging():
 
+					var coord := Coord.new(dig_tile.x, dig_tile.y)
+
 					var path = _navigation.get_simple_path(
 						minion.position,
-						Vector2(
-							dig_tile.x * 32 + 16,
-							dig_tile.y * 32 + 16))
+						coord.to_random_pos())
 
 					if path.size() > 0:
 						minion.dig(path, dig_tile)
@@ -249,3 +308,9 @@ func _on_RallyButton_toggled(button_pressed: bool) -> void:
 
 func set_tool(tool_type) -> void:
 	_tool_type = tool_type
+
+	match tool_type:
+		ToolType.DIG:
+			Input.set_custom_mouse_cursor(cursor_dig, 0, Vector2(16, 16))
+		ToolType.RALLY:
+			Input.set_custom_mouse_cursor(cursor_rally, 0, Vector2(16, 16))

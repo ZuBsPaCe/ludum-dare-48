@@ -22,7 +22,7 @@ enum MinionTask {
 onready var _animation_minion := $Sprites/AnimationMinion
 onready var _animation_pickaxe := $Sprites/AnimationPickaxe
 
-var speed := 16.0
+var speed := 32.0
 
 var tile : Tile
 var coord := Coord.new()
@@ -45,7 +45,7 @@ var path_index := 0
 
 var dig_tile : Tile
 
-
+var faction := 0
 
 
 func _ready() -> void:
@@ -203,8 +203,30 @@ func _advance_path() -> bool:
 	path_index += 1
 	if path_index >= path.size():
 		return false
-	_set_target(path[path_index])
+
+	var pos : Vector2 = path[path_index]
+	var remainder_x = fmod(abs(pos.x), 32.0)
+	var remainder_y = fmod(abs(pos.y), 32.0)
+
+	if remainder_x < 0.1:
+		pos.x = floor(pos.x) + 0.1
+	elif remainder_x > 0.9:
+		pos.x = floor(pos.x) + 0.9
+
+	if remainder_y < 0.1:
+		pos.y = floor(pos.y) + 0.1
+	elif remainder_y > 0.9:
+		pos.y = floor(pos.y) + 0.9
+
+	_set_target(pos)
 	return true
+
+
+func set_faction(faction : int) -> void:
+	self.faction = faction
+	if faction == 1:
+		modulate = Color.crimson
+
 
 func can_start_digging() -> bool:
 	return (

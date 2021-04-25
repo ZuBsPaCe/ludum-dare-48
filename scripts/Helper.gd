@@ -7,6 +7,20 @@ var map : Map
 func _ready() -> void:
 	pass
 
+func get_tile_circle(center_x : int, center_y : int, radius : int) -> Array:
+	var tiles := []
+	var radius_sq := radius * radius
+	for y in range(center_y - radius, center_y + radius + 1):
+		for x in range(center_x - radius, center_x + radius + 1):
+			if !map.is_valid(x, y):
+				continue
+
+			var diff_x := center_x - x
+			var diff_y := center_y - y
+			if diff_x * diff_x + diff_y * diff_y <= radius:
+				tiles.append(map.get_tile(x, y))
+	return tiles
+
 func get_walkable_pos(coord : Coord, include_current = true) -> Vector2:
 	var rand = randi() % 9
 

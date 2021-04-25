@@ -23,5 +23,10 @@ func to_random_pos() -> Vector2:
 		x * 32.0 + randf() * 32.0,
 		y * 32.0 + randf() * 32.0)
 
+func distance_to(other : Coord) -> float:
+	var diff_x := other.x - x
+	var diff_y := other.y - y
+	return sqrt(diff_x * diff_x + diff_y * diff_y)
+
 func _to_string() -> String:
 	return "%d/%d" % [x, y]
