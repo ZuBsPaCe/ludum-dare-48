@@ -228,11 +228,11 @@ func _process(delta: float) -> void:
 			_check_level_done_cooldown.restart()
 			game_check_level_done()
 
-		if _spawn_cooldown.done && !_level_done && State.monsters.size() > 6:
+		if _spawn_cooldown.done && !_level_done && State.monsters.size() > 6 && State.monsters.size() < 100:
 			_spawn_cooldown.restart()
 
 			for portal in State.end_portals:
-				var tiles := Helper.get_tile_circle(portal.tile.coord.x, portal.tile.coord.y, 4)
+				var tiles := Helper.get_tile_circle(portal.tile.coord.x, portal.tile.coord.y, 2, false)
 
 				while tiles.size() > 0:
 					var index = randi() % tiles.size()
@@ -271,6 +271,7 @@ func game_start() -> void:
 	randomize()
 
 	State.increase_level()
+	_spawn_cooldown.restart(State.spawn_cooldown)
 
 	_map_type = MapType.CAVES
 	_level_done = false
@@ -611,7 +612,7 @@ func switch_state(new_game_state):
 		GameState.TITLE_SCREEN:
 			$Screens/Title.visible = true
 			$HUD/MarginContainer.visible = false
-
+			Input.set_mouse_mode(Input.MOUSE_MODE_VISIBLE)
 
 		GameState.INTRO:
 			$Screens/Title.visible = false
@@ -652,7 +653,10 @@ func switch_state(new_game_state):
 			$HUD/MarginContainer.visible = false
 			$Screens/Title/StartButton.text = "START"
 			$Screens/Title/NewGameButton.visible = false
-			switch_state(GameState.TITLE_SCREEN)
+			_camera.zoom = Vector2(1.0, 1.0)
+			Input.set_mouse_mode(Input.MOUSE_MODE_HIDDEN)
+			$GameOver.start()
+			game_reset()
 
 		GameState.LEVEL_START:
 			$Screens/Title.visible = false
@@ -660,7 +664,7 @@ func switch_state(new_game_state):
 			$LevelStart.visible = true
 			_camera.zoom = Vector2(1.0, 1.0)
 			Input.set_mouse_mode(Input.MOUSE_MODE_HIDDEN)
-			$LevelStart/AnimationPlayer.play("Default")
+			$LevelStart.start()
 			game_reset()
 
 
@@ -690,6 +694,9 @@ func _on_LevelStart_stop_level_start() -> void:
 	switch_state(GameState.GAME)
 
 
+func _on_GameOver_stop_game_over() -> void:
+	switch_state(GameState.TITLE_SCREEN)
+
 
 
 func _on_MusicSlider_value_changed(value: float) -> void:
@@ -698,4 +705,6 @@ func _on_MusicSlider_value_changed(value: float) -> void:
 
 func _on_SoundSlider_value_changed(value: float) -> void:
 	AudioServer.set_bus_volume_db(AudioServer.get_bus_index("Sounds"), -80.0 + value / 100.0 * 80.0)
+
+
 

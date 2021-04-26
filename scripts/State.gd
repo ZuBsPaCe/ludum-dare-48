@@ -32,6 +32,8 @@ var minion_check_index : int
 var level : int
 var end_level_info := ""
 
+var spawn_cooldown := 20
+
 
 func _ready() -> void:
 	pass
@@ -59,12 +61,16 @@ func world_reset() -> void:
 	level = 0
 	end_level_info = ""
 
+	spawn_cooldown = 20
+
 func increase_level():
 	State.level += 1
 
 	if State.level > 1:
 		minion_count = minions.size() + max(5, minions.size() * 2)
 		level_monster_count *= 2
+
+		spawn_cooldown = max(10, 20 - State.level * 2)
 
 func game_reset():
 	pass
