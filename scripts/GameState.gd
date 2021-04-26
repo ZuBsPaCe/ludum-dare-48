@@ -10,4 +10,7 @@ enum GameState {
 
 	NEW_GAME,
 	GAME_PAUSED
+	GAME_CONTINUED
+
+	GAME_OVER
 }

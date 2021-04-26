@@ -24,6 +24,9 @@ onready var _raycast := $RayCast2D
 var _fullscreen_cooldown := Cooldown.new(0.5)
 var _dig_traverse_cooldown := Cooldown.new(1.0)
 var _start_battle_cooldown := Cooldown.new()
+var _level_done_cooldown := Cooldown.new(2.0)
+var _check_level_done_cooldown := Cooldown.new(2.0)
+var _spawn_cooldown := Cooldown.new(5.0)
 
 var _map := Map.new()
 
@@ -75,6 +78,10 @@ var _mouse_on_button := false
 var _drag_start_mouse_pos := Vector2()
 var _drag_start_camera_pos := Vector2()
 
+var _level_done := false
+
+
+
 
 func _ready() -> void:
 	State.map = _map
@@ -87,6 +94,9 @@ func _ready() -> void:
 		$Screens/Title/ExitButton.visible = false
 
 	$Screens/PostProcess.visible = true
+
+	$Screens/Title/StartButton.text = "START"
+	$Screens/Title/NewGameButton.visible = false
 
 	switch_state(GameState.TITLE_SCREEN)
 
@@ -101,6 +111,9 @@ func _process(delta: float) -> void:
 		_fullscreen_cooldown.step(delta)
 		_dig_traverse_cooldown.step(delta)
 		_start_battle_cooldown.step(delta)
+		_level_done_cooldown.step(delta)
+		_check_level_done_cooldown.step(delta)
+		_spawn_cooldown.step(delta)
 
 
 		var mouse_pos := get_global_mouse_position()
@@ -211,12 +224,33 @@ func _process(delta: float) -> void:
 		game_traverse_rally_tiles(delta)
 		game_start_battles()
 
+		if _check_level_done_cooldown.done:
+			_check_level_done_cooldown.restart()
+			game_check_level_done()
+
+		if _spawn_cooldown.done && !_level_done && State.monsters.size() > 6:
+			_spawn_cooldown.restart()
+
+			for portal in State.end_portals:
+				var tiles := Helper.get_tile_circle(portal.tile.coord.x, portal.tile.coord.y, 4)
+
+				while tiles.size() > 0:
+					var index = randi() % tiles.size()
+					var check_tile = tiles[index]
+					if check_tile.tile_type == TileType.GROUND:
+						var monster : Minion = minion_scene.instance()
+						monster.setup(1)
+						monster.position = check_tile.coord.to_random_pos()
+						_entity_container.add_child(monster)
+						break
+
+					tiles.remove(index)
+
 
 func world_reset() -> void:
 	State.world_reset()
 
 func game_reset() -> void:
-	State.game_state = GameState.TITLE_SCREEN
 	_cursor_highlight.visible = false
 	_dig_button.pressed = true
 	_rally_button.pressed = false
@@ -225,10 +259,21 @@ func game_reset() -> void:
 	_command_type = CommandType.NONE
 	_mouse_on_button = false
 
+	for child in $EntityContainer.get_children():
+		child.queue_free()
+
+	for child in $HighlightContainer.get_children():
+		child.queue_free()
+
+	_tilemap32.clear()
+
 func game_start() -> void:
 	randomize()
 
+	State.increase_level()
+
 	_map_type = MapType.CAVES
+	_level_done = false
 
 	map_generate(32, 32)
 	map_fill()
@@ -288,7 +333,7 @@ func map_generate(width : int, height : int) -> void:
 			_map.set_tile_type(tile.x, tile.y, TileType.MONSTER_START)
 
 
-		var total_cave_count := randi() % 8 + 8
+		var total_cave_count := randi() % (8 + State.level) + (8 + State.level)
 		var cave_count := 0
 
 		var monster_tiles := []
@@ -307,6 +352,24 @@ func map_generate(width : int, height : int) -> void:
 					monster_tiles.append(tile)
 
 			cave_count += 1
+
+		var total_rock_cave_count := 3 + State.level
+		var rock_cave_count := 0
+
+		while rock_cave_count < total_rock_cave_count:
+			var radius := randi() % 8 + 1
+
+			var center := Coord.new(randi() % (width - 4) + 2, randi() % (height - 4) + 2)
+			if center.distance_to(start_coord) <= radius + start_radius + 3:
+				continue
+
+			var rock_tiles := Helper.get_tile_circle(center.x, center.y, radius)
+			for tile in rock_tiles:
+				if tile.tile_type == TileType.DIRT:
+					if randi() % 3 == 0:
+						_map.set_tile_type(tile.x, tile.y, TileType.ROCK)
+
+			rock_cave_count += 1
 
 
 func map_fill() -> void:
@@ -329,6 +392,7 @@ func map_fill() -> void:
 					_tilemap32.set_cell(x, y, 0)
 
 					var start_portal = portal_scene.instance()
+					start_portal.tile = _map.get_tile(x, y)
 					start_portal.position = coord.to_center_pos()
 					_entity_container.add_child(start_portal)
 					State.start_portals.append(start_portal)
@@ -337,6 +401,7 @@ func map_fill() -> void:
 					_tilemap32.set_cell(x, y, 0)
 
 					var end_portal = portal_scene.instance()
+					end_portal.tile = _map.get_tile(x, y)
 					end_portal.position = coord.to_center_pos()
 					_entity_container.add_child(end_portal)
 					end_portal.set_active(true)
@@ -476,6 +541,40 @@ func game_start_battle(attacker : Minion, target_list : Array, view_distance : i
 		if target != null:
 			attacker.attack(target)
 
+func game_check_level_done():
+	if _level_done:
+		if _level_done_cooldown.done:
+			if State.minions.size() == 0:
+				State.end_level_info = "GAME OVER"
+				switch_state(GameState.GAME_OVER)
+			else:
+				switch_state(GameState.LEVEL_START)
+		return
+
+	if State.minions.size() == 0:
+		_level_done = true
+		_level_done_cooldown.restart()
+		return
+
+	if State.monsters.size() == 0:
+		_level_done = true
+		_level_done_cooldown.restart()
+		State.end_level_info = "LEVEL CLEARED" % State.level
+		return
+
+	for minion in State.minions:
+		if !minion.can_end_level():
+			return
+		for portal in State.end_portals:
+			var distance : float = minion.position.distance_to(portal.position)
+			if distance > 128.0:
+				return
+
+	_level_done = true
+	_level_done_cooldown.restart()
+	State.end_level_info = "PORTAL REACHED"
+
+
 func _on_Button_mouse_entered() -> void:
 	_mouse_on_button = true
 
@@ -491,6 +590,9 @@ func _on_RallyButton_toggled(button_pressed: bool) -> void:
 	if button_pressed:
 		_dig_button.pressed = false
 		set_tool(ToolType.RALLY)
+
+func _on_MenuButton_pressed() -> void:
+	switch_state(GameState.GAME_PAUSED)
 
 func set_tool(tool_type) -> void:
 	_tool_type = tool_type
@@ -517,7 +619,7 @@ func switch_state(new_game_state):
 			$SpecialIntro.visible = true
 			_camera.zoom = Vector2(1.0, 1.0)
 			Input.set_mouse_mode(Input.MOUSE_MODE_HIDDEN)
-			$SpecialIntro/AnimationPlayer.play("Default")
+			$SpecialIntro.start()
 
 		GameState.GAME:
 			_camera.zoom = Vector2(0.6, 0.6)
@@ -527,16 +629,49 @@ func switch_state(new_game_state):
 			$HUD/MarginContainer.visible = true
 
 		GameState.NEW_GAME:
+			get_tree().paused = false
 			world_reset()
 			game_reset()
 			switch_state(GameState.INTRO)
 
 		GameState.GAME_PAUSED:
+			get_tree().paused = true
+			$Screens/Title.visible = true
+			$HUD/MarginContainer.visible = false
+			$Screens/Title/StartButton.text = "CONTINUE"
+			$Screens/Title/NewGameButton.visible = true
+
+		GameState.GAME_CONTINUED:
+			$Screens/Title.visible = false
 			$HUD/MarginContainer.visible = true
+			get_tree().paused = false
+			State.game_state = GameState.GAME
+
+		GameState.GAME_OVER:
+			$Screens/Title.visible = false
+			$HUD/MarginContainer.visible = false
+			$Screens/Title/StartButton.text = "START"
+			$Screens/Title/NewGameButton.visible = false
+			switch_state(GameState.TITLE_SCREEN)
+
+		GameState.LEVEL_START:
+			$Screens/Title.visible = false
+			$HUD/MarginContainer.visible = false
+			$LevelStart.visible = true
+			_camera.zoom = Vector2(1.0, 1.0)
+			Input.set_mouse_mode(Input.MOUSE_MODE_HIDDEN)
+			$LevelStart/AnimationPlayer.play("Default")
+			game_reset()
+
+
 
 
 func _on_StartButton_pressed() -> void:
-	switch_state(GameState.NEW_GAME)
+	if $Screens/Title/StartButton.text == "CONTINUE":
+		switch_state(GameState.GAME_CONTINUED)
+	else:
+		switch_state(GameState.NEW_GAME)
+
 
 func _on_NewGameButton_pressed() -> void:
 	switch_state(GameState.NEW_GAME)
@@ -551,6 +686,10 @@ func _on_SpecialIntro_stop_intro() -> void:
 
 
 
+func _on_LevelStart_stop_level_start() -> void:
+	switch_state(GameState.GAME)
+
+
 
 
 func _on_MusicSlider_value_changed(value: float) -> void:
@@ -559,8 +698,4 @@ func _on_MusicSlider_value_changed(value: float) -> void:
 
 func _on_SoundSlider_value_changed(value: float) -> void:
 	AudioServer.set_bus_volume_db(AudioServer.get_bus_index("Sounds"), -80.0 + value / 100.0 * 80.0)
-
-
-
-
 

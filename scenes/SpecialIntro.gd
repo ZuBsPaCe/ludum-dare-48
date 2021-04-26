@@ -7,23 +7,26 @@ var eyes := []
 
 var talking := false
 var mouth_cooldown := Cooldown.new(0.15)
-var eyes_cooldown := Cooldown.new(1.0)
+var eyes_cooldown := Cooldown.new(0.9)
 
 signal stop_intro
 
 func _ready() -> void:
-	mouths.append($MouthBase)
-	mouths.append($Mouth1)
-	mouths.append($Mouth2)
-	mouths.append($Mouth3)
-	mouths.append($Mouth4)
+	mouths.append($Sprites/MouthBase)
+	mouths.append($Sprites/Mouth1)
+	mouths.append($Sprites/Mouth2)
+	mouths.append($Sprites/Mouth3)
+	mouths.append($Sprites/Mouth4)
 
-	eyes.append($Eyes1)
-	eyes.append($Eyes2)
-	eyes.append($Eyes3)
+	eyes.append($Sprites/Eyes1)
+	eyes.append($Sprites/Eyes2)
+	eyes.append($Sprites/Eyes3)
 
 	reset_eyes()
 	reset_mouths()
+
+	visible = false
+	set_process(false)
 
 func _process(delta: float) -> void:
 	mouth_cooldown.step(delta)
@@ -41,6 +44,14 @@ func _process(delta: float) -> void:
 		eyes[0].visible = false
 		eyes[randi() % eyes.size()].visible = true
 
+	if $AnimationPlayer.current_animation_position > 0.2:
+		if Input.is_action_just_pressed("command"):
+			switch_scene()
+
+func start():
+	set_process(true)
+	$AnimationPlayer.play("Default")
+
 func minion_walk_left():
 	minion.animation_minion.play("WalkLeft")
 	minion.animation_pickaxe.play("WalkLeft")
@@ -50,8 +61,10 @@ func minion_idle_left():
 	minion.animation_pickaxe.play("IdleLeft")
 
 func switch_scene():
+	set_process(false)
 	visible = false
 	$CanvasLayer/VBoxContainer.visible = false
+	$AnimationPlayer.stop()
 	emit_signal("stop_intro")
 
 

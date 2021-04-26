@@ -44,7 +44,7 @@ _global_script_class_icons={
 
 [application]
 
-config/name="ludum-dare-48"
+config/name="Down"
 config/description="Game entry for ludum-dare-48 \"Deeper and deeper\""
 run/main_scene="res://scenes/Game.tscn"
 config/icon="res://icon.png"

@@ -28,7 +28,7 @@ onready var animation_pickaxe := $Sprites/AnimationPickaxe
 
 export var in_animation := false
 
-var speed := 32.0
+var speed := 48.0
 
 var tile : Tile
 var coord := Coord.new()
@@ -66,6 +66,9 @@ var _victim : Minion
 var _last_victim_pos := Vector2.ZERO
 
 
+var _digger := false
+
+
 func _ready() -> void:
 	if in_animation:
 		set_process(false)
@@ -86,6 +89,7 @@ func setup(faction : int) -> void:
 		health = State.minion_health
 
 	elif faction == 1:
+		_digger = randi() % 2 == 0
 		State.monsters.append(self)
 
 		health = State.monster_health
@@ -145,7 +149,7 @@ func _physics_process(delta: float) -> void:
 					_move_near(dig_tile.x, dig_tile.y)
 					dig_tile = null
 			elif task == MinionTask.ATTACK || task == MinionTask.FIGHT:
-				if _victim:
+				if is_instance_valid(_victim):
 					if position.distance_squared_to(_victim.position) < attack_hit_distance_sq:
 						_victim.health -= 1
 						if _victim.health == 0:
@@ -232,7 +236,27 @@ func _physics_process(delta: float) -> void:
 	match task:
 		MinionTask.IDLE:
 			if task_cooldown.done:
-				_set_next_task(MinionTask.ROAM)
+				var can_dig := false
+				if _digger:
+					var near_tiles = Helper.get_tile_circle(coord.x, coord.y, 6, false)
+					while near_tiles.size() > 0:
+						var index = randi() % near_tiles.size()
+						var check_tile = near_tiles[index]
+						if check_tile.tile_type == TileType.DIRT:
+							State.map.astar.set_point_disabled(check_tile.id, false)
+							var path = State.map.astar.get_point_path(tile.id, check_tile.id)
+							State.map.astar.set_point_disabled(check_tile.id, true)
+
+							if path.size() > 0 && path.size() <= State.monster_view_distance:
+								can_dig = true
+								dig(path, check_tile)
+								break
+						near_tiles.remove(index)
+
+
+
+				if !can_dig:
+					_set_next_task(MinionTask.ROAM)
 
 		MinionTask.ROAM:
 			_move()
@@ -337,6 +361,11 @@ func can_interupt() -> bool:
 		task != MinionTask.DIG &&
 		task != MinionTask.FIGHT)
 
+func can_end_level() -> bool:
+	return (
+		task != MinionTask.ATTACK &&
+		task != MinionTask.FIGHT)
+
 func can_start_digging() -> bool:
 	return (
 		task != MinionTask.GO_DIG &&
@@ -359,7 +388,7 @@ func attack(victim : Minion):
 
 func _attack():
 	if attack_cooldown.done:
-		if _victim:
+		if is_instance_valid(_victim):
 			if Helper.raycast_minion(self, _victim):
 				_last_victim_pos = _victim.position
 				victim_lost_cooldown.restart()
@@ -367,7 +396,7 @@ func _attack():
 
 		attack_cooldown.restart()
 
-	if strike_cooldown.done && _victim && position.distance_squared_to(_victim.position) < attack_start_distance_sq:
+	if strike_cooldown.done && is_instance_valid(_victim) && position.distance_squared_to(_victim.position) < attack_start_distance_sq:
 		_strike()
 	else:
 		if task_cooldown.running:

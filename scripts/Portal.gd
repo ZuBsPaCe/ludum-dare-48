@@ -1,6 +1,7 @@
 extends Node2D
 
 var active := false
+var tile : Tile
 
 onready var _portal_animation := $PortalAnimation
 
