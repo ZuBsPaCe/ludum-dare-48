@@ -25,6 +25,7 @@ var end_portals := []
 
 var monsters := []
 var minions := []
+var minions_fled : int
 
 var monster_check_index : int
 var minion_check_index : int
@@ -45,10 +46,7 @@ func world_reset() -> void:
 
 	rally_radius = 2
 	rally_duration = 6
-	start_portals.clear()
-	end_portals.clear()
-	monsters.clear()
-	minions.clear()
+
 	monster_check_index = 0
 	minion_check_index = 0
 
@@ -63,17 +61,25 @@ func world_reset() -> void:
 
 	spawn_cooldown = 20
 
+	minions_fled = 0
+
 func increase_level():
 	State.level += 1
 
 	if State.level > 1:
-		minion_count = minions.size() + max(5, minions.size() * 2)
+		var current_count := minions.size() + minions_fled
+		minions_fled = 0
+
+		minion_count = current_count * 2
 		level_monster_count *= 2
 
-		spawn_cooldown = max(10, 20 - State.level * 2)
+		spawn_cooldown = max(10, 45 - State.level * 6)
 
 func game_reset():
-	pass
+	start_portals.clear()
+	end_portals.clear()
+	monsters.clear()
+	minions.clear()
 
 
 

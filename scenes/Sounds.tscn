@@ -1,0 +1,48 @@
+[gd_scene load_steps=9 format=2]
+
+[ext_resource path="res://art/sound/talk2.wav" type="AudioStream" id=1]
+[ext_resource path="res://art/sound/dig.wav" type="AudioStream" id=2]
+[ext_resource path="res://art/sound/talk3.wav" type="AudioStream" id=3]
+[ext_resource path="res://art/sound/fight.wav" type="AudioStream" id=4]
+[ext_resource path="res://art/sound/die.wav" type="AudioStream" id=5]
+[ext_resource path="res://art/sound/talk1.wav" type="AudioStream" id=6]
+[ext_resource path="res://Sounds.gd" type="Script" id=7]
+[ext_resource path="res://art/sound/fled.wav" type="AudioStream" id=8]
+
+[node name="Sounds" type="Node2D"]
+script = ExtResource( 7 )
+
+[node name="Dig1" type="AudioStreamPlayer" parent="."]
+stream = ExtResource( 2 )
+volume_db = -20.0
+bus = "Sounds"
+
+[node name="Die" type="AudioStreamPlayer" parent="."]
+stream = ExtResource( 5 )
+volume_db = -20.0
+bus = "Sounds"
+
+[node name="Talk1" type="AudioStreamPlayer" parent="."]
+stream = ExtResource( 6 )
+volume_db = -20.0
+bus = "Sounds"
+
+[node name="Talk2" type="AudioStreamPlayer" parent="."]
+stream = ExtResource( 1 )
+volume_db = -20.0
+bus = "Sounds"
+
+[node name="Talk3" type="AudioStreamPlayer" parent="."]
+stream = ExtResource( 3 )
+volume_db = -20.0
+bus = "Sounds"
+
+[node name="Fight" type="AudioStreamPlayer" parent="."]
+stream = ExtResource( 4 )
+volume_db = -20.0
+bus = "Sounds"
+
+[node name="Fled" type="AudioStreamPlayer" parent="."]
+stream = ExtResource( 8 )
+volume_db = -20.0
+bus = "Sounds"

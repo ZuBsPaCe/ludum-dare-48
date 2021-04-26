@@ -1,4 +1,4 @@
-[gd_scene load_steps=47 format=2]
+[gd_scene load_steps=48 format=2]
 
 [ext_resource path="res://scenes/Minion.tscn" type="PackedScene" id=1]
 [ext_resource path="res://scripts/Game.gd" type="Script" id=2]
@@ -34,12 +34,13 @@
 [ext_resource path="res://art/fullscreen/intro/Mouth 4.png" type="Texture" id=32]
 [ext_resource path="res://art/fullscreen/intro/Eyes1.png" type="Texture" id=33]
 [ext_resource path="res://art/fullscreen/intro/Ground Front.png" type="Texture" id=34]
-[ext_resource path="res://scenes/SpecialIntro.gd" type="Script" id=35]
+[ext_resource path="res://scripts/SpecialIntro.gd" type="Script" id=35]
 [ext_resource path="res://art/fullscreen/intro/Mouth Base.png" type="Texture" id=36]
 [ext_resource path="res://sprites/MenuButtonPressed.png" type="Texture" id=37]
 [ext_resource path="res://sprites/MenuButton.png" type="Texture" id=38]
 [ext_resource path="res://sprites/MenuButtonHover.png" type="Texture" id=39]
-[ext_resource path="res://scenes/LevelStart.gd" type="Script" id=40]
+[ext_resource path="res://scripts/LevelStart.gd" type="Script" id=40]
+[ext_resource path="res://scripts/GameOver.gd" type="Script" id=41]
 
 [sub_resource type="StyleBoxLine" id=1]
 color = Color( 0.278431, 0.278431, 0.278431, 1 )
@@ -661,11 +662,12 @@ follow_viewport_enable = true
 
 [node name="TitleMusic" type="AudioStreamPlayer" parent="."]
 stream = ExtResource( 19 )
-autoplay = true
+volume_db = -80.0
 bus = "Music"
 
 [node name="Track1" type="AudioStreamPlayer" parent="."]
 stream = ExtResource( 21 )
+volume_db = -80.0
 bus = "Music"
 
 [node name="SpecialIntro" type="Node2D" parent="."]
@@ -893,7 +895,7 @@ __meta__ = {
 anims/Default = SubResource( 5 )
 
 [node name="GameOver" type="Node2D" parent="."]
-script = ExtResource( 40 )
+script = ExtResource( 41 )
 
 [node name="CanvasLayer" type="CanvasLayer" parent="GameOver"]
 
@@ -944,4 +946,5 @@ anims/Default = SubResource( 6 )
 [connection signal="value_changed" from="Screens/Title/MusicSlider" to="." method="_on_MusicSlider_value_changed"]
 [connection signal="value_changed" from="Screens/Title/SoundSlider" to="." method="_on_SoundSlider_value_changed"]
 [connection signal="stop_intro" from="SpecialIntro" to="." method="_on_SpecialIntro_stop_intro"]
+[connection signal="stop_level_start" from="LevelStart" to="." method="_on_LevelStart_stop_level_start"]
 [connection signal="stop_game_over" from="GameOver" to="." method="_on_GameOver_stop_game_over"]

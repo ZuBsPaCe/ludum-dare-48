@@ -53,6 +53,7 @@ config/icon="res://icon.png"
 
 State="*res://scripts/State.gd"
 Helper="*res://scripts/Helper.gd"
+Sounds="*res://scenes/Sounds.tscn"
 
 [display]
 

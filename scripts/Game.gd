@@ -21,12 +21,17 @@ onready var _rally_button := $HUD/MarginContainer/HBoxContainer/RallyButton
 onready var _raycast := $RayCast2D
 
 
+var title_music_target := -80.0
+var track1_target := -80.0
+
+
 var _fullscreen_cooldown := Cooldown.new(0.5)
 var _dig_traverse_cooldown := Cooldown.new(1.0)
 var _start_battle_cooldown := Cooldown.new()
 var _level_done_cooldown := Cooldown.new(2.0)
 var _check_level_done_cooldown := Cooldown.new(2.0)
 var _spawn_cooldown := Cooldown.new(5.0)
+
 
 var _map := Map.new()
 
@@ -106,6 +111,32 @@ func _process(delta: float) -> void:
 		if !_fullscreen_cooldown.running && Input.is_key_pressed(KEY_ALT) && Input.is_key_pressed(KEY_ENTER):
 			OS.window_fullscreen = !OS.window_fullscreen
 			_fullscreen_cooldown.restart()
+
+
+	if title_music_target > -80.0:
+		if !$TitleMusic.playing && $TitleMusic.volume_db == -80.0:
+			$TitleMusic.play()
+		if $TitleMusic.volume_db < 0.0:
+			$TitleMusic.volume_db = min(0.0, $TitleMusic.volume_db + delta * 20.0)
+	else:
+		if $TitleMusic.volume_db > -80.0:
+			$TitleMusic.volume_db = max(-80.0, $TitleMusic.volume_db - delta * 20.0)
+		else:
+			$TitleMusic.stop()
+
+
+	if track1_target > -80.0:
+		if !$Track1.playing && $Track1.volume_db == -80.0:
+			$Track1.play()
+		if $Track1.volume_db < 0.0:
+			$Track1.volume_db = min(0.0, $Track1.volume_db + delta * 40.0)
+	else:
+		if $Track1.volume_db > -80.0:
+			$Track1.volume_db = max(-80.0, $Track1.volume_db - delta * 40.0)
+		else:
+			$Track1.stop()
+
+
 
 	if State.game_state == GameState.GAME:
 		_fullscreen_cooldown.step(delta)
@@ -205,7 +236,7 @@ func _process(delta: float) -> void:
 							continue
 						var distance := mouse_coord.distance_to(tile.coord)
 						var rally := (1.0 - distance / (State.rally_radius + 1)) * State.rally_duration
-						print(distance)
+
 						if rally < tile.rally:
 							continue
 						tile.rally = rally
@@ -267,6 +298,8 @@ func game_reset() -> void:
 
 	_tilemap32.clear()
 
+	State.game_reset()
+
 func game_start() -> void:
 	randomize()
 
@@ -287,7 +320,7 @@ func map_generate(width : int, height : int) -> void:
 	_map.setup(width, height, TileType.DIRT)
 
 	var start_radius := randi() % 4 + 3
-	var start_x := width / 2
+	var start_x := randi() % (width - 10) + 5
 	var start_y := start_radius + 2
 	var start_coord := Coord.new(start_x, start_y)
 
@@ -321,7 +354,7 @@ func map_generate(width : int, height : int) -> void:
 
 	if _map_type == MapType.CAVES:
 		var end_radius := randi() % 4 + 3
-		var end_x := width / 2
+		var end_x := randi() % (width - 10) + 5
 		var end_y := height - end_radius - 2
 		var end_coord := Coord.new(end_x, end_y)
 
@@ -451,7 +484,7 @@ func game_traverse_dig_tiles():
 	for dig_tile in _map.dig_tiles:
 		_map.astar.set_point_disabled(dig_tile.id, false)
 
-		var tiles := Helper.get_tile_circle(dig_tile.x, dig_tile.y, State.minion_view_distance)
+		var tiles := Helper.get_tile_circle(dig_tile.x, dig_tile.y, State.minion_view_distance + 4)
 
 		for from_tile in tiles:
 			if from_tile.tile_type != TileType.GROUND:
@@ -545,7 +578,7 @@ func game_start_battle(attacker : Minion, target_list : Array, view_distance : i
 func game_check_level_done():
 	if _level_done:
 		if _level_done_cooldown.done:
-			if State.minions.size() == 0:
+			if State.minions.size() == 0 && State.minions_fled == 0:
 				State.end_level_info = "GAME OVER"
 				switch_state(GameState.GAME_OVER)
 			else:
@@ -563,17 +596,24 @@ func game_check_level_done():
 		State.end_level_info = "LEVEL CLEARED" % State.level
 		return
 
+	var fled_minions := []
+
 	for minion in State.minions:
 		if !minion.can_end_level():
-			return
+			continue
 		for portal in State.end_portals:
 			var distance : float = minion.position.distance_to(portal.position)
-			if distance > 128.0:
-				return
+			if distance < 55.0:
+				fled_minions.append(minion)
 
-	_level_done = true
-	_level_done_cooldown.restart()
-	State.end_level_info = "PORTAL REACHED"
+	if fled_minions.size() > 0:
+		for minion in fled_minions:
+			minion.flee()
+
+	if State.minions.size() == 0:
+		_level_done = true
+		_level_done_cooldown.restart()
+		State.end_level_info = "PORTAL REACHED"
 
 
 func _on_Button_mouse_entered() -> void:
@@ -613,6 +653,9 @@ func switch_state(new_game_state):
 			$Screens/Title.visible = true
 			$HUD/MarginContainer.visible = false
 			Input.set_mouse_mode(Input.MOUSE_MODE_VISIBLE)
+			title_music_target = 0.0
+			track1_target = -80.0
+			_camera.zoom = Vector2(0.6, 0.6)
 
 		GameState.INTRO:
 			$Screens/Title.visible = false
@@ -621,6 +664,9 @@ func switch_state(new_game_state):
 			_camera.zoom = Vector2(1.0, 1.0)
 			Input.set_mouse_mode(Input.MOUSE_MODE_HIDDEN)
 			$SpecialIntro.start()
+			title_music_target = -80
+			track1_target = -80.0
+			_camera.position = Vector2.ZERO
 
 		GameState.GAME:
 			_camera.zoom = Vector2(0.6, 0.6)
@@ -628,12 +674,16 @@ func switch_state(new_game_state):
 			$Screens/Title.visible = false
 			game_start()
 			$HUD/MarginContainer.visible = true
+			title_music_target = -80
+			track1_target = 0.0
 
 		GameState.NEW_GAME:
 			get_tree().paused = false
 			world_reset()
 			game_reset()
 			switch_state(GameState.INTRO)
+			title_music_target = -80
+			track1_target = -80
 
 		GameState.GAME_PAUSED:
 			get_tree().paused = true
@@ -641,12 +691,16 @@ func switch_state(new_game_state):
 			$HUD/MarginContainer.visible = false
 			$Screens/Title/StartButton.text = "CONTINUE"
 			$Screens/Title/NewGameButton.visible = true
+			title_music_target = -80
+			track1_target = -80
 
 		GameState.GAME_CONTINUED:
 			$Screens/Title.visible = false
 			$HUD/MarginContainer.visible = true
 			get_tree().paused = false
 			State.game_state = GameState.GAME
+			title_music_target = -80
+			_mouse_on_button = false
 
 		GameState.GAME_OVER:
 			$Screens/Title.visible = false
@@ -657,6 +711,8 @@ func switch_state(new_game_state):
 			Input.set_mouse_mode(Input.MOUSE_MODE_HIDDEN)
 			$GameOver.start()
 			game_reset()
+			title_music_target = 0
+			track1_target = -80
 
 		GameState.LEVEL_START:
 			$Screens/Title.visible = false
@@ -666,6 +722,8 @@ func switch_state(new_game_state):
 			Input.set_mouse_mode(Input.MOUSE_MODE_HIDDEN)
 			$LevelStart.start()
 			game_reset()
+			title_music_target = -80
+			track1_target = -80
 
 
 

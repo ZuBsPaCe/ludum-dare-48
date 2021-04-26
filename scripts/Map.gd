@@ -24,6 +24,8 @@ func _init() -> void:
 func setup(width : int, height : int, default_value) -> void:
 	tiles_types.clear()
 	tiles.clear()
+	dig_tiles.clear()
+	rally_tiles.clear()
 
 	self.width = width
 	self.height = height

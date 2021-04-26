@@ -1,13 +1,17 @@
 extends Node2D
 
+const AudioType = preload("res://scripts/AudioType.gd").AudioType
+
 onready var minion := $Minion
 
 var mouths := []
 var eyes := []
 
+
 var talking := false
 var mouth_cooldown := Cooldown.new(0.15)
 var eyes_cooldown := Cooldown.new(0.9)
+var talk_cooldown := Cooldown.new(0.3)
 
 signal stop_intro
 
@@ -31,12 +35,17 @@ func _ready() -> void:
 func _process(delta: float) -> void:
 	mouth_cooldown.step(delta)
 	eyes_cooldown.step(delta)
+	talk_cooldown.step(delta)
 
 	if talking && mouth_cooldown.done:
 		mouth_cooldown.restart()
 		reset_mouths()
 		mouths[0].visible = false
 		mouths[randi() % (mouths.size() - 1) + 1].visible = true
+
+	if talking && talk_cooldown.done:
+		talk_cooldown.restart()
+		Sounds.play(AudioType.TALK)
 
 	if talking && eyes_cooldown.done:
 		eyes_cooldown.restart()

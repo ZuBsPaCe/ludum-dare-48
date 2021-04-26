@@ -3,6 +3,7 @@ extends KinematicBody2D
 class_name Minion
 
 const TileType = preload("res://scripts/TileType.gd").TileType
+const AudioType = preload("res://scripts/AudioType.gd").AudioType
 
 # Collider radius is 4 -> double it + margin
 const attack_start_distance_sq := 10 * 10
@@ -56,6 +57,7 @@ var dig_tile : Tile
 var faction := 0
 
 var health := 1
+var dead := false
 
 var _path_variation_x := 0.0
 var _path_variation_y := 0.0
@@ -136,6 +138,10 @@ func _physics_process(delta: float) -> void:
 			strike_hit = true
 			if task == MinionTask.DIG:
 				dig_tile.health -= 1
+
+				if dig_tile.health >= 0:
+					Sounds.play(AudioType.DIG)
+
 				if dig_tile.health == 0:
 					if dig_tile.dig_highlight != null:
 						dig_tile.dig_highlight.queue_free()
@@ -148,10 +154,15 @@ func _physics_process(delta: float) -> void:
 				elif dig_tile.health < 0:
 					_move_near(dig_tile.x, dig_tile.y)
 					dig_tile = null
+
 			elif task == MinionTask.ATTACK || task == MinionTask.FIGHT:
-				if is_instance_valid(_victim):
+				if (is_instance_valid(_victim) && !_victim.dead):
 					if position.distance_squared_to(_victim.position) < attack_hit_distance_sq:
 						_victim.health -= 1
+
+						if _victim.health >= 0:
+							Sounds.play(AudioType.FIGHT)
+
 						if _victim.health == 0:
 							_victim.die()
 							_set_next_task(MinionTask.ROAM)
@@ -388,7 +399,7 @@ func attack(victim : Minion):
 
 func _attack():
 	if attack_cooldown.done:
-		if is_instance_valid(_victim):
+		if (is_instance_valid(_victim) && !_victim.dead):
 			if Helper.raycast_minion(self, _victim):
 				_last_victim_pos = _victim.position
 				victim_lost_cooldown.restart()
@@ -396,17 +407,23 @@ func _attack():
 
 		attack_cooldown.restart()
 
-	if strike_cooldown.done && is_instance_valid(_victim) && position.distance_squared_to(_victim.position) < attack_start_distance_sq:
+	if strike_cooldown.done && (is_instance_valid(_victim) && !_victim.dead) && position.distance_squared_to(_victim.position) < attack_start_distance_sq:
 		_strike()
+	elif victim_lost_cooldown.done:
+		_victim = null
+		_set_next_task(MinionTask.IDLE)
+	elif task_cooldown.running:
+		_move()
 	else:
-		if task_cooldown.running:
-			_move()
-
-	if victim_lost_cooldown.done:
+		# At last known pos. Victim gone...
 		_victim = null
 		_set_next_task(MinionTask.IDLE)
 
+
+
 func die():
+	Sounds.play(AudioType.DIE)
+
 	if faction == 0:
 		State.minions.erase(self)
 		tile.minions.erase(self)
@@ -417,6 +434,25 @@ func die():
 	set_process(false)
 	set_physics_process(false)
 
+	dead = true
+	queue_free()
+
+func flee():
+	Sounds.play(AudioType.FLED)
+
+	if faction == 0:
+		State.minions.erase(self)
+		tile.minions.erase(self)
+	else:
+		State.monsters.erase(self)
+		tile.monsters.erase(self)
+
+	State.minions_fled += 1
+
+	set_process(false)
+	set_physics_process(false)
+
+	dead = true
 	queue_free()
 
 func _move_near(coord_x : int, coord_y : int):

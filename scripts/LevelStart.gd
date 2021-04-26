@@ -1,7 +1,7 @@
 extends Node2D
 
 
-signal stop_game_over
+signal stop_level_start
 
 func _ready() -> void:
 	visible = false
@@ -16,12 +16,16 @@ func start() -> void:
 	visible = true
 	set_process(true)
 
+	$CanvasLayer/LevelLabel.text = State.end_level_info
+
 	$AnimationPlayer.play("Default")
 
+func show_level():
+	$CanvasLayer/LevelLabel.text = "Down to level %d" % State.level
 
 func switch_scene() -> void:
 	set_process(false)
-	$CanvasLayer/GameOverLabel.visible = false
+	$CanvasLayer/LevelLabel.visible = false
 	$CanvasLayer/TextureRect.visible = false
 	$AnimationPlayer.stop()
-	emit_signal("stop_game_over")
+	emit_signal("stop_level_start")
