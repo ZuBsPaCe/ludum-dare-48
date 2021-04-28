@@ -2,6 +2,7 @@ extends Node2D
 
 const GameState = preload("res://scripts/GameState.gd").GameState
 const TileType = preload("res://scripts/TileType.gd").TileType
+const AudioType = preload("res://scripts/AudioType.gd").AudioType
 
 var cursor_dig = preload("res://sprites/CursorDig.png")
 var cursor_rally = preload("res://sprites/CursorRally.png")
@@ -60,7 +61,8 @@ enum ToolType {
 enum CommandType {
 	NONE,
 	ADD_DIG,
-	REMOVE_DIG
+	REMOVE_DIG,
+	ADD_RALLY
 }
 
 enum MapType{
@@ -83,25 +85,48 @@ var _mouse_on_button := false
 var _drag_start_mouse_pos := Vector2()
 var _drag_start_camera_pos := Vector2()
 
+var _rally_last_mouse_pos := Vector2()
+
 var _level_done := false
 
-
+var _loading := true
 
 
 func _ready() -> void:
+	State.config = ConfigFile.new()
+	State.config.load(State.config_path)
+
+	if !State.config.has_section_key("Display", "Fullscreen"):
+		State.config.set_value("Display", "Fullscreen", false)
+
+	if !State.config.has_section_key("Audio", "Music"):
+		State.config.set_value("Audio", "Music", 0.8)
+
+	if !State.config.has_section_key("Audio", "Sound"):
+		State.config.set_value("Audio", "Sound", 0.8)
+
+	$Screens/Title/MusicSlider.value = State.config.get_value("Audio", "Music")
+	$Screens/Title/SoundSlider.value = State.config.get_value("Audio", "Sound")
+
+	State.entity_container = $EntityContainer
 	State.map = _map
 	Helper.map = _map
 	Helper.raycast = _raycast
 
 	State.tilemap32 = _tilemap32
 
+
 	if OS.get_name() == "HTML5":
 		$Screens/Title/ExitButton.visible = false
+	else:
+		OS.window_fullscreen = State.config.get_value("Display", "Fullscreen")
 
 	$Screens/PostProcess.visible = true
 
 	$Screens/Title/StartButton.text = "START"
 	$Screens/Title/NewGameButton.visible = false
+
+	_loading = false
 
 	switch_state(GameState.TITLE_SCREEN)
 
@@ -110,6 +135,8 @@ func _process(delta: float) -> void:
 	if OS.get_name() != "HTML5":
 		if !_fullscreen_cooldown.running && Input.is_key_pressed(KEY_ALT) && Input.is_key_pressed(KEY_ENTER):
 			OS.window_fullscreen = !OS.window_fullscreen
+			State.config.set_value("Display", "Fullscreen", OS.window_fullscreen)
+			State.config.save(State.config_path)
 			_fullscreen_cooldown.restart()
 
 
@@ -175,7 +202,8 @@ func _process(delta: float) -> void:
 			new_camera_position = _camera.position + drag_vec * 768.0 * delta
 
 		if new_camera_position != null:
-			var screen_size = get_viewport().size
+			#var screen_size = get_viewport().size
+			var screen_size = get_viewport_rect().size
 			var screen_half = screen_size * 0.5 * _camera.zoom
 			new_camera_position.x = max(new_camera_position.x, screen_half.x)
 			new_camera_position.x = min(new_camera_position.x, _camera.limit_right - screen_half.x)
@@ -229,23 +257,52 @@ func _process(delta: float) -> void:
 								tile.dig_highlight = null
 
 			ToolType.RALLY:
-				if Input.is_action_pressed("command"):
-					var tiles := Helper.get_tile_circle(mouse_coord.x, mouse_coord.y, State.rally_radius)
-					for tile in tiles:
-						if tile.tile_type != TileType.GROUND:
-							continue
-						var distance := mouse_coord.distance_to(tile.coord)
-						var rally := (1.0 - distance / (State.rally_radius + 1)) * State.rally_duration
+				var set_rally := false
+				var rally_dir
 
-						if rally < tile.rally:
-							continue
-						tile.rally = rally
-						if tile.rally_highlight == null:
-							_map.rally_tiles.append(tile)
-							var rally_highlight : Node2D = rally_highlight_scene.instance()
-							rally_highlight.position = tile.coord.to_pos()
-							_highlight_container.add_child(rally_highlight)
-							tile.rally_highlight = rally_highlight
+				if _command_type == CommandType.NONE:
+					if Input.is_action_just_pressed("command") && !_mouse_on_button:
+						_command_type = CommandType.ADD_RALLY
+
+				if _command_type == CommandType.ADD_RALLY:
+					if Input.is_action_pressed("command"):
+						var move_dir : Vector2
+
+						if _rally_last_mouse_pos.distance_to(mouse_pos) > 5:
+							set_rally = true
+							rally_dir = (mouse_pos - _rally_last_mouse_pos).normalized()
+							_rally_last_mouse_pos = mouse_pos
+
+					if Input.is_action_just_released("command"):
+						set_rally = true
+						rally_dir = Vector2.ZERO
+
+					if set_rally:
+						var tiles = Helper.get_tile_circle(mouse_coord.x, mouse_coord.y, State.rally_radius)
+						for tile in tiles:
+							if tile.tile_type != TileType.GROUND:
+								continue
+							var distance := mouse_coord.distance_to(tile.coord)
+							var rally_countdown := (1.0 - distance / (State.rally_radius + 1)) * State.rally_duration
+
+							if tile.rally_countdown < rally_countdown:
+								tile.rally_countdown = rally_countdown
+
+							tile.rally_time = 0.0
+							tile.rally_dir = rally_dir
+
+							if tile.rally_highlight == null:
+								_map.rally_tiles.append(tile)
+								var rally_highlight : Node2D = rally_highlight_scene.instance()
+								rally_highlight.position = tile.coord.to_pos()
+								_highlight_container.add_child(rally_highlight)
+								tile.rally_highlight = rally_highlight
+
+							for minion in tile.minions:
+								minion.rally_immune = 0
+
+				if Input.is_action_just_released("command"):
+					_command_type = CommandType.NONE
 
 
 		if _dig_traverse_cooldown.done:
@@ -270,12 +327,17 @@ func _process(delta: float) -> void:
 					var check_tile = tiles[index]
 					if check_tile.tile_type == TileType.GROUND:
 						var monster : Minion = minion_scene.instance()
-						monster.setup(1)
+						monster.setup(1, randf() < State.monster_archer_fraction)
 						monster.position = check_tile.coord.to_random_pos()
 						_entity_container.add_child(monster)
 						break
 
 					tiles.remove(index)
+
+		if Input.is_action_just_pressed("tool1"):
+			set_tool(ToolType.DIG)
+		elif Input.is_action_just_pressed("tool2"):
+			set_tool(ToolType.RALLY)
 
 
 func world_reset() -> void:
@@ -324,7 +386,11 @@ func map_generate(width : int, height : int) -> void:
 	var start_y := start_radius + 2
 	var start_coord := Coord.new(start_x, start_y)
 
-	#start_radius = 3
+#	start_radius = 30
+
+#	for x in range(2, width-2):
+#		for y in range(2, 11):
+#			_map.set_tile_type(x, y, TileType.GROUND)
 
 	_map.set_tile_type(start_coord.x, start_coord.y, TileType.START_PORTAL)
 
@@ -458,7 +524,7 @@ func map_fill() -> void:
 		for i in range(State.minion_count):
 			var tile : Tile = minion_tiles[randi() % minion_tiles.size()]
 			var minion : Minion = minion_scene.instance()
-			minion.setup(0)
+			minion.setup(0, i < State.archer_count)
 			minion.position = tile.coord.to_random_pos()
 			_entity_container.add_child(minion)
 
@@ -469,7 +535,7 @@ func map_fill() -> void:
 		for i in range(State.level_monster_count):
 			var tile : Tile = monster_tiles[randi() % monster_tiles.size()]
 			var monster : Minion = minion_scene.instance()
-			monster.setup(1)
+			monster.setup(1, randf() < State.monster_archer_fraction)
 			monster.position = tile.coord.to_random_pos()
 			_entity_container.add_child(monster)
 
@@ -520,15 +586,16 @@ func game_traverse_rally_tiles(delta : float):
 
 	for i in range(_map.rally_tiles.size() - 1, -1, -1):
 		var rally_tile = _map.rally_tiles[i]
-		rally_tile.rally -= delta
-		if rally_tile.rally <= 0:
-			rally_tile.rally = 0
+		rally_tile.rally_countdown -= delta
+		if rally_tile.rally_countdown <= 0:
+			rally_tile.rally_countdown = 0
+			rally_tile.rally_dir = Vector2.ZERO
 			rally_tile.rally_highlight.queue_free()
 			rally_tile.rally_highlight = null
 			_map.rally_tiles.remove(i)
 		else:
-			rally_tile.rally_highlight.modulate = Color(1, 1, 1, rally_tile.rally / State.rally_duration)
-
+			rally_tile.rally_time += delta
+			rally_tile.rally_highlight.modulate = Color(1, 1, 1, rally_tile.rally_countdown / State.rally_duration)
 
 func game_start_battles():
 	if _start_battle_cooldown.running:
@@ -593,7 +660,7 @@ func game_check_level_done():
 	if State.monsters.size() == 0:
 		_level_done = true
 		_level_done_cooldown.restart()
-		State.end_level_info = "LEVEL CLEARED" % State.level
+		State.end_level_info = "LEVEL CLEARED"
 		return
 
 	var fled_minions := []
@@ -637,12 +704,21 @@ func _on_MenuButton_pressed() -> void:
 
 func set_tool(tool_type) -> void:
 	_tool_type = tool_type
+	_command_type = CommandType.NONE
+
+	_dig_button.disabled = false
+	_rally_button.disabled = false
 
 	match tool_type:
 		ToolType.DIG:
 			Input.set_custom_mouse_cursor(cursor_dig, 0, Vector2(16, 16))
+			_dig_button.disabled = true
+			_rally_button.pressed = false
+
 		ToolType.RALLY:
 			Input.set_custom_mouse_cursor(cursor_rally, 0, Vector2(16, 16))
+			_rally_button.disabled = true
+			_dig_button.pressed = false
 
 func switch_state(new_game_state):
 	var old_game_state = State.game_state
@@ -758,11 +834,19 @@ func _on_GameOver_stop_game_over() -> void:
 
 
 func _on_MusicSlider_value_changed(value: float) -> void:
-	AudioServer.set_bus_volume_db(AudioServer.get_bus_index("Music"), -80.0 + value / 100.0 * 80.0)
+	AudioServer.set_bus_volume_db(AudioServer.get_bus_index("Music"), linear2db(value))
 
+	State.config.set_value("Audio", "Music", value)
+	State.config.save(State.config_path)
 
 func _on_SoundSlider_value_changed(value: float) -> void:
-	AudioServer.set_bus_volume_db(AudioServer.get_bus_index("Sounds"), -80.0 + value / 100.0 * 80.0)
+	AudioServer.set_bus_volume_db(AudioServer.get_bus_index("Sounds"), linear2db(value))
+
+	if !_loading:
+		Sounds.play(AudioType.FIGHT)
+
+	State.config.set_value("Audio", "Sound", value)
+	State.config.save(State.config_path)
 
 
 

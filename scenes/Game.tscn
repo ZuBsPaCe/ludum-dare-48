@@ -1,4 +1,4 @@
-[gd_scene load_steps=48 format=2]
+[gd_scene load_steps=49 format=2]
 
 [ext_resource path="res://scenes/Minion.tscn" type="PackedScene" id=1]
 [ext_resource path="res://scripts/Game.gd" type="Script" id=2]
@@ -41,6 +41,7 @@
 [ext_resource path="res://sprites/MenuButtonHover.png" type="Texture" id=39]
 [ext_resource path="res://scripts/LevelStart.gd" type="Script" id=40]
 [ext_resource path="res://scripts/GameOver.gd" type="Script" id=41]
+[ext_resource path="res://scripts/RallyDebug.gd" type="Script" id=42]
 
 [sub_resource type="StyleBoxLine" id=1]
 color = Color( 0.278431, 0.278431, 0.278431, 1 )
@@ -483,6 +484,9 @@ smoothing_enabled = true
 smoothing_speed = 20.0
 editor_draw_limits = true
 
+[node name="RallyDebug" type="Node2D" parent="."]
+script = ExtResource( 42 )
+
 [node name="HUD" type="CanvasLayer" parent="."]
 
 [node name="MarginContainer" type="MarginContainer" parent="HUD"]
@@ -511,6 +515,7 @@ toggle_mode = true
 texture_normal = ExtResource( 6 )
 texture_pressed = ExtResource( 10 )
 texture_hover = ExtResource( 9 )
+texture_disabled = ExtResource( 10 )
 
 [node name="RallyButton" type="TextureButton" parent="HUD/MarginContainer/HBoxContainer"]
 margin_left = 104.0
@@ -520,6 +525,7 @@ toggle_mode = true
 texture_normal = ExtResource( 7 )
 texture_pressed = ExtResource( 11 )
 texture_hover = ExtResource( 8 )
+texture_disabled = ExtResource( 11 )
 
 [node name="MenuButton" type="TextureButton" parent="HUD/MarginContainer/HBoxContainer"]
 margin_left = 208.0
@@ -632,7 +638,9 @@ margin_right = 368.295
 margin_bottom = 539.478
 rect_min_size = Vector2( 200, 0 )
 custom_styles/slider = SubResource( 1 )
-value = 100.0
+max_value = 1.0
+step = 0.1
+value = 0.8
 __meta__ = {
 "_edit_use_anchors_": false
 }
@@ -644,7 +652,9 @@ margin_right = 851.559
 margin_bottom = 539.478
 rect_min_size = Vector2( 200, 0 )
 custom_styles/slider = SubResource( 1 )
-value = 100.0
+max_value = 1.0
+step = 0.1
+value = 0.8
 
 [node name="PostProcess" type="ColorRect" parent="Screens"]
 visible = false

@@ -32,7 +32,7 @@ limitMemory=true
 useIndexes=true
 
 scaleFactors=[{suffix:"",factor:1,resampling:bicubic}]
-inputFiles=[{path:32/01 Ground1.png,type:Input,regionName:null},{path:32/02 Dirt1.png,type:Input,regionName:null},{path:32/03 Rock1.png,type:Input,regionName:null}]
+inputFiles=[{path:32/01 Ground1.png,type:Input,regionName:null},{path:32/02 Dirt1.png,type:Input,regionName:null},{path:32/03 Rock1.png,type:Input,regionName:null},{path:32/04 Prison.png,type:Input,regionName:null}]
 
 
 -PROJ-

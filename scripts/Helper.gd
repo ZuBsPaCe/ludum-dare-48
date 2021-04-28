@@ -27,6 +27,20 @@ func get_tile_circle(center_x : int, center_y : int, radius : int, return_self =
 				tiles.append(map.get_tile(x, y))
 	return tiles
 
+func get_neighbour_tiles_ordered(center_x : int, center_y : int) -> Array:
+	var tiles := []
+
+	tiles.append(map.get_tile(center_x, center_y - 1))
+	tiles.append(map.get_tile(center_x + 1, center_y - 1))
+	tiles.append(map.get_tile(center_x + 1, center_y))
+	tiles.append(map.get_tile(center_x + 1, center_y + 1))
+	tiles.append(map.get_tile(center_x, center_y + 1))
+	tiles.append(map.get_tile(center_x - 1, center_y + 1))
+	tiles.append(map.get_tile(center_x - 1, center_y))
+	tiles.append(map.get_tile(center_x - 1, center_y - 1))
+
+	return tiles
+
 func get_walkable_pos(coord : Coord, include_current = true) -> Vector2:
 	var rand = randi() % 9
 
