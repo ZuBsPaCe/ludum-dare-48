@@ -31,6 +31,8 @@ onready var pickaxe := $Sprites/Pickaxe
 export var in_animation := false
 export(PackedScene) var arrow_scene
 export(PackedScene) var blood_scene
+export(PackedScene) var beam_scene
+export(PackedScene) var blood_drop_particles_scene
 
 var speed := 48.0
 
@@ -59,6 +61,7 @@ var dig_tile : Tile
 
 var faction := 0
 var archer := false
+var prisoner := false
 
 var health := 1
 var dead := false
@@ -91,10 +94,11 @@ func _ready() -> void:
 	_path_variation_y += randf() * 28.0 - 14.0
 
 
-func setup(faction : int, archer = false) -> void:
+func setup(faction : int, archer = false, prisoner = false) -> void:
 	self.faction = faction
 	if faction == 0:
-		State.minions.append(self)
+		if !prisoner:
+			State.minions.append(self)
 
 		health = State.minion_health
 
@@ -115,6 +119,10 @@ func setup(faction : int, archer = false) -> void:
 
 	if archer:
 		$Sprites/Feather.visible = true
+
+	self.prisoner = prisoner
+	if prisoner:
+		$Sprites/Pickaxe.visible = false
 
 
 func _process(delta: float) -> void:
@@ -165,7 +173,32 @@ func _physics_process(delta: float) -> void:
 					State.tilemap32.set_cell(dig_tile.x, dig_tile.y, 0)
 					State.map.dig_tiles.erase(dig_tile)
 					_move_near(dig_tile.x, dig_tile.y)
+
+					var prisoner_tiles := []
+					var check_tiles = [dig_tile]
+
+					while check_tiles.size() > 0:
+						var check_count : int = check_tiles.size()
+						for i in range(check_count):
+							var check_tile : Tile = check_tiles[0]
+							check_tiles.remove(0)
+
+							var next_tiles = Helper.get_tile_circle(check_tile.x, check_tile.y, 1, false)
+							for next_tile in next_tiles:
+								if next_tile.inner_prison && !prisoner_tiles.has(next_tile):
+									check_tiles.append(next_tile)
+									prisoner_tiles.append(next_tile)
+
+					for prisoner_tile in prisoner_tiles:
+						if prisoner_tile.prisoners.size() > 0:
+							for freed_prisoner in prisoner_tile.prisoners:
+								freed_prisoner.prisoner = false
+								freed_prisoner.pickaxe.visible = true
+								State.minions.append(freed_prisoner)
+							prisoner_tile.prisoners.clear()
+
 					dig_tile = null
+
 				elif dig_tile.health < 0:
 					_move_near(dig_tile.x, dig_tile.y)
 					dig_tile = null
@@ -212,22 +245,7 @@ func _physics_process(delta: float) -> void:
 
 					var rally_target_tile = Helper.map.get_tile(rally_coord.x, rally_coord.y)
 
-					var is_valid := true
-					if !_is_valid_rally_tile(rally_target_tile):
-						var other_tiles = Helper.get_tile_circle(coord.x, coord.y, 2, false)
-						var max_length_sq := 0.0
-						var max_tile : Tile
-						for other_tile in other_tiles:
-							if other_tile != rally_target_tile && _is_valid_rally_tile(other_tile):
-								var current_vec : Vector2 = tile.rally_dir + other_tile.rally_dir
-								var current_length_sq := current_vec.length_squared()
-								if current_length_sq > max_length_sq:
-									max_length_sq = current_length_sq
-									max_tile = other_tile
-
-						if max_tile != null:
-							is_valid = true
-							rally_target_tile = max_tile
+					var is_valid := _is_valid_rally_tile(rally_target_tile)
 
 					if is_valid:
 						_rally_near(rally_target_tile.coord.x, rally_target_tile.coord.y)
@@ -235,11 +253,15 @@ func _physics_process(delta: float) -> void:
 					if !is_valid:
 						rally_immune = State.rally_immune
 
+	if prisoner && next_task != null:
+		if next_task != MinionTask.IDLE && next_task != MinionTask.ROAM && next_task != MinionTask.MOVE:
+			next_task = null
+
 	if next_task != null:
 		if next_task != MinionTask.RALLY && next_task != MinionTask.IDLE:
 			_last_rally_tiles.clear()
 
-		if archer && next_task != MinionTask.ATTACK && MinionTask.FIGHT:
+		if archer && !prisoner && next_task != MinionTask.ATTACK && MinionTask.FIGHT:
 			pickaxe.visible = true
 
 		match next_task:
@@ -419,19 +441,22 @@ func can_interupt() -> bool:
 	return (
 		task != MinionTask.RALLY &&
 		task != MinionTask.DIG &&
-		task != MinionTask.FIGHT)
+		task != MinionTask.FIGHT &&
+		!prisoner)
 
-func can_end_level() -> bool:
-	return (
-		task != MinionTask.ATTACK &&
-		task != MinionTask.FIGHT)
+#func can_end_level() -> bool:
+#	return (
+#		(task != MinionTask.ATTACK &&
+#		task != MinionTask.FIGHT) ||
+#		prisoner)
 
 func can_start_digging() -> bool:
 	return (
 		task != MinionTask.GO_DIG &&
 		task != MinionTask.DIG &&
 		task != MinionTask.ATTACK &&
-		task != MinionTask.FIGHT)
+		task != MinionTask.FIGHT &&
+		!prisoner)
 
 func dig(path : PoolVector2Array, dig_tile : Tile):
 	self.path = path
@@ -479,10 +504,15 @@ func hurt():
 
 	if health >= 0:
 		Sounds.play(AudioType.FIGHT)
+
 		var blood : Sprite = blood_scene.instance()
-		blood.position = position + Vector2(randf() * 10.0 - 5.0, randf() * 10.0 - 5.0)
+		blood.position = position + Vector2(randf() * 10.0 - 5.0, randf() * 10.0 - 5.0) + Vector2(0, 8)
 		blood.rotation = PI / 4 * (randi() % 4)
 		State.entity_container.add_child(blood)
+
+		var blood_drop_particles = blood_drop_particles_scene.instance()
+		blood_drop_particles.position = position + Vector2(randf() * 10.0 - 5.0, randf() * 10.0 - 5.0) + Vector2(0, 8)
+		State.entity_container.add_child(blood_drop_particles)
 
 	if health == 0:
 		die()
@@ -505,6 +535,9 @@ func die():
 
 func flee():
 	Sounds.play(AudioType.FLED)
+	var beam : Node2D = beam_scene.instance()
+	beam.position = position
+	State.entity_container.add_child(beam)
 
 	if faction == 0:
 		State.minions.erase(self)
@@ -538,12 +571,6 @@ func _rally_near(coord_x : int, coord_y : int):
 func _is_valid_rally_tile(rally_target_tile : Tile) -> bool:
 	if rally_target_tile.rally_countdown == 0:
 		return false
-
-	# Check diagonal movement
-	if rally_target_tile.coord.x != coord.x && rally_target_tile.coord.y != coord.y:
-		if (Helper.map.get_tile_type(rally_target_tile.coord.x, coord.y) != TileType.GROUND ||
-			Helper.map.get_tile_type(coord.x, rally_target_tile.coord.y) != TileType.GROUND):
-				return false
 
 	return !_last_rally_tiles.has(rally_target_tile)
 

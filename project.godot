@@ -30,6 +30,11 @@ _global_script_classes=[ {
 "path": "res://scripts/Minion.gd"
 }, {
 "base": "Reference",
+"class": "Prison",
+"language": "GDScript",
+"path": "res://scripts/Prison.gd"
+}, {
+"base": "Reference",
 "class": "Tile",
 "language": "GDScript",
 "path": "res://scripts/Tile.gd"
@@ -39,6 +44,7 @@ _global_script_class_icons={
 "Coord": "",
 "Map": "",
 "Minion": "",
+"Prison": "",
 "Tile": ""
 }
 

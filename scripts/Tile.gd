@@ -5,6 +5,9 @@ class_name Tile
 var minions := []
 var monsters := []
 
+var inner_prison := false
+var prisoners := []
+
 var dig_highlight
 var rally_highlight
 

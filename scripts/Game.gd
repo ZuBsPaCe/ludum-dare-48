@@ -221,8 +221,8 @@ func _process(delta: float) -> void:
 
 		match _tool_type:
 			ToolType.DIG:
-				if mouse_tile == TileType.DIRT:
-					if mouse_tile == TileType.DIRT && !_mouse_on_button:
+				if mouse_tile == TileType.DIRT || mouse_tile == TileType.PRISON:
+					if (mouse_tile == TileType.DIRT || mouse_tile == TileType.PRISON) && !_mouse_on_button:
 						_cursor_highlight.position = mouse_coord.to_pos()
 						_cursor_highlight.visible = true
 					else:
@@ -258,7 +258,7 @@ func _process(delta: float) -> void:
 
 			ToolType.RALLY:
 				var set_rally := false
-				var rally_dir
+				var rally_dir := Vector2.ZERO
 
 				if _command_type == CommandType.NONE:
 					if Input.is_action_just_pressed("command") && !_mouse_on_button:
@@ -275,7 +275,6 @@ func _process(delta: float) -> void:
 
 					if Input.is_action_just_released("command"):
 						set_rally = true
-						rally_dir = Vector2.ZERO
 
 					if set_rally:
 						var tiles = Helper.get_tile_circle(mouse_coord.x, mouse_coord.y, State.rally_radius)
@@ -289,7 +288,35 @@ func _process(delta: float) -> void:
 								tile.rally_countdown = rally_countdown
 
 							tile.rally_time = 0.0
-							tile.rally_dir = rally_dir
+
+							if rally_dir == Vector2.ZERO:
+								tile.rally_dir = Vector2.ZERO
+							else:
+								var closest_tile = null
+								var closest_tile_distance_sq := 0.0
+								var next_tiles = Helper.get_tile_circle(tile.coord.x, tile.coord.y, 2, false)
+								for next_tile in next_tiles:
+									if next_tile.tile_type == TileType.GROUND:
+										var distance_sq = next_tile.coord.to_center_pos().distance_squared_to(mouse_pos)
+										if closest_tile == null || distance_sq < closest_tile_distance_sq:
+											var is_valid := true
+											if tile.coord.x != next_tile.coord.x && tile.coord.y != next_tile.coord.y:
+												var diagonal_tile1 = _map.get_tile(tile.x, next_tile.y)
+												var diagonal_tile2 = _map.get_tile(next_tile.x, tile.y)
+												is_valid = diagonal_tile1.tile_type == TileType.GROUND && diagonal_tile2.tile_type == TileType.GROUND
+
+											if is_valid:
+												closest_tile = next_tile
+												closest_tile_distance_sq = distance_sq
+
+								if closest_tile != null:
+									var dir : Vector2 = (closest_tile.coord.to_center_pos() - tile.coord.to_center_pos()).normalized()
+									if dir.dot(rally_dir) >= 0:
+										tile.rally_dir = dir
+									else:
+										tile.rally_dir = Vector2.ZERO
+								else:
+									tile.rally_dir = Vector2.ZERO
 
 							if tile.rally_highlight == null:
 								_map.rally_tiles.append(tile)
@@ -386,7 +413,7 @@ func map_generate(width : int, height : int) -> void:
 	var start_y := start_radius + 2
 	var start_coord := Coord.new(start_x, start_y)
 
-#	start_radius = 30
+	#start_radius = 8
 
 #	for x in range(2, width-2):
 #		for y in range(2, 11):
@@ -424,14 +451,15 @@ func map_generate(width : int, height : int) -> void:
 		var end_y := height - end_radius - 2
 		var end_coord := Coord.new(end_x, end_y)
 
-		#start_radius = 3
-
 		_map.set_tile_type(end_coord.x, end_coord.y, TileType.END_PORTAL)
 
 		var end_tiles := Helper.get_tile_circle(end_x, end_y, end_radius, false)
 		for tile in end_tiles:
 			_map.set_tile_type(tile.x, tile.y, TileType.MONSTER_START)
 
+
+		var total_prison_count := State.level + 1
+		var prison_count := 0
 
 		var total_cave_count := randi() % (8 + State.level) + (8 + State.level)
 		var cave_count := 0
@@ -446,6 +474,50 @@ func map_generate(width : int, height : int) -> void:
 				continue
 
 			var cave_tiles := Helper.get_tile_circle(center.x, center.y, radius)
+
+			if prison_count < total_prison_count:
+				var prison_center_tile = cave_tiles[randi() % cave_tiles.size()]
+				var check_prison_tiles := Helper.get_tile_circle(prison_center_tile.x, prison_center_tile.y, 8, true)
+
+				var valid_prison := true
+				for check_tile in check_prison_tiles:
+					if check_tile.tile_type != TileType.DIRT && check_tile.tile_type != TileType.GROUND && check_tile.tile_type != TileType.ROCK:
+						valid_prison = false
+						break
+
+				if valid_prison:
+					var prison_tiles := Helper.get_tile_circle(prison_center_tile.x, prison_center_tile.y, 2, true)
+					var inner_tiles := prison_tiles.duplicate()
+
+					var inner_tile_count := 1 + randi() % (prison_tiles.size() - 1)
+
+					while inner_tiles.size() > inner_tile_count:
+						inner_tiles.remove(randi() % inner_tiles.size())
+
+					for i in range(inner_tiles.size() - 1, -1, -1):
+						var inner_tile = inner_tiles[i]
+						if inner_tile.coord.x == 0 || inner_tile.coord.y == 0 || inner_tile.coord.x == _map.width - 1 || inner_tile.coord.y == _map.height - 1:
+							inner_tiles.remove(i)
+
+					valid_prison = inner_tiles.size() > 0
+
+					if valid_prison:
+						for inner_tile in inner_tiles:
+							_map.set_tile_type(inner_tile.x, inner_tile.y, TileType.PRISON_START)
+							inner_tile.inner_prison = true
+
+						for inner_tile in inner_tiles:
+							for y in range(inner_tile.coord.y - 1, inner_tile.coord.y + 2):
+								for x in range(inner_tile.coord.x - 1, inner_tile.coord.x + 2):
+									if _map.is_valid(x, y) && _map.get_tile_type(x, y) == TileType.DIRT:
+										_map.set_tile_type(x, y, TileType.PRISON)
+
+						var prison := Prison.new()
+						prison.inner_tiles = inner_tiles
+						State.prisons.append(prison)
+
+						prison_count += 1
+
 			for tile in cave_tiles:
 				if tile.tile_type == TileType.DIRT:
 					_map.set_tile_type(tile.x, tile.y, TileType.MONSTER_START)
@@ -475,24 +547,37 @@ func map_generate(width : int, height : int) -> void:
 func map_fill() -> void:
 	var minion_tiles := []
 	var monster_tiles := []
+	var prison_tiles := []
+
 
 	for y in range(_map.height):
 		for x in range(_map.width):
-			var tile = _map.get_tile_type(x, y)
+			var tile_type = _map.get_tile_type(x, y)
+			var tile = _map.get_tile(x, y)
 			var coord := Coord.new(x, y)
 
-			match tile:
+			match tile_type:
 				TileType.DIRT:
 					_tilemap32.set_cell(x, y, 1)
 
 				TileType.ROCK:
 					_tilemap32.set_cell(x, y, 2)
 
+				TileType.PRISON:
+					_tilemap32.set_cell(x, y, 3)
+					# Can't set this to dirt, otherwise monsters
+					# will dig into the prison...
+					#_map.set_tile_type(x, y, TileType.DIRT)
+
+				TileType.PRISON_START:
+					_tilemap32.set_cell(x, y, 0)
+					_map.set_tile_type(x, y, TileType.GROUND)
+
 				TileType.START_PORTAL:
 					_tilemap32.set_cell(x, y, 0)
 
 					var start_portal = portal_scene.instance()
-					start_portal.tile = _map.get_tile(x, y)
+					start_portal.tile = tile
 					start_portal.position = coord.to_center_pos()
 					_entity_container.add_child(start_portal)
 					State.start_portals.append(start_portal)
@@ -501,7 +586,7 @@ func map_fill() -> void:
 					_tilemap32.set_cell(x, y, 0)
 
 					var end_portal = portal_scene.instance()
-					end_portal.tile = _map.get_tile(x, y)
+					end_portal.tile = tile
 					end_portal.position = coord.to_center_pos()
 					_entity_container.add_child(end_portal)
 					end_portal.set_active(true)
@@ -538,6 +623,16 @@ func map_fill() -> void:
 			monster.setup(1, randf() < State.monster_archer_fraction)
 			monster.position = tile.coord.to_random_pos()
 			_entity_container.add_child(monster)
+
+	for prison in State.prisons:
+		var amount = max(1.0, randi() % (State.level + 2))
+		for i in range(0, amount):
+			var tile : Tile = prison.inner_tiles[randi() %  prison.inner_tiles.size()]
+			var minion : Minion = minion_scene.instance()
+			minion.setup(0, randf() < 0.5, true)
+			minion.position = tile.coord.to_random_pos()
+			_entity_container.add_child(minion)
+			tile.prisoners.append(minion)
 
 
 func game_traverse_dig_tiles():
@@ -666,8 +761,9 @@ func game_check_level_done():
 	var fled_minions := []
 
 	for minion in State.minions:
-		if !minion.can_end_level():
-			continue
+#		if !minion.can_end_level():
+#			continue
+
 		for portal in State.end_portals:
 			var distance : float = minion.position.distance_to(portal.position)
 			if distance < 55.0:

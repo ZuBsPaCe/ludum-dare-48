@@ -28,6 +28,8 @@ var start_portals := []
 var end_portals := []
 
 var monsters := []
+
+# does not contain minions and fled minions
 var minions := []
 var minions_fled : int
 var archers_fled : int
@@ -43,6 +45,7 @@ var spawn_cooldown := 20
 const config_path = "res://settings.ini"
 var config : ConfigFile
 
+var prisons := []
 
 var entity_container : Node2D
 
@@ -84,7 +87,12 @@ func increase_level():
 	State.level += 1
 
 	if State.level > 1:
-		var current_count := minions.size() + minions_fled + archers_fled
+		var free_minion_count := 0
+		for minion in minions:
+			if !minion.prisoner:
+				free_minion_count += 1
+
+		var current_count := free_minion_count + minions_fled + archers_fled
 		minions_fled = 0
 		archers_fled = 0
 
@@ -104,6 +112,7 @@ func game_reset():
 	end_portals.clear()
 	monsters.clear()
 	minions.clear()
+	prisons.clear()
 
 
 

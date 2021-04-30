@@ -1,4 +1,4 @@
-[gd_scene load_steps=21 format=2]
+[gd_scene load_steps=23 format=2]
 
 [ext_resource path="res://sprites/Minion.png" type="Texture" id=1]
 [ext_resource path="res://scripts/Minion.gd" type="Script" id=2]
@@ -6,6 +6,8 @@
 [ext_resource path="res://sprites/Feather.png" type="Texture" id=4]
 [ext_resource path="res://scenes/Arrow.tscn" type="PackedScene" id=5]
 [ext_resource path="res://scenes/Blood.tscn" type="PackedScene" id=6]
+[ext_resource path="res://scenes/Beam.tscn" type="PackedScene" id=7]
+[ext_resource path="res://scenes/BloodDropParticles.tscn" type="PackedScene" id=8]
 
 [sub_resource type="CircleShape2D" id=1]
 radius = 4.12614
@@ -544,6 +546,8 @@ collision_mask = 5
 script = ExtResource( 2 )
 arrow_scene = ExtResource( 5 )
 blood_scene = ExtResource( 6 )
+beam_scene = ExtResource( 7 )
+blood_drop_particles_scene = ExtResource( 8 )
 
 [node name="CollisionShape2D" type="CollisionShape2D" parent="."]
 shape = SubResource( 1 )
