@@ -86,6 +86,7 @@ var _drag_start_mouse_pos := Vector2()
 var _drag_start_camera_pos := Vector2()
 
 var _rally_last_mouse_pos := Vector2()
+var _rally_last_tiles := []
 
 var _level_done := false
 
@@ -221,14 +222,16 @@ func _process(delta: float) -> void:
 
 		match _tool_type:
 			ToolType.DIG:
-				if mouse_tile == TileType.DIRT || mouse_tile == TileType.PRISON:
-					if (mouse_tile == TileType.DIRT || mouse_tile == TileType.PRISON) && !_mouse_on_button:
-						_cursor_highlight.position = mouse_coord.to_pos()
-						_cursor_highlight.visible = true
-					else:
-						_cursor_highlight.visible = false
+				if (mouse_tile == TileType.DIRT || mouse_tile == TileType.PRISON) && !_mouse_on_button:
+					_cursor_highlight.position = mouse_coord.to_pos()
+					_cursor_highlight.visible = true
+				else:
+					_cursor_highlight.visible = false
 
+				if Input.is_action_just_released("command"):
+					_command_type = CommandType.NONE
 
+				elif mouse_tile == TileType.DIRT || mouse_tile == TileType.PRISON:
 					if _command_type == CommandType.NONE:
 						if Input.is_action_just_pressed("command") && !_mouse_on_button:
 							var tile : Tile = _map.get_tile(mouse_coord.x, mouse_coord.y)
@@ -236,9 +239,6 @@ func _process(delta: float) -> void:
 								_command_type = CommandType.ADD_DIG
 							else:
 								_command_type = CommandType.REMOVE_DIG
-					else:
-						if Input.is_action_just_released("command"):
-							_command_type = CommandType.NONE
 
 					if !_mouse_on_button:
 						if _command_type == CommandType.ADD_DIG:
@@ -258,75 +258,59 @@ func _process(delta: float) -> void:
 
 			ToolType.RALLY:
 				var set_rally := false
-				var rally_dir := Vector2.ZERO
 
 				if _command_type == CommandType.NONE:
 					if Input.is_action_just_pressed("command") && !_mouse_on_button:
 						_command_type = CommandType.ADD_RALLY
+						_rally_last_mouse_pos = mouse_pos
+						_rally_last_tiles.clear()
+						set_rally = true
 
 				if _command_type == CommandType.ADD_RALLY:
 					if Input.is_action_pressed("command"):
 						var move_dir : Vector2
 
-						if _rally_last_mouse_pos.distance_to(mouse_pos) > 5:
+						if _rally_last_mouse_pos.distance_to(mouse_pos) > 64:
 							set_rally = true
-							rally_dir = (mouse_pos - _rally_last_mouse_pos).normalized()
 							_rally_last_mouse_pos = mouse_pos
 
 					if Input.is_action_just_released("command"):
 						set_rally = true
 
 					if set_rally:
-						var tiles = Helper.get_tile_circle(mouse_coord.x, mouse_coord.y, State.rally_radius)
-						for tile in tiles:
-							if tile.tile_type != TileType.GROUND:
-								continue
-							var distance := mouse_coord.distance_to(tile.coord)
+
+						var rally_current_tiles = Helper.get_tile_circle(mouse_coord.x, mouse_coord.y, State.rally_radius)
+						for i in range(rally_current_tiles.size() - 1, -1, -1):
+							if rally_current_tiles[i].tile_type != TileType.GROUND:
+								rally_current_tiles.remove(i)
+
+						for current_tile in rally_current_tiles:
+							var distance := mouse_coord.distance_to(current_tile.coord)
 							var rally_countdown := (1.0 - distance / (State.rally_radius + 1)) * State.rally_duration
 
-							if tile.rally_countdown < rally_countdown:
-								tile.rally_countdown = rally_countdown
+							if current_tile.rally_countdown < rally_countdown:
+								current_tile.rally_countdown = rally_countdown
 
-							tile.rally_time = 0.0
+							current_tile.rally_time = 0.0
+							current_tile.rally_end_tiles.clear()
 
-							if rally_dir == Vector2.ZERO:
-								tile.rally_dir = Vector2.ZERO
-							else:
-								var closest_tile = null
-								var closest_tile_distance_sq := 0.0
-								var next_tiles = Helper.get_tile_circle(tile.coord.x, tile.coord.y, 2, false)
-								for next_tile in next_tiles:
-									if next_tile.tile_type == TileType.GROUND:
-										var distance_sq = next_tile.coord.to_center_pos().distance_squared_to(mouse_pos)
-										if closest_tile == null || distance_sq < closest_tile_distance_sq:
-											var is_valid := true
-											if tile.coord.x != next_tile.coord.x && tile.coord.y != next_tile.coord.y:
-												var diagonal_tile1 = _map.get_tile(tile.x, next_tile.y)
-												var diagonal_tile2 = _map.get_tile(next_tile.x, tile.y)
-												is_valid = diagonal_tile1.tile_type == TileType.GROUND && diagonal_tile2.tile_type == TileType.GROUND
-
-											if is_valid:
-												closest_tile = next_tile
-												closest_tile_distance_sq = distance_sq
-
-								if closest_tile != null:
-									var dir : Vector2 = (closest_tile.coord.to_center_pos() - tile.coord.to_center_pos()).normalized()
-									if dir.dot(rally_dir) >= 0:
-										tile.rally_dir = dir
-									else:
-										tile.rally_dir = Vector2.ZERO
-								else:
-									tile.rally_dir = Vector2.ZERO
-
-							if tile.rally_highlight == null:
-								_map.rally_tiles.append(tile)
+							if current_tile.rally_highlight == null:
+								_map.rally_tiles.append(current_tile)
 								var rally_highlight : Node2D = rally_highlight_scene.instance()
-								rally_highlight.position = tile.coord.to_pos()
+								rally_highlight.position = current_tile.coord.to_pos()
 								_highlight_container.add_child(rally_highlight)
-								tile.rally_highlight = rally_highlight
+								current_tile.rally_highlight = rally_highlight
 
-							for minion in tile.minions:
-								minion.rally_immune = 0
+						if rally_current_tiles.size() > 0:
+							for last_tile in _rally_last_tiles:
+								if last_tile in rally_current_tiles:
+									continue
+
+								last_tile.rally_end_tiles.append_array(rally_current_tiles)
+								for minion in last_tile.minions:
+									minion.rally_immune = 0
+
+							_rally_last_tiles = rally_current_tiles
 
 				if Input.is_action_just_released("command"):
 					_command_type = CommandType.NONE
@@ -575,6 +559,7 @@ func map_fill() -> void:
 
 				TileType.START_PORTAL:
 					_tilemap32.set_cell(x, y, 0)
+					_map.set_tile_type(x, y, TileType.ROCK)
 
 					var start_portal = portal_scene.instance()
 					start_portal.tile = tile
@@ -684,7 +669,7 @@ func game_traverse_rally_tiles(delta : float):
 		rally_tile.rally_countdown -= delta
 		if rally_tile.rally_countdown <= 0:
 			rally_tile.rally_countdown = 0
-			rally_tile.rally_dir = Vector2.ZERO
+			rally_tile.rally_end_tiles.clear()
 			rally_tile.rally_highlight.queue_free()
 			rally_tile.rally_highlight = null
 			_map.rally_tiles.remove(i)
@@ -721,7 +706,7 @@ func game_start_battles():
 		game_start_battle(minion, State.monsters, State.minion_view_distance)
 
 func game_start_battle(attacker : Minion, target_list : Array, view_distance : int):
-	if attacker.can_interupt():
+	if attacker.can_start_attack():
 		var target_distance := view_distance
 		var target = null
 
@@ -815,6 +800,7 @@ func set_tool(tool_type) -> void:
 			Input.set_custom_mouse_cursor(cursor_rally, 0, Vector2(16, 16))
 			_rally_button.disabled = true
 			_dig_button.pressed = false
+			_cursor_highlight.visible = false
 
 func switch_state(new_game_state):
 	var old_game_state = State.game_state

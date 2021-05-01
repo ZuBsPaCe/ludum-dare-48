@@ -20,7 +20,7 @@ var tile_type
 var health : int
 var rally_time := 0.0
 var rally_countdown := 0.0
-var rally_dir := Vector2.ZERO
+var rally_end_tiles := []
 
 func _init(id : int, x : int, y : int, tile_type) -> void:
 	self.id = id

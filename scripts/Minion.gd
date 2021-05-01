@@ -64,13 +64,13 @@ var archer := false
 var prisoner := false
 
 var health := 1
+var anger := 0
 var dead := false
 
 var _path_variation_x := 0.0
 var _path_variation_y := 0.0
 
 var rally_immune := 0.0
-var _last_rally_tiles := []
 
 var _victim : Minion
 var _last_victim_pos := Vector2.ZERO
@@ -204,6 +204,9 @@ func _physics_process(delta: float) -> void:
 					dig_tile = null
 
 			elif task == MinionTask.ATTACK || task == MinionTask.FIGHT:
+				if anger > 0:
+					anger -= 1
+
 				if !archer:
 					if (is_instance_valid(_victim) && !_victim.dead):
 						if position.distance_squared_to(_victim.position) < attack_hit_distance_sq:
@@ -230,37 +233,26 @@ func _physics_process(delta: float) -> void:
 		rally_immune = max(rally_immune - delta, 0.0)
 
 	if faction == 0:
-		if can_interupt():
+		if can_start_rally():
 			if rally_immune == 0.0 && tile.rally_countdown > 0.0 && tile.rally_time > 0.25:
-				if tile.rally_dir == Vector2.ZERO:
-					rally_immune = State.rally_immune
+				if tile.rally_end_tiles.size() == 0:
+					#rally_immune = State.rally_immune
+					pass
 				else:
-					# 47 -> must be larger than maximal tile radius (45.254) and less than 48 (32+16)
-					var rally_pos := coord.to_center_pos() + tile.rally_dir * 47.0
-					var rally_coord := Coord.new()
-					rally_coord.set_vector(rally_pos)
+					var rally_end_tile : Tile = tile.rally_end_tiles[randi() % tile.rally_end_tiles.size()]
 
-					assert(abs(rally_coord.x - coord.x) <= 1)
-					assert(abs(rally_coord.y - coord.y) <= 1)
+					var path = State.map.astar.get_point_path(tile.id, rally_end_tile.id)
 
-					var rally_target_tile = Helper.map.get_tile(rally_coord.x, rally_coord.y)
-
-					var is_valid := _is_valid_rally_tile(rally_target_tile)
-
-					if is_valid:
-						_rally_near(rally_target_tile.coord.x, rally_target_tile.coord.y)
-
-					if !is_valid:
+					if path.size() == 0 || path.size() > 25:
 						rally_immune = State.rally_immune
+					else:
+						_rally(path)
 
 	if prisoner && next_task != null:
 		if next_task != MinionTask.IDLE && next_task != MinionTask.ROAM && next_task != MinionTask.MOVE:
 			next_task = null
 
 	if next_task != null:
-		if next_task != MinionTask.RALLY && next_task != MinionTask.IDLE:
-			_last_rally_tiles.clear()
-
 		if archer && !prisoner && next_task != MinionTask.ATTACK && MinionTask.FIGHT:
 			pickaxe.visible = true
 
@@ -282,7 +274,10 @@ func _physics_process(delta: float) -> void:
 					animation_pickaxe.play("IdleLeft")
 
 			MinionTask.ROAM:
-				_set_target(Helper.get_walkable_pos(coord))
+				if faction == 0:
+					_set_target(tile.coord.to_random_pos())
+				else:
+					_set_target(Helper.get_walkable_pos(coord))
 				task = MinionTask.ROAM
 
 			MinionTask.GO_DIG:
@@ -370,7 +365,8 @@ func _physics_process(delta: float) -> void:
 			_move()
 
 			if task_cooldown.done:
-				_set_next_task(MinionTask.IDLE)
+				if !_advance_path():
+					_set_next_task(MinionTask.IDLE)
 
 		MinionTask.ATTACK:
 			# ATTACK can be interrupted. After first successful
@@ -421,7 +417,7 @@ func _start_path() -> void:
 	if path.size() == 0:
 		task_cooldown.set_done()
 	else:
-		path_index = -1
+		path_index = 0
 		_advance_path()
 
 func _advance_path() -> bool:
@@ -437,12 +433,32 @@ func _advance_path() -> bool:
 	_set_target(_vary_pos_from_coord(coord_x, coord_y))
 	return true
 
-func can_interupt() -> bool:
-	return (
-		task != MinionTask.RALLY &&
-		task != MinionTask.DIG &&
-		task != MinionTask.FIGHT &&
-		!prisoner)
+func can_start_rally() -> bool:
+	if prisoner:
+		return false
+
+	if task == MinionTask.RALLY:
+		return false
+
+	if task == MinionTask.DIG:
+		return false
+
+	if task == MinionTask.FIGHT || task == MinionTask.ATTACK:
+		return anger < 2
+
+	return true
+
+func can_start_attack() -> bool:
+	if prisoner:
+		return false
+
+	if task == MinionTask.FIGHT:
+		return false
+
+	if task == MinionTask.DIG || task == MinionTask.RALLY:
+		return anger >= 2
+
+	return true
 
 #func can_end_level() -> bool:
 #	return (
@@ -503,6 +519,8 @@ func hurt():
 	health -= 1
 
 	if health >= 0:
+		anger += 1
+
 		Sounds.play(AudioType.FIGHT)
 
 		var blood : Sprite = blood_scene.instance()
@@ -559,21 +577,18 @@ func _move_near(coord_x : int, coord_y : int):
 	path.append(_vary_pos_from_coord(coord_x, coord_y))
 	_set_next_task(MinionTask.MOVE)
 
-func _rally_near(coord_x : int, coord_y : int):
-	_last_rally_tiles.append(State.map.get_tile(coord_x, coord_y))
-	if _last_rally_tiles.size() > 5:
-		_last_rally_tiles.remove(0)
+#func _rally_near(coord_x : int, coord_y : int):
+#	_last_rally_tiles.append(State.map.get_tile(coord_x, coord_y))
+#	if _last_rally_tiles.size() > 5:
+#		_last_rally_tiles.remove(0)
+#
+#	path = PoolVector2Array()
+#	path.append(_vary_pos_from_coord(coord_x, coord_y))
+#	_set_next_task(MinionTask.RALLY)
 
-	path = PoolVector2Array()
-	path.append(_vary_pos_from_coord(coord_x, coord_y))
+func _rally(path : PoolVector2Array):
+	self.path = path
 	_set_next_task(MinionTask.RALLY)
-
-func _is_valid_rally_tile(rally_target_tile : Tile) -> bool:
-	if rally_target_tile.rally_countdown == 0:
-		return false
-
-	return !_last_rally_tiles.has(rally_target_tile)
-
 
 func _vary_pos_from_coord(coord_x : int, coord_y : int) -> Vector2:
 	var pos_x := coord_x * 32.0 + 16.0

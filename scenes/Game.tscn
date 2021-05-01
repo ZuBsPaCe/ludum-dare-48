@@ -485,6 +485,7 @@ smoothing_speed = 20.0
 editor_draw_limits = true
 
 [node name="RallyDebug" type="Node2D" parent="."]
+visible = false
 script = ExtResource( 42 )
 
 [node name="HUD" type="CanvasLayer" parent="."]
