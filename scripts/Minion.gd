@@ -124,6 +124,10 @@ func setup(faction : int, archer = false, prisoner = false) -> void:
 	if prisoner:
 		$Sprites/Pickaxe.visible = false
 
+	var init_coord := Coord.new()
+	init_coord.set_vector(position)
+	tile = State.map.get_tile(init_coord.x, init_coord.y)
+
 
 func _process(delta: float) -> void:
 	task_cooldown.step(delta)
@@ -140,11 +144,10 @@ func _process(delta: float) -> void:
 func _physics_process(delta: float) -> void:
 	check_coord.set_vector(position)
 	if check_coord.x != coord.x || check_coord.y != coord.y:
-		if tile:
-			if faction == 0:
-				tile.minions.erase(self)
-			else:
-				tile.monsters.erase(self)
+		if faction == 0:
+			tile.minions.erase(self)
+		else:
+			tile.monsters.erase(self)
 		coord.set_vector(position)
 		tile = State.map.get_tile(coord.x, coord.y)
 		if faction == 0:
@@ -192,6 +195,9 @@ func _physics_process(delta: float) -> void:
 					for prisoner_tile in prisoner_tiles:
 						if prisoner_tile.prisoners.size() > 0:
 							for freed_prisoner in prisoner_tile.prisoners:
+								if !is_instance_valid(freed_prisoner):
+									# Could have died due to a bomg :(
+									continue
 								freed_prisoner.prisoner = false
 								freed_prisoner.pickaxe.visible = true
 								State.minions.append(freed_prisoner)
@@ -523,17 +529,22 @@ func hurt():
 
 		Sounds.play(AudioType.FIGHT)
 
-		var blood : Sprite = blood_scene.instance()
-		blood.position = position + Vector2(randf() * 10.0 - 5.0, randf() * 10.0 - 5.0) + Vector2(0, 8)
-		blood.rotation = PI / 4 * (randi() % 4)
-		State.entity_container.add_child(blood)
-
-		var blood_drop_particles = blood_drop_particles_scene.instance()
-		blood_drop_particles.position = position + Vector2(randf() * 10.0 - 5.0, randf() * 10.0 - 5.0) + Vector2(0, 8)
-		State.entity_container.add_child(blood_drop_particles)
+		show_blood_effect(State.entity_container)
+		show_blood_drop_effect(State.entity_container)
 
 	if health == 0:
 		die()
+
+func show_blood_effect(container : Node2D) -> void:
+	var blood : Sprite = blood_scene.instance()
+	blood.position = position + Vector2(randf() * 10.0 - 5.0, randf() * 10.0 - 5.0) + Vector2(0, 8)
+	blood.rotation = PI / 4 * (randi() % 4)
+	container.add_child(blood)
+
+func show_blood_drop_effect(container : Node2D) -> void:
+	var blood_drop_particles = blood_drop_particles_scene.instance()
+	blood_drop_particles.position = position + Vector2(randf() * 10.0 - 5.0, randf() * 10.0 - 5.0) + Vector2(0, 8)
+	container.add_child(blood_drop_particles)
 
 func die():
 	Sounds.play(AudioType.DIE)

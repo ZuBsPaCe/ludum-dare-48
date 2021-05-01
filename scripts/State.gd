@@ -6,6 +6,7 @@ const GameState = preload("res://scripts/GameState.gd").GameState
 var game_state = GameState.TITLE_SCREEN
 var minion_count : int
 var archer_count : int
+var bomb_count : int
 var map : Map
 var tilemap32 : TileMap
 
@@ -57,6 +58,7 @@ func _ready() -> void:
 func world_reset() -> void:
 	minion_count = 7
 	level_monster_count = 10
+	bomb_count = 10
 
 	# Part of minion_count
 	archer_count = 2
@@ -113,6 +115,3 @@ func game_reset():
 	monsters.clear()
 	minions.clear()
 	prisons.clear()
-
-
-

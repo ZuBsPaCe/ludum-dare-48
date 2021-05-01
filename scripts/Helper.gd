@@ -122,3 +122,16 @@ func raycast_minion(from_minion : Minion, to_minion : Minion) -> bool:
 		return false
 
 	return collider == to_minion
+
+func raycast_minion_to_pos(from_minion : Minion, to_pos : Vector2) -> bool:
+	var diff_vec := to_pos - from_minion.position
+#	raycast.clear_exceptions()
+#	raycast.add_exception(from_minion)
+	raycast.position = from_minion.position
+	raycast.cast_to = diff_vec
+	raycast.collision_mask = 1
+
+	raycast.force_raycast_update()
+
+	var collider := raycast.get_collider()
+	return collider == null

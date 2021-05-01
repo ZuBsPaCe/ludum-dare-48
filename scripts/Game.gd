@@ -4,22 +4,34 @@ const GameState = preload("res://scripts/GameState.gd").GameState
 const TileType = preload("res://scripts/TileType.gd").TileType
 const AudioType = preload("res://scripts/AudioType.gd").AudioType
 
+const bomb_distance := 160.0
+const bomb_distance_sq := bomb_distance * bomb_distance
+const bomb_distance_half := bomb_distance * 0.5
+const bomb_distance_double_sq := bomb_distance_sq * 2.0
+
 var cursor_dig = preload("res://sprites/CursorDig.png")
 var cursor_rally = preload("res://sprites/CursorRally.png")
+var cursor_bomb = preload("res://sprites/CursorBomb.png")
 
 export(PackedScene) var minion_scene
 export(PackedScene) var dig_highlight_scene
 export(PackedScene) var rally_highlight_scene
 export(PackedScene) var portal_scene
+export(PackedScene) var explosion_scene
 
 onready var _tilemap32 := $TileMap32
 onready var _entity_container := $EntityContainer
+onready var _explosion_container := $ExplosionContainer
 onready var _highlight_container := $HighlightContainer
 onready var _camera := $GameCamera
 onready var _cursor_highlight := $CursorHighlight
+onready var _bomb_indicator := $BombIndicator
+onready var _bomb_indicator_part := $BombIndicator/BombIndicatorPartSprite
 onready var _dig_button := $HUD/MarginContainer/HBoxContainer/DigButton
 onready var _rally_button := $HUD/MarginContainer/HBoxContainer/RallyButton
+onready var _bomb_button := $HUD/MarginContainer/HBoxContainer/BombButton
 onready var _raycast := $RayCast2D
+onready var _bomb_count_label := $HUD/MarginContainer/HBoxContainer/BombButton/BombCount
 
 
 var title_music_target := -80.0
@@ -54,7 +66,8 @@ var _offsets8 := [
 
 enum ToolType {
 	DIG,
-	RALLY
+	RALLY,
+	BOMB
 }
 
 
@@ -315,6 +328,67 @@ func _process(delta: float) -> void:
 				if Input.is_action_just_released("command"):
 					_command_type = CommandType.NONE
 
+			ToolType.BOMB:
+				var valid := false
+				var nearest_minion_distance_sq := 0
+				var nearest_minion = null
+				var nearest_minion_visible = false
+
+				var has_bombs := State.bomb_count > 0
+
+				if has_bombs:
+					for minion in State.minions:
+						var minion_pos : Vector2 = minion.position + Vector2(0, -8.0)
+						var distance_sq = minion_pos.distance_to(mouse_pos)
+						if distance_sq <= bomb_distance_double_sq:
+							var minion_visible : bool = Helper.raycast_minion_to_pos(minion, mouse_pos)
+
+							if nearest_minion == null || distance_sq < nearest_minion_distance_sq || !nearest_minion_visible && minion_visible:
+								nearest_minion = minion
+								nearest_minion_distance_sq = distance_sq
+								nearest_minion_visible = minion_visible
+
+				var can_bomb : bool = (
+					has_bombs &&
+					mouse_tile == TileType.GROUND &&
+					nearest_minion != null &&
+					nearest_minion_visible &&
+					nearest_minion_distance_sq <= bomb_distance_sq)
+
+				if has_bombs && nearest_minion != null:
+					_bomb_indicator.position = nearest_minion.position + Vector2(0, -8.0)
+					_bomb_indicator.rotation = Vector2.DOWN.angle_to(nearest_minion.position - mouse_pos)
+					_bomb_indicator_part.visible = nearest_minion_visible
+					_bomb_indicator.visible = true
+				else:
+					_bomb_indicator.visible = false
+
+				if can_bomb:
+					if Input.is_action_just_pressed("command") && !_mouse_on_button:
+						State.bomb_count -= 1
+						_bomb_count_label.text = str(State.bomb_count)
+
+						var entities := []
+						for tile in Helper.get_tile_circle(mouse_coord.x, mouse_coord.y, 8):
+							for monster in tile.monsters:
+								if monster.position.distance_to(mouse_pos) > bomb_distance_half:
+									continue
+								monster.show_blood_effect(State.entity_container)
+								entities.append(monster)
+							for minion in tile.minions:
+								if minion.position.distance_to(mouse_pos) > bomb_distance_half:
+									continue
+								minion.show_blood_effect(State.entity_container)
+								entities.append(minion)
+
+						var explosion : Node2D = explosion_scene.instance()
+						explosion.position = mouse_pos
+						explosion.rotation = randf() * 2 * PI
+						_explosion_container.add_child(explosion)
+
+						for entity in entities:
+							entity.show_blood_drop_effect(_explosion_container)
+							entity.die()
 
 		if _dig_traverse_cooldown.done:
 			_dig_traverse_cooldown.restart()
@@ -349,6 +423,8 @@ func _process(delta: float) -> void:
 			set_tool(ToolType.DIG)
 		elif Input.is_action_just_pressed("tool2"):
 			set_tool(ToolType.RALLY)
+		elif Input.is_action_just_pressed("tool3"):
+			set_tool(ToolType.BOMB)
 
 
 func world_reset() -> void:
@@ -356,6 +432,8 @@ func world_reset() -> void:
 
 func game_reset() -> void:
 	_cursor_highlight.visible = false
+	_bomb_indicator.visible = false
+
 	_dig_button.pressed = true
 	_rally_button.pressed = false
 
@@ -389,6 +467,8 @@ func game_start() -> void:
 func map_generate(width : int, height : int) -> void:
 	_camera.limit_right = width * 32
 	_camera.limit_bottom = height * 32
+	_bomb_count_label.text = str(State.bomb_count)
+
 
 	_map.setup(width, height, TileType.DIRT)
 
@@ -773,12 +853,21 @@ func _on_Button_mouse_exited() -> void:
 func _on_DigButton_toggled(button_pressed: bool) -> void:
 	if button_pressed:
 		_rally_button.pressed = false
+		_bomb_button.pressed = false
 		set_tool(ToolType.DIG)
 
 func _on_RallyButton_toggled(button_pressed: bool) -> void:
 	if button_pressed:
 		_dig_button.pressed = false
+		_bomb_button.pressed = false
 		set_tool(ToolType.RALLY)
+
+func _on_BombButton_toggled(button_pressed: bool) -> void:
+	if button_pressed:
+		_dig_button.pressed = false
+		_rally_button.pressed = false
+		set_tool(ToolType.BOMB)
+
 
 func _on_MenuButton_pressed() -> void:
 	switch_state(GameState.GAME_PAUSED)
@@ -789,17 +878,33 @@ func set_tool(tool_type) -> void:
 
 	_dig_button.disabled = false
 	_rally_button.disabled = false
+	_bomb_button.disabled = false
 
 	match tool_type:
 		ToolType.DIG:
 			Input.set_custom_mouse_cursor(cursor_dig, 0, Vector2(16, 16))
 			_dig_button.disabled = true
 			_rally_button.pressed = false
+			_bomb_button.pressed = false
+
+			_bomb_indicator.visible = false
 
 		ToolType.RALLY:
 			Input.set_custom_mouse_cursor(cursor_rally, 0, Vector2(16, 16))
 			_rally_button.disabled = true
 			_dig_button.pressed = false
+			_bomb_button.pressed = false
+
+			_cursor_highlight.visible = false
+			_bomb_indicator.visible = false
+
+
+		ToolType.BOMB:
+			Input.set_custom_mouse_cursor(cursor_bomb, 0, Vector2(16, 16))
+			_bomb_button.disabled = true
+			_dig_button.pressed = false
+			_rally_button.pressed = false
+
 			_cursor_highlight.visible = false
 
 func switch_state(new_game_state):
@@ -929,6 +1034,3 @@ func _on_SoundSlider_value_changed(value: float) -> void:
 
 	State.config.set_value("Audio", "Sound", value)
 	State.config.save(State.config_path)
-
-
-
