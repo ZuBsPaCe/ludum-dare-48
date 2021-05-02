@@ -704,11 +704,17 @@ func game_traverse_dig_tiles():
 
 	var minion_to_path := {}
 	var minion_to_dig_tile := {}
+	var minion_to_manhattan_distance := {}
 
 	for dig_tile in _map.dig_tiles:
-		_map.astar.set_point_disabled(dig_tile.id, false)
+		if (_map.get_tile_type(dig_tile.x + 1, dig_tile.y) == TileType.ROCK &&
+			_map.get_tile_type(dig_tile.x - 1, dig_tile.y) == TileType.ROCK &&
+			_map.get_tile_type(dig_tile.x, dig_tile.y + 1) == TileType.ROCK &&
+			_map.get_tile_type(dig_tile.x, dig_tile.y - 1) == TileType.ROCK):
+			continue
 
-		var tiles := Helper.get_tile_circle(dig_tile.x, dig_tile.y, State.minion_view_distance + 4)
+		var astar_enabled := false
+		var tiles := Helper.get_tile_circle(dig_tile.x, dig_tile.y, State.minion_view_distance + 4, false)
 
 		for from_tile in tiles:
 			if from_tile.tile_type != TileType.GROUND:
@@ -716,22 +722,24 @@ func game_traverse_dig_tiles():
 
 			for minion in from_tile.minions:
 				if minion.can_start_digging():
+					var manhattan_distance := abs(minion.coord.x + from_tile.x) + abs(minion.coord.y + from_tile.y)
+					if minion_to_manhattan_distance.has(minion) && manhattan_distance > minion_to_manhattan_distance[minion]:
+						continue
+
+					if !astar_enabled:
+						_map.astar.set_point_disabled(dig_tile.id, false)
 
 					var path = _map.astar.get_point_path(minion.tile.id, dig_tile.id)
 
 					if path.size() == 0 || path.size() > State.minion_view_distance:
 						continue
 
-					if !minion_to_path.has(minion):
-						minion_to_path[minion] = path
-						minion_to_dig_tile[minion] = dig_tile
-					else:
-						var other_path = minion_to_path[minion]
-						if path.size() < other_path.size():
-							minion_to_path[minion] = path
-							minion_to_dig_tile[minion] = dig_tile
+					minion_to_path[minion] = path
+					minion_to_dig_tile[minion] = dig_tile
+					minion_to_manhattan_distance[manhattan_distance] = manhattan_distance
 
-		_map.astar.set_point_disabled(dig_tile.id, true)
+		if astar_enabled:
+			_map.astar.set_point_disabled(dig_tile.id, true)
 
 	for minion in minion_to_path:
 		var path = minion_to_path[minion]

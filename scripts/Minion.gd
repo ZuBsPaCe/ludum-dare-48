@@ -142,9 +142,6 @@ func _physics_process(delta: float) -> void:
 		if rally_immune < 0.0:
 			rally_immune = 0.0
 
-
-	if faction == 1:
-		return
 	check_coord.set_vector(position)
 	if check_coord.x != coord.x || check_coord.y != coord.y:
 		if faction == 0:
@@ -252,20 +249,19 @@ func _physics_process(delta: float) -> void:
 		rally_immune = max(rally_immune - delta, 0.0)
 
 	if faction == 0:
-		if can_start_rally():
-			if rally_immune == 0.0 && tile.rally_countdown > 0.0 && tile.rally_time > 0.25:
-				if tile.rally_end_tiles.size() == 0:
-					#rally_immune = State.rally_immune
-					pass
+		if tile.rally_countdown > 0.0 && can_start_rally() && tile.rally_time > 0.25 && rally_immune == 0.0:
+			if tile.rally_end_tiles.size() == 0:
+				#rally_immune = State.rally_immune
+				pass
+			else:
+				var rally_end_tile : Tile = tile.rally_end_tiles[randi() % tile.rally_end_tiles.size()]
+
+				var path = State.map.astar.get_point_path(tile.id, rally_end_tile.id)
+
+				if path.size() == 0 || path.size() > 25:
+					rally_immune = State.rally_immune
 				else:
-					var rally_end_tile : Tile = tile.rally_end_tiles[randi() % tile.rally_end_tiles.size()]
-
-					var path = State.map.astar.get_point_path(tile.id, rally_end_tile.id)
-
-					if path.size() == 0 || path.size() > 25:
-						rally_immune = State.rally_immune
-					else:
-						_rally(path)
+					_rally(path)
 
 	if prisoner && next_task != null:
 		if next_task != MinionTask.IDLE && next_task != MinionTask.ROAM && next_task != MinionTask.MOVE:
@@ -414,13 +410,6 @@ func _move(delta : float) -> void:
 	if task_cooldown.timer >= delta:
 		move_and_slide(target_vec)
 
-	if target_vec.x >= 0.0:
-		animation_minion.play("WalkRight")
-		animation_pickaxe.play("WalkRight")
-	else:
-		animation_minion.play("WalkLeft")
-		animation_pickaxe.play("WalkLeft")
-
 func _strike() -> void:
 	strike_cooldown.restart()
 	strike_hit_cooldown.restart()
@@ -444,6 +433,13 @@ func _set_target(new_target_pos : Vector2) -> void:
 
 	task_cooldown.restart(time)
 
+	if target_vec.x >= 0.0:
+		animation_minion.play("WalkRight")
+		animation_pickaxe.play("WalkRight")
+	else:
+		animation_minion.play("WalkLeft")
+		animation_pickaxe.play("WalkLeft")
+
 func _start_path() -> void:
 	if path.size() == 0:
 		task_cooldown.set_done()
@@ -465,13 +461,7 @@ func _advance_path() -> bool:
 	return true
 
 func can_start_rally() -> bool:
-	if prisoner:
-		return false
-
-	if task == MinionTask.RALLY:
-		return false
-
-	if task == MinionTask.DIG:
+	if task == MinionTask.DIG || task == MinionTask.RALLY || prisoner:
 		return false
 
 	if task == MinionTask.FIGHT || task == MinionTask.ATTACK:

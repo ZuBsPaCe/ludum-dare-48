@@ -643,6 +643,7 @@ visible = false
 script = ExtResource( 42 )
 
 [node name="WaypoingsDebug" type="Node2D" parent="."]
+visible = false
 script = ExtResource( 42 )
 
 [node name="HUD" type="CanvasLayer" parent="."]
