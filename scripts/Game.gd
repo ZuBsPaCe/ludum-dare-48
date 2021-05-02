@@ -472,7 +472,7 @@ func map_generate(width : int, height : int) -> void:
 	var start_y := start_radius + 2
 	var start_coord := Coord.new(start_x, start_y)
 
-	#start_radius = 8
+	start_radius = 20
 
 #	for x in range(2, width-2):
 #		for y in range(2, 11):
@@ -664,6 +664,9 @@ func map_fill() -> void:
 					_tilemap32.set_cell(x, y, 0)
 					_map.set_tile_type(x, y, TileType.GROUND)
 					monster_tiles.append(_map.get_tile(x, y))
+
+	_map.finalize_waypoints()
+
 
 	if minion_tiles.size() > 0:
 		for i in range(State.minion_count):

@@ -41,7 +41,7 @@
 [ext_resource path="res://sprites/MenuButtonHover.png" type="Texture" id=39]
 [ext_resource path="res://scripts/LevelStart.gd" type="Script" id=40]
 [ext_resource path="res://scripts/GameOver.gd" type="Script" id=41]
-[ext_resource path="res://scripts/RallyDebug.gd" type="Script" id=42]
+[ext_resource path="res://scripts/WaypointsDebug.gd" type="Script" id=42]
 [ext_resource path="res://scenes/BombButton.tscn" type="PackedScene" id=43]
 [ext_resource path="res://scenes/Button.tscn" type="PackedScene" id=44]
 [ext_resource path="res://scenes/Explosion.tscn" type="PackedScene" id=46]
@@ -640,6 +640,9 @@ editor_draw_limits = true
 
 [node name="RallyDebug" type="Node2D" parent="."]
 visible = false
+script = ExtResource( 42 )
+
+[node name="WaypoingsDebug" type="Node2D" parent="."]
 script = ExtResource( 42 )
 
 [node name="HUD" type="CanvasLayer" parent="."]

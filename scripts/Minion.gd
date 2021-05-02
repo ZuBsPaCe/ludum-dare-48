@@ -130,7 +130,7 @@ func setup(faction : int, archer = false, prisoner = false) -> void:
 		$Sprites/Pickaxe.visible = false
 
 
-func _process(delta: float) -> void:
+func _physics_process(delta: float) -> void:
 	task_cooldown.step(delta)
 	strike_cooldown.step(delta)
 	strike_hit_cooldown.step(delta)
@@ -142,13 +142,21 @@ func _process(delta: float) -> void:
 		if rally_immune < 0.0:
 			rally_immune = 0.0
 
-func _physics_process(delta: float) -> void:
+
+	if faction == 1:
+		return
 	check_coord.set_vector(position)
 	if check_coord.x != coord.x || check_coord.y != coord.y:
 		if faction == 0:
 			tile.minions.erase(self)
 		else:
 			tile.monsters.erase(self)
+
+#		var debug_coord := Coord.new()
+#		debug_coord.set_vector(position)
+#		var debug_tile = State.map.get_tile(debug_coord.x, debug_coord.y)
+#		assert(debug_tile.tile_type == TileType.GROUND)
+
 		coord.set_vector(position)
 		tile = State.map.get_tile(coord.x, coord.y)
 
@@ -169,9 +177,8 @@ func _physics_process(delta: float) -> void:
 			if task == MinionTask.DIG:
 				dig_tile.health -= 1
 
-				assert(dig_tile.minions.size() == 0)
-
 				if dig_tile.health >= 0:
+					assert(dig_tile.minions.size() == 0)
 					Sounds.play(AudioType.DIG)
 
 				if dig_tile.health == 0:
@@ -288,6 +295,12 @@ func _physics_process(delta: float) -> void:
 			MinionTask.ROAM:
 				if faction == 0:
 					_set_target(tile.coord.to_random_pos())
+
+#					var debug_coord := Coord.new()
+#					debug_coord.set_vector(target_pos)
+#					var debug_tile = State.map.get_tile(debug_coord.x, debug_coord.y)
+#					assert(debug_tile == tile)
+
 				else:
 					_set_target(Helper.get_walkable_pos(coord))
 				task = MinionTask.ROAM
@@ -348,13 +361,13 @@ func _physics_process(delta: float) -> void:
 					_set_next_task(MinionTask.ROAM)
 
 		MinionTask.ROAM:
-			_move()
+			_move(delta)
 
 			if task_cooldown.done:
 				_set_next_task(MinionTask.IDLE)
 
 		MinionTask.GO_DIG:
-			_move()
+			_move(delta)
 
 			if task_cooldown.done:
 				if !_advance_path():
@@ -368,13 +381,13 @@ func _physics_process(delta: float) -> void:
 				dig_tile = null
 
 		MinionTask.MOVE:
-			_move()
+			_move(delta)
 
 			if task_cooldown.done:
 				_set_next_task(MinionTask.IDLE)
 
 		MinionTask.RALLY:
-			_move()
+			_move(delta)
 
 			if task_cooldown.done:
 				if !_advance_path():
@@ -383,18 +396,24 @@ func _physics_process(delta: float) -> void:
 		MinionTask.ATTACK:
 			# ATTACK can be interrupted. After first successful
 			# Strike it switches to FIGHT which can't be interrupted anymore
-			_attack()
+			_attack(delta)
 
 		MinionTask.FIGHT:
-			_attack()
+			_attack(delta)
 
 
 
 func _set_next_task(new_task):
 	next_task = new_task
 
-func _move() -> void:
-	move_and_slide(target_vec)
+func _move(delta : float) -> void:
+	# ATTENTION: NEVER overstep the target position. Bad things will happen!
+	# Also, we simply ignore timer values below delta. It's hard/impossible to correct
+	# this without taking into account collisions with dig-tiles, because target positions
+	# lie WITHIN dig tiles, blocking the path, which can suddenly disappear, dub by another minion.
+	if task_cooldown.timer >= delta:
+		move_and_slide(target_vec)
+
 	if target_vec.x >= 0.0:
 		animation_minion.play("WalkRight")
 		animation_pickaxe.play("WalkRight")
@@ -500,7 +519,7 @@ func attack(victim : Minion):
 	_victim_visible = true
 	_set_next_task(MinionTask.ATTACK)
 
-func _attack():
+func _attack(delta : float):
 	if attack_cooldown.done:
 		if (is_instance_valid(_victim) && !_victim.dead):
 			if Helper.raycast_minion(self, _victim):
@@ -521,7 +540,7 @@ func _attack():
 		_victim = null
 		_set_next_task(MinionTask.IDLE)
 	elif task_cooldown.running:
-		_move()
+		_move(delta)
 	else:
 		# At last known pos. Victim gone...
 		_victim = null
@@ -591,6 +610,7 @@ func flee():
 
 func _move_near(coord_x : int, coord_y : int):
 	path = PoolVector2Array()
+	path.append(position)
 	path.append(_vary_pos_from_coord(coord_x, coord_y))
 	_set_next_task(MinionTask.MOVE)
 
