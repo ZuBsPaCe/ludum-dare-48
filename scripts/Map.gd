@@ -29,6 +29,8 @@ func setup(width : int, height : int, default_value) -> void:
 	dig_tiles.clear()
 	rally_tiles.clear()
 
+	auto_fix_waypoints = false
+
 	self.width = width
 	self.height = height
 

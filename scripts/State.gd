@@ -55,6 +55,8 @@ var prisons := []
 var entity_container : Node2D
 
 
+var tile_circle := []
+
 func _ready() -> void:
 	pass
 

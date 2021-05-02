@@ -100,6 +100,8 @@ var _level_done := false
 
 var _loading := true
 
+var _tiles := []
+
 
 func _ready() -> void:
 	State.config = ConfigFile.new()
@@ -287,12 +289,12 @@ func _process(delta: float) -> void:
 
 					if set_rally:
 
-						var rally_current_tiles = Helper.get_tile_circle(mouse_coord.x, mouse_coord.y, State.rally_radius)
-						for i in range(rally_current_tiles.size() - 1, -1, -1):
-							if rally_current_tiles[i].tile_type != TileType.GROUND:
-								rally_current_tiles.remove(i)
+						Helper.get_tile_circle(_tiles, mouse_coord.x, mouse_coord.y, State.rally_radius)
+						for i in range(_tiles.size() - 1, -1, -1):
+							if _tiles[i].tile_type != TileType.GROUND:
+								_tiles.remove(i)
 
-						for current_tile in rally_current_tiles:
+						for current_tile in _tiles:
 							var distance := mouse_coord.distance_to(current_tile.coord)
 							var rally_countdown := (1.0 - distance / (State.rally_radius + 1)) * State.rally_duration
 
@@ -309,16 +311,16 @@ func _process(delta: float) -> void:
 								_highlight_container.add_child(rally_highlight)
 								current_tile.rally_highlight = rally_highlight
 
-						if rally_current_tiles.size() > 0:
+						if _tiles.size() > 0:
 							for last_tile in _rally_last_tiles:
-								if last_tile in rally_current_tiles:
+								if last_tile in _tiles:
 									continue
 
-								last_tile.rally_end_tiles.append_array(rally_current_tiles)
+								last_tile.rally_end_tiles.append_array(_tiles)
 								for minion in last_tile.minions:
 									minion.rally_immune = 0
 
-							_rally_last_tiles = rally_current_tiles
+							_rally_last_tiles = _tiles.duplicate()
 
 				if Input.is_action_just_released("command"):
 					_command_type = CommandType.NONE
@@ -364,7 +366,8 @@ func _process(delta: float) -> void:
 						_bomb_count_label.text = str(State.bomb_count)
 
 						var entities := []
-						for tile in Helper.get_tile_circle(mouse_coord.x, mouse_coord.y, 8):
+						Helper.get_tile_circle(_tiles, mouse_coord.x, mouse_coord.y, 8)
+						for tile in _tiles:
 							for monster in tile.monsters:
 								if monster.position.distance_to(mouse_pos) > bomb_distance_half:
 									continue
@@ -400,11 +403,11 @@ func _process(delta: float) -> void:
 			_spawn_cooldown.restart()
 
 			for portal in State.end_portals:
-				var tiles := Helper.get_tile_circle(portal.tile.coord.x, portal.tile.coord.y, 2, false)
+				Helper.get_tile_circle(_tiles, portal.tile.coord.x, portal.tile.coord.y, 2, false)
 
-				while tiles.size() > 0:
-					var index = randi() % tiles.size()
-					var check_tile = tiles[index]
+				while _tiles.size() > 0:
+					var index = randi() % _tiles.size()
+					var check_tile = _tiles[index]
 					if check_tile.tile_type == TileType.GROUND:
 						var monster : Minion = minion_scene.instance()
 						monster.setup(1, randf() < State.monster_archer_fraction)
@@ -412,7 +415,7 @@ func _process(delta: float) -> void:
 						_entity_container.add_child(monster)
 						break
 
-					tiles.remove(index)
+					_tiles.remove(index)
 
 		if Input.is_action_just_pressed("tool1"):
 			set_tool(ToolType.DIG)
@@ -472,7 +475,7 @@ func map_generate(width : int, height : int) -> void:
 	var start_y := start_radius + 2
 	var start_coord := Coord.new(start_x, start_y)
 
-	start_radius = 20
+	#start_radius = 5
 
 #	for x in range(2, width-2):
 #		for y in range(2, 11):
@@ -480,7 +483,7 @@ func map_generate(width : int, height : int) -> void:
 
 	_map.set_tile_type(start_coord.x, start_coord.y, TileType.START_PORTAL)
 
-	var start_tiles := Helper.get_tile_circle(start_x, start_y, start_radius, false)
+	var start_tiles := Helper.get_tile_circle_new(start_x, start_y, start_radius, false)
 	for tile in start_tiles:
 		_map.set_tile_type(tile.x, tile.y, TileType.MINION_START)
 
@@ -512,7 +515,7 @@ func map_generate(width : int, height : int) -> void:
 
 		_map.set_tile_type(end_coord.x, end_coord.y, TileType.END_PORTAL)
 
-		var end_tiles := Helper.get_tile_circle(end_x, end_y, end_radius, false)
+		var end_tiles := Helper.get_tile_circle_new(end_x, end_y, end_radius, false)
 		for tile in end_tiles:
 			_map.set_tile_type(tile.x, tile.y, TileType.MONSTER_START)
 
@@ -532,11 +535,11 @@ func map_generate(width : int, height : int) -> void:
 			if center.distance_to(start_coord) <= radius + start_radius + 3:
 				continue
 
-			var cave_tiles := Helper.get_tile_circle(center.x, center.y, radius)
+			var cave_tiles := Helper.get_tile_circle_new(center.x, center.y, radius)
 
 			if prison_count < total_prison_count:
 				var prison_center_tile = cave_tiles[randi() % cave_tiles.size()]
-				var check_prison_tiles := Helper.get_tile_circle(prison_center_tile.x, prison_center_tile.y, 8, true)
+				var check_prison_tiles := Helper.get_tile_circle_new(prison_center_tile.x, prison_center_tile.y, 8, true)
 
 				var valid_prison := true
 				for check_tile in check_prison_tiles:
@@ -545,7 +548,7 @@ func map_generate(width : int, height : int) -> void:
 						break
 
 				if valid_prison:
-					var prison_tiles := Helper.get_tile_circle(prison_center_tile.x, prison_center_tile.y, 2, true)
+					var prison_tiles := Helper.get_tile_circle_new(prison_center_tile.x, prison_center_tile.y, 2, true)
 					var inner_tiles := prison_tiles.duplicate()
 
 					var inner_tile_count := 1 + randi() % (prison_tiles.size() - 1)
@@ -594,7 +597,7 @@ func map_generate(width : int, height : int) -> void:
 			if center.distance_to(start_coord) <= radius + start_radius + 3:
 				continue
 
-			var rock_tiles := Helper.get_tile_circle(center.x, center.y, radius)
+			var rock_tiles := Helper.get_tile_circle_new(center.x, center.y, radius)
 			for tile in rock_tiles:
 				if tile.tile_type == TileType.DIRT:
 					if randi() % 3 == 0:
@@ -633,7 +636,7 @@ func map_fill() -> void:
 					_map.set_tile_type(x, y, TileType.GROUND)
 
 				TileType.START_PORTAL:
-					_tilemap32.set_cell(x, y, 0)
+					_tilemap32.set_cell(x, y, 4)
 					_map.set_tile_type(x, y, TileType.ROCK)
 
 					var start_portal = portal_scene.instance()
@@ -643,7 +646,7 @@ func map_fill() -> void:
 					State.start_portals.append(start_portal)
 
 				TileType.END_PORTAL:
-					_tilemap32.set_cell(x, y, 0)
+					_tilemap32.set_cell(x, y, 4)
 
 					var end_portal = portal_scene.instance()
 					end_portal.tile = tile
@@ -704,7 +707,7 @@ func game_traverse_dig_tiles():
 
 	var minion_to_path := {}
 	var minion_to_dig_tile := {}
-	var minion_to_manhattan_distance := {}
+	var minion_to_distance := {}
 
 	for dig_tile in _map.dig_tiles:
 		if (_map.get_tile_type(dig_tile.x + 1, dig_tile.y) == TileType.ROCK &&
@@ -714,17 +717,32 @@ func game_traverse_dig_tiles():
 			continue
 
 		var astar_enabled := false
-		var tiles := Helper.get_tile_circle(dig_tile.x, dig_tile.y, State.minion_view_distance + 4, false)
+		Helper.get_tile_circle(State.tile_circle, dig_tile.x, dig_tile.y, State.minion_view_distance, false)
 
-		for from_tile in tiles:
+		var tile_count := State.tile_circle.size()
+
+		var tile_index := randi() % tile_count
+		for i in range(0, tile_count):
+			tile_index = posmod(tile_index + 1, tile_count)
+
+			var from_tile : Tile = State.tile_circle[tile_index]
 			if from_tile.tile_type != TileType.GROUND:
 				continue
 
 			for minion in from_tile.minions:
 				if minion.can_start_digging():
-					var manhattan_distance := abs(minion.coord.x + from_tile.x) + abs(minion.coord.y + from_tile.y)
-					if minion_to_manhattan_distance.has(minion) && manhattan_distance > minion_to_manhattan_distance[minion]:
-						continue
+					#var distance : float = minion.coord.distance_to_squared(dig_tile.coord)
+					var distance := abs(minion.coord.x - dig_tile.coord.x) + abs(minion.coord.y - dig_tile.coord.y)
+
+					if minion_to_distance.has(minion):
+						var best_distance : float= minion_to_distance[minion]
+						if randf() >= 0.5:
+							if distance > best_distance:
+								continue
+						else:
+							if distance > best_distance - 4:
+								continue
+
 
 					if !astar_enabled:
 						_map.astar.set_point_disabled(dig_tile.id, false)
@@ -736,7 +754,7 @@ func game_traverse_dig_tiles():
 
 					minion_to_path[minion] = path
 					minion_to_dig_tile[minion] = dig_tile
-					minion_to_manhattan_distance[manhattan_distance] = manhattan_distance
+					minion_to_distance[minion] = distance
 
 		if astar_enabled:
 			_map.astar.set_point_disabled(dig_tile.id, true)

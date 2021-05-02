@@ -84,6 +84,8 @@ func _ready() -> void:
 	$Sprites/Feather.visible = archer
 
 	if in_animation:
+		collision_layer = 0
+		collision_mask = 0
 		set_process(false)
 		set_physics_process(false)
 		return
@@ -196,8 +198,8 @@ func _physics_process(delta: float) -> void:
 							var check_tile : Tile = check_tiles[0]
 							check_tiles.remove(0)
 
-							var next_tiles = Helper.get_tile_circle(check_tile.x, check_tile.y, 1, false)
-							for next_tile in next_tiles:
+							Helper.get_tile_neighbours_4(State.tile_circle, check_tile.x, check_tile.y)
+							for next_tile in State.tile_circle:
 								if next_tile.inner_prison && !prisoner_tiles.has(next_tile):
 									check_tiles.append(next_tile)
 									prisoner_tiles.append(next_tile)
@@ -336,10 +338,10 @@ func _physics_process(delta: float) -> void:
 			if task_cooldown.done:
 				var can_dig := false
 				if _digger:
-					var near_tiles = Helper.get_tile_circle(coord.x, coord.y, 6, false)
-					while near_tiles.size() > 0:
-						var index = randi() % near_tiles.size()
-						var check_tile = near_tiles[index]
+					Helper.get_tile_circle(State.tile_circle, coord.x, coord.y, 6, false)
+					while State.tile_circle.size() > 0:
+						var index = randi() % State.tile_circle.size()
+						var check_tile = State.tile_circle[index]
 						if check_tile.tile_type == TileType.DIRT:
 							State.map.astar.set_point_disabled(check_tile.id, false)
 							var path = State.map.astar.get_point_path(tile.id, check_tile.id)
@@ -349,7 +351,7 @@ func _physics_process(delta: float) -> void:
 								can_dig = true
 								dig(path, check_tile)
 								break
-						near_tiles.remove(index)
+						State.tile_circle.remove(index)
 
 
 

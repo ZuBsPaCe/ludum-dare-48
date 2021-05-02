@@ -10,8 +10,24 @@ var raycast : RayCast2D
 func _ready() -> void:
 	pass
 
-func get_tile_circle(center_x : int, center_y : int, radius : int, return_self = true) -> Array:
-	var tiles := []
+func get_tile_neighbours_4(result : Array, center_x : int, center_y : int) -> void:
+	result.clear()
+	if center_y < map.height - 1:
+		result.append(map.get_tile(center_x, center_y + 1))
+	if center_x > 0:
+		result.append(map.get_tile(center_x - 1, center_y))
+	if center_x < map.width - 1:
+		result.append(map.get_tile(center_x + 1, center_y))
+	if center_y > 0:
+		result.append(map.get_tile(center_x, center_y - 1))
+
+func get_tile_circle_new(center_x : int, center_y : int, radius : int, return_self = true) -> Array:
+	var result := []
+	get_tile_circle(result, center_x, center_y, radius, return_self)
+	return result
+
+func get_tile_circle(result : Array, center_x : int, center_y : int, radius : int, return_self = true) -> void:
+	result.clear()
 	var radius_sq := radius * radius
 	for y in range(center_y - radius, center_y + radius + 1):
 		for x in range(center_x - radius, center_x + radius + 1):
@@ -23,9 +39,8 @@ func get_tile_circle(center_x : int, center_y : int, radius : int, return_self =
 
 			var diff_x := center_x - x
 			var diff_y := center_y - y
-			if diff_x * diff_x + diff_y * diff_y <= radius:
-				tiles.append(map.get_tile(x, y))
-	return tiles
+			if diff_x * diff_x + diff_y * diff_y <= radius_sq:
+				result.append(map.get_tile(x, y))
 
 func get_neighbour_tiles_ordered(center_x : int, center_y : int) -> Array:
 	var tiles := []
