@@ -10,6 +10,10 @@ var bomb_count : int
 var map : Map
 var tilemap32 : TileMap
 
+var increase_minion_count : int
+var increase_archer_count : int
+var increase_bomb_count : int
+
 var rally_radius : int
 var rally_duration : int
 var rally_immune : int
@@ -64,6 +68,11 @@ func world_reset() -> void:
 	archer_count = 2
 
 
+	increase_minion_count = 0
+	increase_archer_count = 0
+	increase_bomb_count = 0
+
+
 	rally_radius = 2
 	rally_duration = 15
 	rally_immune = 15
@@ -98,8 +107,8 @@ func increase_level():
 		minions_fled = 0
 		archers_fled = 0
 
-		minion_count = current_count
-		archer_count = archers_fled
+		minion_count = current_count + increase_minion_count + increase_archer_count
+		archer_count = archers_fled + increase_archer_count
 
 		for minion in minions:
 			if minion.archer:
@@ -108,6 +117,12 @@ func increase_level():
 		level_monster_count *= 1.5
 
 		spawn_cooldown = max(10, 45 - State.level * 6)
+
+		bomb_count += increase_bomb_count
+
+		increase_minion_count = 0
+		increase_archer_count = 0
+		increase_bomb_count = 0
 
 func game_reset():
 	start_portals.clear()

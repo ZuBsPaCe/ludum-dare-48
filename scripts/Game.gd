@@ -83,11 +83,6 @@ enum MapType{
 }
 
 
-enum SpecialType {
-	INTRO
-}
-
-
 
 var _map_type = MapType.CAVES
 
@@ -931,6 +926,17 @@ func switch_state(new_game_state):
 			track1_target = -80.0
 			_camera.position = Vector2.ZERO
 
+		GameState.MERCHANT:
+			$Screens/Title.visible = false
+			$HUD/MarginContainer.visible = false
+			$Merchant.visible = true
+			_camera.zoom = Vector2(1.0, 1.0)
+			Input.set_mouse_mode(Input.MOUSE_MODE_VISIBLE)
+			$Merchant.start()
+			title_music_target = -80
+			track1_target = -80.0
+			_camera.position = Vector2.ZERO
+
 		GameState.GAME:
 			_camera.zoom = Vector2(0.6, 0.6)
 			Input.set_mouse_mode(Input.MOUSE_MODE_VISIBLE)
@@ -1010,9 +1016,8 @@ func _on_SpecialIntro_stop_intro() -> void:
 	switch_state(GameState.GAME)
 
 
-
 func _on_LevelStart_stop_level_start() -> void:
-	switch_state(GameState.GAME)
+	switch_state(GameState.MERCHANT)
 
 
 func _on_GameOver_stop_game_over() -> void:
@@ -1034,3 +1039,4 @@ func _on_SoundSlider_value_changed(value: float) -> void:
 
 	State.config.set_value("Audio", "Sound", value)
 	State.config.save(State.config_path)
+

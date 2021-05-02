@@ -5,6 +5,7 @@ enum GameState {
 	LEVEL_START,
 
 	INTRO,
+	MERCHANT,
 
 	GAME,
 

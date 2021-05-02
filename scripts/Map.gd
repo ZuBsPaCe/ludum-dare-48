@@ -78,6 +78,9 @@ func set_tile_type(x : int, y : int, value) -> void:
 	if value == TileType.GROUND:
 		astar.set_point_disabled(id, false)
 		_check_nav_connections(tile)
+	else:
+		astar.set_point_disabled(id, true)
+		#_check_nav_connections(tile)
 
 
 func _check_nav_connections(tile : Tile) -> void:

@@ -42,9 +42,8 @@
 [ext_resource path="res://scripts/LevelStart.gd" type="Script" id=40]
 [ext_resource path="res://scripts/GameOver.gd" type="Script" id=41]
 [ext_resource path="res://scripts/RallyDebug.gd" type="Script" id=42]
-[ext_resource path="res://sprites/BombButtonHover.png" type="Texture" id=43]
-[ext_resource path="res://sprites/BombButtonPressed.png" type="Texture" id=44]
-[ext_resource path="res://sprites/BombButton.png" type="Texture" id=45]
+[ext_resource path="res://scenes/BombButton.tscn" type="PackedScene" id=43]
+[ext_resource path="res://scenes/Button.tscn" type="PackedScene" id=44]
 [ext_resource path="res://scenes/Explosion.tscn" type="PackedScene" id=46]
 [ext_resource path="res://sprites/IndicatorPart.png" type="Texture" id=47]
 [ext_resource path="res://sprites/IndicatorFull.png" type="Texture" id=48]
@@ -320,6 +319,143 @@ tracks/15/keys = {
 
 [sub_resource type="Animation" id=5]
 resource_name = "Default"
+length = 2.7
+tracks/0/type = "value"
+tracks/0/path = NodePath("Minion:position")
+tracks/0/interp = 1
+tracks/0/loop_wrap = true
+tracks/0/imported = false
+tracks/0/enabled = true
+tracks/0/keys = {
+"times": PoolRealArray( 0, 1, 2 ),
+"transitions": PoolRealArray( 1, 1, 1 ),
+"update": 0,
+"values": [ Vector2( 1072, 512 ), Vector2( 888, 519.071 ), Vector2( 704, 503.515 ) ]
+}
+tracks/1/type = "method"
+tracks/1/path = NodePath(".")
+tracks/1/interp = 1
+tracks/1/loop_wrap = true
+tracks/1/imported = false
+tracks/1/enabled = true
+tracks/1/keys = {
+"times": PoolRealArray( 0, 0.4, 1.7, 2, 2.001 ),
+"transitions": PoolRealArray( 1, 1, 1, 1, 1 ),
+"values": [ {
+"args": [  ],
+"method": "minion_walk_left"
+}, {
+"args": [  ],
+"method": "initialize_offer"
+}, {
+"args": [  ],
+"method": "start_talking"
+}, {
+"args": [  ],
+"method": "minion_idle_left"
+}, {
+"args": [  ],
+"method": "stop_talking"
+} ]
+}
+tracks/2/type = "value"
+tracks/2/path = NodePath("CanvasLayer/Label:modulate")
+tracks/2/interp = 1
+tracks/2/loop_wrap = true
+tracks/2/imported = false
+tracks/2/enabled = true
+tracks/2/keys = {
+"times": PoolRealArray( 0, 1.5, 2 ),
+"transitions": PoolRealArray( 1, 1, 1 ),
+"update": 0,
+"values": [ Color( 1, 1, 1, 0 ), Color( 1, 1, 1, 0 ), Color( 1, 1, 1, 1 ) ]
+}
+tracks/3/type = "value"
+tracks/3/path = NodePath("CanvasLayer/Label:rect_position")
+tracks/3/interp = 1
+tracks/3/loop_wrap = true
+tracks/3/imported = false
+tracks/3/enabled = true
+tracks/3/keys = {
+"times": PoolRealArray( 0, 1.5, 2 ),
+"transitions": PoolRealArray( 1, 1, 1 ),
+"update": 0,
+"values": [ Vector2( 508.495, 206.392 ), Vector2( 508.495, 206.392 ), Vector2( 508.495, 81.9411 ) ]
+}
+tracks/4/type = "value"
+tracks/4/path = NodePath("CanvasLayer/Button1:visible")
+tracks/4/interp = 1
+tracks/4/loop_wrap = true
+tracks/4/imported = false
+tracks/4/enabled = true
+tracks/4/keys = {
+"times": PoolRealArray( 0, 2 ),
+"transitions": PoolRealArray( 1, 1 ),
+"update": 1,
+"values": [ false, true ]
+}
+tracks/5/type = "value"
+tracks/5/path = NodePath("CanvasLayer/Button2:visible")
+tracks/5/interp = 1
+tracks/5/loop_wrap = true
+tracks/5/imported = false
+tracks/5/enabled = true
+tracks/5/keys = {
+"times": PoolRealArray( 0, 2.1 ),
+"transitions": PoolRealArray( 1, 1 ),
+"update": 1,
+"values": [ false, true ]
+}
+tracks/6/type = "value"
+tracks/6/path = NodePath("CanvasLayer/Button3:visible")
+tracks/6/interp = 1
+tracks/6/loop_wrap = true
+tracks/6/imported = false
+tracks/6/enabled = true
+tracks/6/keys = {
+"times": PoolRealArray( 0, 2.2 ),
+"transitions": PoolRealArray( 1, 1 ),
+"update": 1,
+"values": [ false, true ]
+}
+tracks/7/type = "value"
+tracks/7/path = NodePath("CanvasLayer/Button1:modulate")
+tracks/7/interp = 1
+tracks/7/loop_wrap = true
+tracks/7/imported = false
+tracks/7/enabled = true
+tracks/7/keys = {
+"times": PoolRealArray( 0, 2, 2.5 ),
+"transitions": PoolRealArray( 1, 1, 1 ),
+"update": 0,
+"values": [ Color( 1, 1, 1, 0 ), Color( 1, 1, 1, 0 ), Color( 1, 1, 1, 1 ) ]
+}
+tracks/8/type = "value"
+tracks/8/path = NodePath("CanvasLayer/Button2:modulate")
+tracks/8/interp = 1
+tracks/8/loop_wrap = true
+tracks/8/imported = false
+tracks/8/enabled = true
+tracks/8/keys = {
+"times": PoolRealArray( 0, 2.1, 2.6 ),
+"transitions": PoolRealArray( 1, 1, 1 ),
+"update": 0,
+"values": [ Color( 1, 1, 1, 0 ), Color( 1, 1, 1, 0 ), Color( 1, 1, 1, 1 ) ]
+}
+tracks/9/type = "value"
+tracks/9/path = NodePath("CanvasLayer/Button3:modulate")
+tracks/9/interp = 1
+tracks/9/loop_wrap = true
+tracks/9/imported = false
+tracks/9/enabled = true
+tracks/9/keys = {
+"times": PoolRealArray( 0, 2.2, 2.7 ),
+"transitions": PoolRealArray( 1, 1, 1 ),
+"update": 0,
+"values": [ Color( 1, 1, 1, 0 ), Color( 1, 1, 1, 0 ), Color( 1, 1, 1, 1 ) ]
+}
+
+[sub_resource type="Animation" id=6]
 length = 3.5
 tracks/0/type = "value"
 tracks/0/path = NodePath("CanvasLayer/TextureRect:modulate")
@@ -387,8 +523,7 @@ tracks/4/keys = {
 } ]
 }
 
-[sub_resource type="Animation" id=6]
-resource_name = "Default"
+[sub_resource type="Animation" id=7]
 length = 4.0
 tracks/0/type = "value"
 tracks/0/path = NodePath("CanvasLayer/TextureRect:modulate")
@@ -547,28 +682,7 @@ texture_pressed = ExtResource( 11 )
 texture_hover = ExtResource( 8 )
 texture_disabled = ExtResource( 11 )
 
-[node name="BombButton" type="TextureButton" parent="HUD/MarginContainer/HBoxContainer"]
-margin_left = 208.0
-margin_right = 272.0
-margin_bottom = 64.0
-toggle_mode = true
-texture_normal = ExtResource( 45 )
-texture_pressed = ExtResource( 44 )
-texture_hover = ExtResource( 43 )
-texture_disabled = ExtResource( 44 )
-
-[node name="BombCount" type="Label" parent="HUD/MarginContainer/HBoxContainer/BombButton"]
-anchor_top = 0.8
-anchor_right = 0.9
-anchor_bottom = 0.9
-margin_top = -14.0
-custom_fonts/font = ExtResource( 18 )
-text = "99"
-align = 2
-valign = 1
-__meta__ = {
-"_edit_use_anchors_": false
-}
+[node name="BombButton" parent="HUD/MarginContainer/HBoxContainer" instance=ExtResource( 43 )]
 
 [node name="MenuButton" type="TextureButton" parent="HUD/MarginContainer/HBoxContainer"]
 margin_left = 312.0
@@ -803,11 +917,10 @@ in_animation = true
 [node name="CanvasLayer" type="CanvasLayer" parent="SpecialIntro"]
 
 [node name="VBoxContainer" type="VBoxContainer" parent="SpecialIntro/CanvasLayer"]
-visible = false
 margin_left = 509.909
-margin_top = -1200.0
+margin_top = 441.043
 margin_right = 1005.91
-margin_bottom = -10.0
+margin_bottom = 1631.04
 custom_constants/separation = 40
 __meta__ = {
 "_edit_use_anchors_": false
@@ -909,6 +1022,123 @@ depths swallow
 you."
 align = 1
 
+[node name="Merchant" type="Node2D" parent="."]
+visible = false
+script = ExtResource( 35 )
+merchant = true
+
+[node name="Sprites" type="Node2D" parent="Merchant"]
+self_modulate = Color( 1, 1, 1, 0 )
+
+[node name="Background" type="Sprite" parent="Merchant/Sprites"]
+position = Vector2( 512, 288 )
+texture = ExtResource( 25 )
+
+[node name="Head Top" type="Sprite" parent="Merchant/Sprites"]
+position = Vector2( 256, 208 )
+texture = ExtResource( 27 )
+
+[node name="Dots" type="Sprite" parent="Merchant/Sprites"]
+position = Vector2( 234.96, 136.44 )
+texture = ExtResource( 29 )
+
+[node name="Head Bottom" type="Sprite" parent="Merchant/Sprites"]
+position = Vector2( 272, 240 )
+texture = ExtResource( 28 )
+
+[node name="Body" type="Sprite" parent="Merchant/Sprites"]
+position = Vector2( 304, 384 )
+texture = ExtResource( 26 )
+
+[node name="MouthBase" type="Sprite" parent="Merchant/Sprites"]
+position = Vector2( 309.941, 419.981 )
+texture = ExtResource( 36 )
+
+[node name="Mouth1" type="Sprite" parent="Merchant/Sprites"]
+visible = false
+position = Vector2( 309.941, 413.254 )
+texture = ExtResource( 24 )
+
+[node name="Mouth2" type="Sprite" parent="Merchant/Sprites"]
+visible = false
+position = Vector2( 328.839, 410.734 )
+texture = ExtResource( 22 )
+
+[node name="Mouth3" type="Sprite" parent="Merchant/Sprites"]
+visible = false
+position = Vector2( 326.32, 401.915 )
+texture = ExtResource( 23 )
+
+[node name="Mouth4" type="Sprite" parent="Merchant/Sprites"]
+visible = false
+position = Vector2( 316.24, 422.074 )
+texture = ExtResource( 32 )
+
+[node name="Eyes1" type="Sprite" parent="Merchant/Sprites"]
+position = Vector2( 325.06, 325.06 )
+texture = ExtResource( 33 )
+
+[node name="Eyes2" type="Sprite" parent="Merchant/Sprites"]
+visible = false
+position = Vector2( 313.72, 330.099 )
+texture = ExtResource( 31 )
+
+[node name="Eyes3" type="Sprite" parent="Merchant/Sprites"]
+visible = false
+position = Vector2( 318.76, 307.421 )
+texture = ExtResource( 30 )
+
+[node name="Ground Front" type="Sprite" parent="Merchant/Sprites"]
+position = Vector2( 480, 592 )
+texture = ExtResource( 34 )
+
+[node name="Minion" parent="Merchant" instance=ExtResource( 1 )]
+position = Vector2( 704, 503.515 )
+scale = Vector2( 5, 5 )
+in_animation = true
+
+[node name="AnimationPlayer" type="AnimationPlayer" parent="Merchant"]
+anims/Default = SubResource( 5 )
+
+[node name="CanvasLayer" type="CanvasLayer" parent="Merchant"]
+
+[node name="Label" type="Label" parent="Merchant/CanvasLayer"]
+visible = false
+margin_left = 508.495
+margin_top = 81.9411
+margin_right = 1004.49
+margin_bottom = 121.941
+custom_fonts/font = ExtResource( 15 )
+text = "What you want?"
+align = 1
+__meta__ = {
+"_edit_use_anchors_": false
+}
+
+[node name="Button1" parent="Merchant/CanvasLayer" instance=ExtResource( 44 )]
+visible = false
+margin_left = 560.0
+margin_top = 180.0
+margin_right = 624.0
+margin_bottom = 244.0
+rect_scale = Vector2( 1.5, 1.5 )
+
+[node name="Button2" parent="Merchant/CanvasLayer" instance=ExtResource( 44 )]
+visible = false
+margin_left = 710.0
+margin_top = 180.0
+margin_right = 774.0
+margin_bottom = 244.0
+rect_scale = Vector2( 1.5, 1.5 )
+
+[node name="Button3" parent="Merchant/CanvasLayer" instance=ExtResource( 44 )]
+visible = false
+margin_left = 860.0
+margin_top = 180.0
+margin_right = 924.0
+margin_bottom = 244.0
+rect_scale = Vector2( 1.5, 1.5 )
+
 [node name="LevelStart" type="Node2D" parent="."]
 visible = false
 script = ExtResource( 40 )
@@ -945,7 +1175,7 @@ __meta__ = {
 }
 
 [node name="AnimationPlayer" type="AnimationPlayer" parent="LevelStart"]
-anims/Default = SubResource( 5 )
+anims/Default = SubResource( 6 )
 
 [node name="GameOver" type="Node2D" parent="."]
 script = ExtResource( 41 )
@@ -982,7 +1212,20 @@ __meta__ = {
 }
 
 [node name="AnimationPlayer" type="AnimationPlayer" parent="GameOver"]
-anims/Default = SubResource( 6 )
+anims/Default = SubResource( 7 )
+
+[node name="BombCount" type="Label" parent="."]
+anchor_top = 0.8
+anchor_right = 0.9
+anchor_bottom = 0.9
+margin_top = -14.0
+custom_fonts/font = ExtResource( 18 )
+text = "99"
+align = 2
+valign = 1
+__meta__ = {
+"_edit_use_anchors_": false
+}
 
 [connection signal="mouse_entered" from="HUD/MarginContainer/HBoxContainer/DigButton" to="." method="_on_Button_mouse_entered"]
 [connection signal="mouse_exited" from="HUD/MarginContainer/HBoxContainer/DigButton" to="." method="_on_Button_mouse_exited"]
@@ -990,8 +1233,6 @@ anims/Default = SubResource( 6 )
 [connection signal="mouse_entered" from="HUD/MarginContainer/HBoxContainer/RallyButton" to="." method="_on_Button_mouse_entered"]
 [connection signal="mouse_exited" from="HUD/MarginContainer/HBoxContainer/RallyButton" to="." method="_on_Button_mouse_exited"]
 [connection signal="toggled" from="HUD/MarginContainer/HBoxContainer/RallyButton" to="." method="_on_RallyButton_toggled"]
-[connection signal="mouse_entered" from="HUD/MarginContainer/HBoxContainer/BombButton" to="." method="_on_Button_mouse_entered"]
-[connection signal="mouse_exited" from="HUD/MarginContainer/HBoxContainer/BombButton" to="." method="_on_Button_mouse_exited"]
 [connection signal="toggled" from="HUD/MarginContainer/HBoxContainer/BombButton" to="." method="_on_BombButton_toggled"]
 [connection signal="mouse_entered" from="HUD/MarginContainer/HBoxContainer/MenuButton" to="." method="_on_Button_mouse_entered"]
 [connection signal="mouse_exited" from="HUD/MarginContainer/HBoxContainer/MenuButton" to="." method="_on_Button_mouse_exited"]
@@ -1002,5 +1243,6 @@ anims/Default = SubResource( 6 )
 [connection signal="value_changed" from="Screens/Title/MusicSlider" to="." method="_on_MusicSlider_value_changed"]
 [connection signal="value_changed" from="Screens/Title/SoundSlider" to="." method="_on_SoundSlider_value_changed"]
 [connection signal="stop_intro" from="SpecialIntro" to="." method="_on_SpecialIntro_stop_intro"]
+[connection signal="stop_intro" from="Merchant" to="." method="_on_SpecialIntro_stop_intro"]
 [connection signal="stop_level_start" from="LevelStart" to="." method="_on_LevelStart_stop_level_start"]
 [connection signal="stop_game_over" from="GameOver" to="." method="_on_GameOver_stop_game_over"]

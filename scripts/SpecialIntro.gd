@@ -1,6 +1,15 @@
 extends Node2D
 
+export var merchant := false
+
 const AudioType = preload("res://scripts/AudioType.gd").AudioType
+
+var minion_icon = preload("res://sprites/MinionIcon.png")
+var archer_icon = preload("res://sprites/ArcherIcon.png")
+var bomb_icon = preload("res://sprites/BombIcon.png")
+
+
+
 
 onready var minion := $Minion
 
@@ -53,7 +62,7 @@ func _process(delta: float) -> void:
 		eyes[0].visible = false
 		eyes[randi() % eyes.size()].visible = true
 
-	if $AnimationPlayer.current_animation_position > 0.2:
+	if !merchant && $AnimationPlayer.current_animation_position > 0.2:
 		if Input.is_action_just_pressed("command"):
 			switch_scene()
 
@@ -72,7 +81,15 @@ func minion_idle_left():
 func switch_scene():
 	set_process(false)
 	visible = false
-	$CanvasLayer/VBoxContainer.visible = false
+
+	if !merchant:
+		$CanvasLayer/VBoxContainer.visible = false
+	else:
+		$CanvasLayer/Label.visible = false
+		$CanvasLayer/Button1.visible = false
+		$CanvasLayer/Button2.visible = false
+		$CanvasLayer/Button3.visible = false
+
 	$AnimationPlayer.stop()
 	emit_signal("stop_intro")
 
@@ -86,6 +103,35 @@ func stop_talking():
 	talking = false
 	reset_mouths()
 	reset_eyes()
+
+func initialize_offer():
+	var button1 = $CanvasLayer/Button1
+	var button2 = $CanvasLayer/Button2
+	var button3 = $CanvasLayer/Button3
+	button1.connect("pressed", self, "button1_pressed")
+	button2.connect("pressed", self, "button2_pressed")
+	button3.connect("pressed", self, "button3_pressed")
+
+	button1.set_icon(minion_icon)
+	button1.set_count(10)
+
+	button2.set_icon(archer_icon)
+	button2.set_count(8)
+
+	button3.set_icon(bomb_icon)
+	button3.set_count(4)
+
+func button1_pressed():
+	State.increase_minion_count += 10
+	switch_scene()
+
+func button2_pressed():
+	State.increase_archer_count += 8
+	switch_scene()
+
+func button3_pressed():
+	State.increase_bomb_count += 4
+	switch_scene()
 
 func reset_mouths():
 	for i in range(1, mouths.size()):

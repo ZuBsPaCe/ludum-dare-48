@@ -93,6 +93,11 @@ func _ready() -> void:
 	_path_variation_x += randf() * 28.0 - 14.0
 	_path_variation_y += randf() * 28.0 - 14.0
 
+	var init_coord := Coord.new()
+	init_coord.set_vector(position)
+	tile = State.map.get_tile(init_coord.x, init_coord.y)
+	assert(tile.tile_type == TileType.GROUND)
+
 
 func setup(faction : int, archer = false, prisoner = false) -> void:
 	self.faction = faction
@@ -124,10 +129,6 @@ func setup(faction : int, archer = false, prisoner = false) -> void:
 	if prisoner:
 		$Sprites/Pickaxe.visible = false
 
-	var init_coord := Coord.new()
-	init_coord.set_vector(position)
-	tile = State.map.get_tile(init_coord.x, init_coord.y)
-
 
 func _process(delta: float) -> void:
 	task_cooldown.step(delta)
@@ -150,6 +151,9 @@ func _physics_process(delta: float) -> void:
 			tile.monsters.erase(self)
 		coord.set_vector(position)
 		tile = State.map.get_tile(coord.x, coord.y)
+
+		assert(tile.tile_type == TileType.GROUND)
+
 		if faction == 0:
 			tile.minions.append(self)
 		else:
@@ -164,6 +168,8 @@ func _physics_process(delta: float) -> void:
 			strike_hit = true
 			if task == MinionTask.DIG:
 				dig_tile.health -= 1
+
+				assert(dig_tile.minions.size() == 0)
 
 				if dig_tile.health >= 0:
 					Sounds.play(AudioType.DIG)
