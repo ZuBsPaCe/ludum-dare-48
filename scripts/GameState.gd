@@ -3,6 +3,9 @@ enum GameState {
 	TITLE_SCREEN,
 
 	LEVEL_START,
+	LEVEL_END,
+
+	WORLD_MAP,
 
 	INTRO,
 	MERCHANT,

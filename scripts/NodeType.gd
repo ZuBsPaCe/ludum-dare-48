@@ -1,0 +1,9 @@
+enum NodeType {
+	PORTAL,
+	TUTORIAL,
+	ESCORT,
+	RESCUE,
+	DEFEND,
+	MERCHANT,
+	HELL
+}

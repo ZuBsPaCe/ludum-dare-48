@@ -3,6 +3,7 @@ extends Node2D
 const GameState = preload("res://scripts/GameState.gd").GameState
 const TileType = preload("res://scripts/TileType.gd").TileType
 const AudioType = preload("res://scripts/AudioType.gd").AudioType
+const NodeType = preload("res://scripts/NodeType.gd").NodeType
 
 const bomb_distance := 160.0
 const bomb_distance_sq := bomb_distance * bomb_distance
@@ -93,6 +94,9 @@ var _mouse_on_button := false
 var _drag_start_mouse_pos := Vector2()
 var _drag_start_camera_pos := Vector2()
 
+var _mouse_wheel := 0.0
+var _mouse_wheel_direction := 0.0
+
 var _rally_last_mouse_pos := Vector2()
 var _rally_last_tiles := []
 
@@ -101,6 +105,116 @@ var _level_done := false
 var _loading := true
 
 var _tiles := []
+
+var _world_layers := [
+	WorldLayer.new(
+		1, 1, [
+			WorldConnection.new(0, 0)]),
+	WorldLayer.new(
+		1, 2, [
+			WorldConnection.new(0, 0),
+			WorldConnection.new(0, 1)]),
+	WorldLayer.new(
+		1, 3, [
+			WorldConnection.new(0, 0),
+			WorldConnection.new(0, 1),
+			WorldConnection.new(0, 2)]),
+	WorldLayer.new(
+		1, 4, [
+			WorldConnection.new(0, 0),
+			WorldConnection.new(0, 1),
+			WorldConnection.new(0, 2),
+			WorldConnection.new(0, 3)]),
+
+	WorldLayer.new(
+		2, 1, [
+			WorldConnection.new(0, 0),
+			WorldConnection.new(1, 0)]),
+	WorldLayer.new(
+		2, 2, [
+			WorldConnection.new(0, 0),
+			WorldConnection.new(0, 1, "A"),
+			WorldConnection.new(1, 0, "A"),
+			WorldConnection.new(1, 1)]),
+	WorldLayer.new(
+		2, 3, [
+			WorldConnection.new(0, 0),
+			WorldConnection.new(0, 1),
+			WorldConnection.new(1, 1),
+			WorldConnection.new(1, 2)]),
+	WorldLayer.new(
+		2, 4, [
+			WorldConnection.new(0, 0),
+			WorldConnection.new(0, 1),
+			WorldConnection.new(0, 2, "A"),
+			WorldConnection.new(1, 1, "A"),
+			WorldConnection.new(1, 2),
+			WorldConnection.new(1, 3)]),
+
+	WorldLayer.new(
+		3, 1, [
+			WorldConnection.new(0, 0),
+			WorldConnection.new(1, 0),
+			WorldConnection.new(2, 0)]),
+	WorldLayer.new(
+		3, 2, [
+			WorldConnection.new(0, 0),
+			WorldConnection.new(1, 0),
+			WorldConnection.new(1, 1),
+			WorldConnection.new(2, 1)]),
+	WorldLayer.new(
+		3, 3, [
+			WorldConnection.new(0, 0),
+			WorldConnection.new(0, 1, "A"),
+			WorldConnection.new(1, 0, "A"),
+			WorldConnection.new(1, 1),
+			WorldConnection.new(1, 2, "B"),
+			WorldConnection.new(2, 1, "B"),
+			WorldConnection.new(2, 2)]),
+	WorldLayer.new(
+		3, 4, [
+			WorldConnection.new(0, 0),
+			WorldConnection.new(0, 1),
+			WorldConnection.new(1, 2),
+			WorldConnection.new(1, 2),
+			WorldConnection.new(2, 2),
+			WorldConnection.new(2, 3)]),
+
+	WorldLayer.new(
+		4, 1, [
+			WorldConnection.new(0, 0),
+			WorldConnection.new(1, 0),
+			WorldConnection.new(2, 0),
+			WorldConnection.new(3, 0)]),
+	WorldLayer.new(
+		4, 2, [
+			WorldConnection.new(0, 0),
+			WorldConnection.new(1, 0),
+			WorldConnection.new(1, 1, "A"),
+			WorldConnection.new(2, 0, "A"),
+			WorldConnection.new(2, 1),
+			WorldConnection.new(3, 1)]),
+	WorldLayer.new(
+		4, 3, [
+			WorldConnection.new(0, 0),
+			WorldConnection.new(1, 0),
+			WorldConnection.new(1, 1),
+			WorldConnection.new(2, 1),
+			WorldConnection.new(2, 2),
+			WorldConnection.new(3, 2)]),
+	WorldLayer.new(
+		4, 4, [
+			WorldConnection.new(0, 0),
+			WorldConnection.new(0, 1, "A"),
+			WorldConnection.new(1, 0, "A"),
+			WorldConnection.new(1, 1),
+			WorldConnection.new(1, 2, "B"),
+			WorldConnection.new(2, 1, "B"),
+			WorldConnection.new(2, 2),
+			WorldConnection.new(2, 3, "C"),
+			WorldConnection.new(3, 2, "C"),
+			WorldConnection.new(3, 3)])
+]
 
 
 func _ready() -> void:
@@ -125,6 +239,7 @@ func _ready() -> void:
 	Helper.raycast = _raycast
 
 	State.tilemap32 = _tilemap32
+	State.game_camera = $GameCamera
 
 
 	if OS.get_name() == "HTML5":
@@ -141,9 +256,18 @@ func _ready() -> void:
 
 	switch_state(GameState.TITLE_SCREEN)
 
+func _input(event: InputEvent) -> void:
+	if State.game_state == GameState.WORLD_MAP:
+		if event is InputEventMouseButton:
+			if event.is_pressed():
+				if event.button_index == BUTTON_WHEEL_DOWN:
+					_mouse_wheel_direction = 1.0
+				elif event.button_index == BUTTON_WHEEL_UP:
+					_mouse_wheel_direction = -1.0
 
 func _process(delta: float) -> void:
 	if OS.get_name() != "HTML5":
+		_fullscreen_cooldown.step(delta)
 		if !_fullscreen_cooldown.running && Input.is_key_pressed(KEY_ALT) && Input.is_key_pressed(KEY_ENTER):
 			OS.window_fullscreen = !OS.window_fullscreen
 			State.config.set_value("Display", "Fullscreen", OS.window_fullscreen)
@@ -174,28 +298,15 @@ func _process(delta: float) -> void:
 		else:
 			$Track1.stop()
 
+	var mouse_pos := get_global_mouse_position()
 
-
-	if State.game_state == GameState.GAME:
-		_fullscreen_cooldown.step(delta)
-		_dig_traverse_cooldown.step(delta)
-		_start_battle_cooldown.step(delta)
-		_level_done_cooldown.step(delta)
-		_check_level_done_cooldown.step(delta)
-		_spawn_cooldown.step(delta)
-
-
-		var mouse_pos := get_global_mouse_position()
-		var mouse_coord := Coord.new()
-		mouse_coord.set_vector(mouse_pos)
-
+	if State.game_state == GameState.GAME || State.game_state == GameState.WORLD_MAP:
 		if Input.is_action_just_pressed("alternate"):
 			_drag_start_mouse_pos = get_viewport().get_mouse_position()
 			_drag_start_camera_pos = _camera.position
 
 
 		var new_camera_position = null
-
 
 		if Input.is_action_pressed("alternate"):
 			var drag_vec = (_drag_start_mouse_pos - get_viewport().get_mouse_position()) * _camera.zoom
@@ -210,6 +321,25 @@ func _process(delta: float) -> void:
 				drag_vec.x -= 1
 			if Input.is_action_pressed("right"):
 				drag_vec.x += 1
+
+			if State.game_state == GameState.WORLD_MAP && (_mouse_wheel != 0.0 || _mouse_wheel_direction != 0.0):
+				if _mouse_wheel_direction != 0.0:
+					if _mouse_wheel_direction < 0.0:
+						_mouse_wheel = max(-1.0, _mouse_wheel - delta * 4.0)
+
+					else:
+						_mouse_wheel = min(1.0, _mouse_wheel + delta * 4.0)
+
+					if abs(_mouse_wheel) == 1.0:
+							_mouse_wheel_direction = 0.0
+				else:
+					if _mouse_wheel < 0.0:
+						_mouse_wheel = min(0.0, _mouse_wheel + delta * 2.0)
+					else:
+						_mouse_wheel = max(0.0, _mouse_wheel - delta * 2.0)
+
+				drag_vec.y += _mouse_wheel
+
 			new_camera_position = _camera.position + drag_vec * 768.0 * delta
 
 		if new_camera_position != null:
@@ -223,8 +353,16 @@ func _process(delta: float) -> void:
 			_camera.position = new_camera_position
 
 
+	if State.game_state == GameState.GAME:
+		_dig_traverse_cooldown.step(delta)
+		_start_battle_cooldown.step(delta)
+		_level_done_cooldown.step(delta)
+		_check_level_done_cooldown.step(delta)
+		_spawn_cooldown.step(delta)
 
 		var mouse_tile = -1
+		var mouse_coord := Coord.new()
+		mouse_coord.set_vector(mouse_pos)
 
 		if _map.is_valid(mouse_coord.x, mouse_coord.y):
 			mouse_tile = _map.get_tile_type(mouse_coord.x, mouse_coord.y)
@@ -428,6 +566,143 @@ func _process(delta: float) -> void:
 func world_reset() -> void:
 	State.world_reset()
 
+func world_start() -> void:
+	randomize()
+
+	var layer_count := 8
+	var layer_counts := []
+
+	for i in (layer_count * 4):
+		State.world_node_noise.append(Vector2(randf() * 64.0 - 32.0, randf() * 64.0 - 32.0))
+
+	var random_node_count := 0
+
+	var prev1 := 0
+	var prev2 := 0
+
+	layer_counts.append(1)
+
+	for i in range(1, layer_count - 1):
+		var next_count : int
+		while true:
+			next_count = randi() % 3 + 2
+			if prev1 == prev2 && prev1 == next_count:
+				continue
+			break
+
+		layer_counts.append(next_count)
+		prev2 = prev1
+		prev1 = next_count
+
+		random_node_count += next_count
+
+	layer_counts.append(1)
+
+
+	var valid_node_types := [
+		NodeType.PORTAL,
+		NodeType.ESCORT,
+		NodeType.RESCUE,
+		NodeType.DEFEND]
+
+	var random_node_types := []
+	var valid_node_types_index = 0
+	for i in random_node_count:
+		if i <= 2:
+			random_node_types.append(NodeType.MERCHANT)
+		else:
+			random_node_types.append(valid_node_types[valid_node_types_index])
+			valid_node_types_index = posmod(valid_node_types_index + 1, valid_node_types.size())
+
+
+	var layer_connections := []
+	var layer_node_types := []
+
+	var node_to_node_types := {}
+	node_to_node_types[0] = NodeType.PORTAL
+	layer_node_types.append([NodeType.PORTAL])
+
+	for i in range(0, layer_counts.size() - 1):
+		var upper_count : int = layer_counts[i]
+		var lower_count : int = layer_counts[i + 1]
+
+		var possible_connections := []
+		for world_layer in _world_layers:
+			if world_layer.upper_count == upper_count && world_layer.lower_count == lower_count:
+				possible_connections = world_layer.world_connections
+				break
+
+		assert(possible_connections.size() > 0)
+		var valid_permutations := []
+
+		var bit_count := possible_connections.size()
+		var permutations := pow(2, bit_count)
+		for permutation in range(permutations):
+			var valid := true
+			var connected_upper_indexes := {}
+			var connected_lower_indexes := {}
+			var groups := {}
+
+			for bit_offset in range(bit_count):
+				var bit_set : bool = (permutation & (1 << bit_offset)) > 0
+				if bit_set:
+					var connection : WorldConnection= possible_connections[bit_offset]
+					if connection.group != "":
+						if groups.has(connection.group):
+							valid = false
+							break
+						groups[connection.group] = 1
+
+					connected_upper_indexes[connection.from] = 1
+					connected_lower_indexes[connection.to] = 1
+
+			if valid:
+				if connected_upper_indexes.keys().size() != upper_count:
+					valid = false
+				elif connected_lower_indexes.keys().size() != lower_count:
+					valid = false
+
+			if valid:
+				valid_permutations.append(permutation)
+
+		assert(valid_permutations.size() > 0)
+		var selected_permutation : int = valid_permutations[randi() % valid_permutations.size()]
+		var selected_connections := []
+		for bit_offset in range(bit_count):
+			var bit_set : bool = (selected_permutation & (1 << bit_offset)) > 0
+			if bit_set:
+				selected_connections.append(possible_connections[bit_offset])
+
+		layer_connections.append(selected_connections)
+
+		if i < layer_counts.size() - 2:
+			var current_node_types := []
+
+			for lower_index in lower_count:
+				var upper_node_types := []
+				for connection in selected_connections:
+					if connection.to == lower_index:
+						upper_node_types.append(node_to_node_types[i * 4 + connection.from])
+
+				var node_type = null
+				for test in 10:
+					var random_index = randi() % random_node_types.size()
+					node_type = random_node_types[random_index]
+					if !upper_node_types.has(node_type) || test == 9:
+						random_node_types.remove(random_index)
+						current_node_types.append(node_type)
+						node_to_node_types[(i + 1) * 4 + lower_index] = node_type
+						break
+
+			layer_node_types.append(current_node_types)
+
+	layer_node_types.append([NodeType.HELL])
+
+	State.world_layer_counts = layer_counts
+	State.world_layer_connections = layer_connections
+	State.world_layer_node_types = layer_node_types
+
+
 func game_reset() -> void:
 	_cursor_highlight.visible = false
 	_bomb_indicator.visible = false
@@ -450,8 +725,6 @@ func game_reset() -> void:
 	State.game_reset()
 
 func game_start() -> void:
-	randomize()
-
 	State.increase_level()
 	_spawn_cooldown.restart(State.spawn_cooldown)
 
@@ -833,7 +1106,7 @@ func game_check_level_done():
 				State.end_level_info = "GAME OVER"
 				switch_state(GameState.GAME_OVER)
 			else:
-				switch_state(GameState.LEVEL_START)
+				switch_state(GameState.LEVEL_END)
 		return
 
 	if State.minions.size() == 0:
@@ -947,6 +1220,7 @@ func switch_state(new_game_state):
 		GameState.INTRO:
 			$Screens/Title.visible = false
 			$HUD/MarginContainer.visible = false
+			$WorldMap.visible = false
 			$SpecialIntro.visible = true
 			_camera.zoom = Vector2(1.0, 1.0)
 			Input.set_mouse_mode(Input.MOUSE_MODE_HIDDEN)
@@ -958,6 +1232,7 @@ func switch_state(new_game_state):
 		GameState.MERCHANT:
 			$Screens/Title.visible = false
 			$HUD/MarginContainer.visible = false
+			$WorldMap.visible = false
 			$Merchant.visible = true
 			_camera.zoom = Vector2(1.0, 1.0)
 			Input.set_mouse_mode(Input.MOUSE_MODE_VISIBLE)
@@ -979,9 +1254,25 @@ func switch_state(new_game_state):
 			get_tree().paused = false
 			world_reset()
 			game_reset()
-			switch_state(GameState.INTRO)
+			world_start()
+			switch_state(GameState.WORLD_MAP)
 			title_music_target = -80
 			track1_target = -80
+
+		GameState.WORLD_MAP:
+			_camera.zoom = Vector2(1.0, 1.0)
+			_camera.limit_right = get_viewport_rect().size.x
+			_camera.limit_bottom = get_viewport_rect().size.y * 2
+			_camera.position = Vector2.ZERO
+
+			Input.set_mouse_mode(Input.MOUSE_MODE_VISIBLE)
+			$Screens/Title.visible = false
+			$HUD/MarginContainer.visible = false
+			$WorldMap.visible = true
+			$WorldMap.start()
+			title_music_target = -80
+			track1_target = -80.0
+
 
 		GameState.GAME_PAUSED:
 			get_tree().paused = true
@@ -1015,10 +1306,21 @@ func switch_state(new_game_state):
 		GameState.LEVEL_START:
 			$Screens/Title.visible = false
 			$HUD/MarginContainer.visible = false
-			$LevelStart.visible = true
+			$WorldMap.visible = false
+			$LevelInterlude.visible = true
 			_camera.zoom = Vector2(1.0, 1.0)
 			Input.set_mouse_mode(Input.MOUSE_MODE_HIDDEN)
-			$LevelStart.start()
+			$LevelInterlude.show_level_start()
+
+		GameState.LEVEL_END:
+			game_reset()
+			$Screens/Title.visible = false
+			$HUD/MarginContainer.visible = false
+			$WorldMap.visible = false
+			$LevelInterlude.visible = true
+			_camera.zoom = Vector2(1.0, 1.0)
+			Input.set_mouse_mode(Input.MOUSE_MODE_HIDDEN)
+			$LevelInterlude.show_level_end()
 			game_reset()
 			title_music_target = -80
 			track1_target = -80
@@ -1045,13 +1347,36 @@ func _on_SpecialIntro_stop_intro() -> void:
 	switch_state(GameState.GAME)
 
 
-func _on_LevelStart_stop_level_start() -> void:
-	switch_state(GameState.MERCHANT)
+func _on_LevelInterlude_stop_level_start() -> void:
+	switch_state(GameState.GAME)
+
+
+func _on_LevelInterlude_stop_level_end() -> void:
+	switch_state(GameState.WORLD_MAP)
 
 
 func _on_GameOver_stop_game_over() -> void:
 	switch_state(GameState.TITLE_SCREEN)
 
+func _on_WorldMap_world_node_clicked(node_type) -> void:
+	if State.world_visited_nodes.size() == 1:
+		switch_state(GameState.INTRO)
+	else:
+		match node_type:
+			NodeType.PORTAL:
+				switch_state(GameState.LEVEL_START)
+			NodeType.TUTORIAL:
+				assert(false)
+			NodeType.ESCORT:
+				switch_state(GameState.LEVEL_START)
+			NodeType.RESCUE:
+				switch_state(GameState.LEVEL_START)
+			NodeType.DEFEND:
+				switch_state(GameState.LEVEL_START)
+			NodeType.MERCHANT:
+				switch_state(GameState.MERCHANT)
+			NodeType.HELL:
+				switch_state(GameState.LEVEL_START)
 
 
 func _on_MusicSlider_value_changed(value: float) -> void:

@@ -38,6 +38,16 @@ _global_script_classes=[ {
 "class": "Tile",
 "language": "GDScript",
 "path": "res://scripts/Tile.gd"
+}, {
+"base": "Reference",
+"class": "WorldConnection",
+"language": "GDScript",
+"path": "res://scripts/WorldConnection.gd"
+}, {
+"base": "Reference",
+"class": "WorldLayer",
+"language": "GDScript",
+"path": "res://scripts/WorldLayer.gd"
 } ]
 _global_script_class_icons={
 "Cooldown": "",
@@ -45,7 +55,9 @@ _global_script_class_icons={
 "Map": "",
 "Minion": "",
 "Prison": "",
-"Tile": ""
+"Tile": "",
+"WorldConnection": "",
+"WorldLayer": ""
 }
 
 [application]

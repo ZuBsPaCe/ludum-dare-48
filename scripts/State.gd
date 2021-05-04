@@ -1,9 +1,18 @@
 extends Node
 
 const GameState = preload("res://scripts/GameState.gd").GameState
-
+const NodeType = preload("res://scripts/NodeType.gd").NodeType
 
 var game_state = GameState.TITLE_SCREEN
+
+var world_layer_counts := []
+var world_layer_connections := []
+var world_layer_node_types := []
+var world_visited_nodes := []
+var world_node_noise := []
+
+var world_node_type
+
 var minion_count : int
 var archer_count : int
 var bomb_count : int
@@ -50,6 +59,8 @@ var spawn_cooldown := 20
 const config_path = "res://settings.ini"
 var config : ConfigFile
 
+var game_camera : Camera2D
+
 var prisons := []
 
 var entity_container : Node2D
@@ -62,6 +73,14 @@ func _ready() -> void:
 
 
 func world_reset() -> void:
+	world_layer_counts.clear()
+	world_layer_connections.clear()
+	world_layer_node_types.clear()
+	world_visited_nodes.clear()
+	world_node_noise.clear()
+
+	world_node_type = NodeType.PORTAL
+
 	minion_count = 7
 	level_monster_count = 10
 	bomb_count = 10
