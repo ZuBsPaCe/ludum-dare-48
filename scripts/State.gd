@@ -3,18 +3,24 @@ extends Node
 const GameState = preload("res://scripts/GameState.gd").GameState
 const NodeType = preload("res://scripts/NodeType.gd").NodeType
 
+const random_seed := 2241771032
+
 var game_state = GameState.TITLE_SCREEN
+
+var world_layer_seeds := []
 
 var world_layer_counts := []
 var world_layer_connections := []
 var world_layer_node_types := []
 var world_visited_nodes := []
 var world_node_noise := []
+var world_layer_index : int
 
 var world_node_type
 
 var minion_count : int
 var archer_count : int
+var minion_king_count : int
 var bomb_count : int
 var map : Map
 var tilemap32 : TileMap
@@ -35,6 +41,7 @@ var monster_archer_fraction := 0.25
 var dirt_health : int
 var minion_health : int
 var monster_health : int
+var king_health : int
 
 var level_monster_count : int
 
@@ -43,10 +50,14 @@ var end_portals := []
 
 var monsters := []
 
-# does not contain minions and fled minions
+# does not contain monsters and fled minions
 var minions := []
 var minions_fled : int
 var archers_fled : int
+
+var minion_kings_created_count : int
+var minion_kings_died_count : int
+var minion_kings := []
 
 var monster_check_index : int
 var minion_check_index : int
@@ -73,15 +84,19 @@ func _ready() -> void:
 
 
 func world_reset() -> void:
+	world_layer_seeds.clear()
 	world_layer_counts.clear()
 	world_layer_connections.clear()
 	world_layer_node_types.clear()
 	world_visited_nodes.clear()
 	world_node_noise.clear()
 
+	world_layer_index = 0
+
 	world_node_type = NodeType.PORTAL
 
 	minion_count = 7
+
 	level_monster_count = 10
 	bomb_count = 10
 
@@ -89,6 +104,7 @@ func world_reset() -> void:
 
 	# Part of minion_count
 	archer_count = 2
+	minion_king_count = 0
 
 
 	increase_minion_count = 0
@@ -108,6 +124,7 @@ func world_reset() -> void:
 	dirt_health = 3
 	minion_health = 5
 	monster_health = 5
+	king_health = 20
 
 	level = 0
 	end_level_info = ""
@@ -117,8 +134,14 @@ func world_reset() -> void:
 	minions_fled = 0
 	archers_fled = 0
 
+
+	minion_kings.clear()
+	minion_kings_created_count = 0
+	minion_kings_died_count = 0
+
 func increase_level():
 	State.level += 1
+	State.world_layer_index += 1
 
 	if State.level > 1:
 		var free_minion_count := 0
@@ -153,3 +176,7 @@ func game_reset():
 	monsters.clear()
 	minions.clear()
 	prisons.clear()
+	minion_kings.clear()
+
+	minion_kings_created_count = 0
+	minion_kings_died_count = 0

@@ -24,7 +24,7 @@ func start() -> void:
 
 
 	var viewport_rect := get_viewport_rect()
-	var layer_count := State.world_layer_counts.size()
+	var layer_count : int = State.world_layer_counts.size()
 	var visited_nodes := State.world_visited_nodes
 
 #	visited_nodes.append(0)
@@ -33,10 +33,9 @@ func start() -> void:
 #	visited_nodes.append(0)
 #	visited_nodes.append(0)
 
-	var current_layer_index := State.world_visited_nodes.size()
 
-	if current_layer_index > 0:
-		State.game_camera.position.y = 128.0 + get_node_pos(current_layer_index, 0, 1, viewport_rect).y
+	if State.world_layer_index > 0:
+		State.game_camera.position.y = 128.0 + get_node_pos(State.world_layer_index, 0, 1, viewport_rect).y
 
 
 
@@ -95,14 +94,14 @@ func start() -> void:
 
 			button.set_disabled(true)
 
-			if layer_index < current_layer_index:
+			if layer_index < State.world_layer_index:
 				if visited_nodes[layer_index] == node_index:
 					button.set_highlight(true)
 					var button_disabled : TextureRect = button.get_node("ButtonDisabled")
 					button_disabled.modulate.r8 = 44
 					button_disabled.modulate.g8 = 255
 
-			elif layer_index == current_layer_index:
+			elif layer_index == State.world_layer_index:
 				var reachable := false
 
 				if layer_index == 0:
@@ -143,4 +142,5 @@ func on_button_pressed(button) -> void:
 
 	State.world_node_type = button.tag
 	State.world_visited_nodes.append(button.index)
+
 	emit_signal("world_node_clicked", button.tag)

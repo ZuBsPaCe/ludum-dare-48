@@ -62,6 +62,7 @@ var dig_tile : Tile
 var faction := 0
 var archer := false
 var prisoner := false
+var king := false
 
 var health := 1
 var anger := 0
@@ -82,6 +83,9 @@ var _digger := false
 
 func _ready() -> void:
 	$Sprites/Feather.visible = archer
+	$Sprites/Pickaxe.visible = !prisoner
+	$Sprites/Crown.visible = king
+
 
 	if in_animation:
 		collision_layer = 0
@@ -101,19 +105,27 @@ func _ready() -> void:
 	assert(tile.tile_type == TileType.GROUND)
 
 
-func setup(faction : int, archer = false, prisoner = false) -> void:
+func setup(faction : int, archer = false, prisoner = false, king = false) -> void:
 	self.faction = faction
 	if faction == 0:
 		if !prisoner:
 			State.minions.append(self)
 
-		health = State.minion_health
+		if king:
+			health = State.king_health
+			State.minion_kings.append(self)
+			State.minion_kings_created_count += 1
+		else:
+			health = State.minion_health
 
 	elif faction == 1:
 		_digger = randi() % 2 == 0
 		State.monsters.append(self)
 
-		health = State.monster_health
+		if king:
+			health = State.king_health
+		else:
+			health = State.monster_health
 
 		modulate = Color.crimson
 
@@ -123,13 +135,11 @@ func setup(faction : int, archer = false, prisoner = false) -> void:
 		set_collision_mask_bit(1, true)
 
 	self.archer = archer
-
-	if archer:
-		$Sprites/Feather.visible = true
-
 	self.prisoner = prisoner
-	if prisoner:
-		$Sprites/Pickaxe.visible = false
+	self.king = king
+
+	if king:
+		scale = Vector2(1.75, 1.75)
 
 
 func _physics_process(delta: float) -> void:
@@ -212,6 +222,10 @@ func _physics_process(delta: float) -> void:
 									continue
 								freed_prisoner.prisoner = false
 								freed_prisoner.pickaxe.visible = true
+
+								if freed_prisoner.king:
+									State.minion_king_count += 1
+
 								State.minions.append(freed_prisoner)
 							prisoner_tile.prisoners.clear()
 
@@ -569,6 +583,10 @@ func die():
 	if faction == 0:
 		State.minions.erase(self)
 		tile.minions.erase(self)
+
+		if king:
+			State.minion_kings_died_count += 1
+			State.minion_kings.erase(self)
 	else:
 		State.monsters.erase(self)
 		tile.monsters.erase(self)
@@ -588,6 +606,9 @@ func flee():
 	if faction == 0:
 		State.minions.erase(self)
 		tile.minions.erase(self)
+
+		if king:
+			State.minion_kings.erase(self)
 	else:
 		State.monsters.erase(self)
 		tile.monsters.erase(self)
@@ -597,7 +618,7 @@ func flee():
 	set_process(false)
 	set_physics_process(false)
 
-	dead = true
+#	dead = true
 	queue_free()
 
 func _move_near(coord_x : int, coord_y : int):
