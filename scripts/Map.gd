@@ -39,6 +39,8 @@ func setup(width : int, height : int, default_value) -> void:
 	astar = AStar2D.new()
 	astar.reserve_space(size)
 
+	var point_disabled : bool = default_value != TileType.OPEN
+
 	var id := 0
 	for y in range(height):
 		for x in range(width):
@@ -47,8 +49,7 @@ func setup(width : int, height : int, default_value) -> void:
 
 			astar.add_point(id, Vector2(x * 32.0 + 16.0, y * 32.0 + 16.0))
 
-			assert(default_value != TileType.GROUND)
-			astar.set_point_disabled(id, true)
+			astar.set_point_disabled(id, point_disabled)
 
 			if y > 0:
 				astar.connect_points(id, id - width)
@@ -80,20 +81,20 @@ func set_tile_type(x : int, y : int, value) -> void:
 	tile.tile_type = value
 
 	if auto_fix_waypoints:
-		if value == TileType.GROUND:
+		if value == TileType.OPEN:
 			astar.set_point_disabled(id, false)
 			_check_nav_connections(tile)
 
-			if y > 0 && tiles_types[id - width] == TileType.GROUND:
+			if y > 0 && tiles_types[id - width] == TileType.OPEN:
 				_check_nav_connections(tiles[id - width])
 
-			if x > 0 && tiles_types[id - 1] == TileType.GROUND:
+			if x > 0 && tiles_types[id - 1] == TileType.OPEN:
 				_check_nav_connections(tiles[id - 1])
 
-			if y < height - 1 && tiles_types[id + width] == TileType.GROUND:
+			if y < height - 1 && tiles_types[id + width] == TileType.OPEN:
 				_check_nav_connections(tiles[id + width])
 
-			if x < width - 1 && tiles_types[id + 1] == TileType.GROUND:
+			if x < width - 1 && tiles_types[id + 1] == TileType.OPEN:
 				_check_nav_connections(tiles[id + 1])
 
 		else:
@@ -107,7 +108,7 @@ func finalize_waypoints() -> void:
 	for y in range(0, height):
 		for x in range(0, width):
 			var tile = get_tile(x, y)
-			if tile.tile_type == TileType.GROUND:
+			if tile.tile_type == TileType.OPEN:
 				astar.set_point_disabled(tile.id, false)
 				_check_nav_connections(tile)
 			else:
@@ -121,10 +122,10 @@ func _check_nav_connections(tile : Tile) -> void:
 		var other_id := tile.id - width - 1
 		var left_id := tile.id - 1
 		var up_id := tile.id - width
-		if (tiles_types[other_id] == TileType.GROUND &&
+		if (tiles_types[other_id] == TileType.OPEN &&
 			!astar.are_points_connected(tile.id, other_id) &&
-			tiles_types[left_id] == TileType.GROUND &&
-			tiles_types[up_id] == TileType.GROUND):
+			tiles_types[left_id] == TileType.OPEN &&
+			tiles_types[up_id] == TileType.OPEN):
 			astar.connect_points(tile.id, other_id)
 
 	# Top Right
@@ -132,10 +133,10 @@ func _check_nav_connections(tile : Tile) -> void:
 		var other_id := tile.id - width + 1
 		var right_id := tile.id + 1
 		var up_id := tile.id - width
-		if (tiles_types[other_id] == TileType.GROUND &&
+		if (tiles_types[other_id] == TileType.OPEN &&
 			!astar.are_points_connected(tile.id, other_id) &&
-			tiles_types[right_id] == TileType.GROUND &&
-			tiles_types[up_id] == TileType.GROUND):
+			tiles_types[right_id] == TileType.OPEN &&
+			tiles_types[up_id] == TileType.OPEN):
 			astar.connect_points(tile.id, other_id)
 
 	# Bottom Right
@@ -143,10 +144,10 @@ func _check_nav_connections(tile : Tile) -> void:
 		var other_id := tile.id + width + 1
 		var right_id := tile.id + 1
 		var down_id := tile.id + width
-		if (tiles_types[other_id] == TileType.GROUND &&
+		if (tiles_types[other_id] == TileType.OPEN &&
 			!astar.are_points_connected(tile.id, other_id) &&
-			tiles_types[right_id] == TileType.GROUND &&
-			tiles_types[down_id] == TileType.GROUND):
+			tiles_types[right_id] == TileType.OPEN &&
+			tiles_types[down_id] == TileType.OPEN):
 			astar.connect_points(tile.id, other_id)
 
 	# Bottom Left
@@ -154,31 +155,31 @@ func _check_nav_connections(tile : Tile) -> void:
 		var other_id := tile.id + width - 1
 		var left_id := tile.id - 1
 		var down_id := tile.id + width
-		if (tiles_types[other_id] == TileType.GROUND &&
+		if (tiles_types[other_id] == TileType.OPEN &&
 			!astar.are_points_connected(tile.id, other_id) &&
-			tiles_types[left_id] == TileType.GROUND &&
-			tiles_types[down_id] == TileType.GROUND):
+			tiles_types[left_id] == TileType.OPEN &&
+			tiles_types[down_id] == TileType.OPEN):
 			astar.connect_points(tile.id, other_id)
 
 #	else:
 #		if tile.x > 0 && tile.y > 0:
 #			var other_id := tile.id - width - 1
-#			if tiles_types[other_id] == TileType.GROUND && astar.are_points_connected(tile.id, other_id):
+#			if tiles_types[other_id] == TileType.OPEN && astar.are_points_connected(tile.id, other_id):
 #				astar.disconnect_points(tile.id, other_id)
 #
 #		if tile.x < width - 1 && tile.y > 0:
 #			var other_id := tile.id - width + 1
-#			if tiles_types[other_id] == TileType.GROUND && astar.are_points_connected(tile.id, other_id):
+#			if tiles_types[other_id] == TileType.OPEN && astar.are_points_connected(tile.id, other_id):
 #				astar.disconnect_points(tile.id, other_id)
 #
 #		if tile.x < width - 1 && tile.y < height - 1:
 #			var other_id := tile.id + width + 1
-#			if tiles_types[other_id] == TileType.GROUND && astar.are_points_connected(tile.id, other_id):
+#			if tiles_types[other_id] == TileType.OPEN && astar.are_points_connected(tile.id, other_id):
 #				astar.disconnect_points(tile.id, other_id)
 #
 #		if tile.x > 0 && tile.y < height - 1:
 #			var other_id := tile.id + width - 1
-#			if tiles_types[other_id] == TileType.GROUND && astar.are_points_connected(tile.id, other_id):
+#			if tiles_types[other_id] == TileType.OPEN && astar.are_points_connected(tile.id, other_id):
 #				astar.disconnect_points(tile.id, other_id)
 
 

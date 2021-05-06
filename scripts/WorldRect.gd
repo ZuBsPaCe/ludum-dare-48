@@ -21,15 +21,15 @@ func _init(width : int, height : int, room_type) -> void:
 
 	self.room_type = room_type
 
-func set_position(x : int, y : int) -> void:
-	self.x = x
-	self.y = y
+func set_position(center_x : int, center_y : int) -> void:
+	self.center_x = center_x
+	self.center_y = center_y
 
-	center.x = x + width * 0.5
-	center.y = y + height * 0.5
+	center.x = center_x
+	center.y = center_y
 
-	center_x = int(center.x)
-	center_y = int(center.y)
+	x = center_x - floor(width * 0.5)
+	y = center_y - floor(height * 0.5)
 
 	rect.position.x = x
 	rect.position.y = y

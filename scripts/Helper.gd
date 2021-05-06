@@ -10,8 +10,11 @@ var raycast : RayCast2D
 func _ready() -> void:
 	pass
 
-func get_tile_neighbours_4(result : Array, center_x : int, center_y : int) -> void:
+func get_tile_neighbours_4(result : Array, center_x : int, center_y : int, return_self = false) -> void:
 	result.clear()
+	if return_self:
+		result.append(map.get_tile(center_x, center_y))
+
 	if center_y < map.height - 1:
 		result.append(map.get_tile(center_x, center_y + 1))
 	if center_x > 0:
@@ -20,6 +23,18 @@ func get_tile_neighbours_4(result : Array, center_x : int, center_y : int) -> vo
 		result.append(map.get_tile(center_x + 1, center_y))
 	if center_y > 0:
 		result.append(map.get_tile(center_x, center_y - 1))
+
+func get_tile_neighbours_8(result : Array, center_x : int, center_y : int, return_self = false) -> void:
+	get_tile_neighbours_4(result, center_x, center_y, return_self)
+
+	if center_x < map.width - 1 && center_y < map.height - 1:
+		result.append(map.get_tile(center_x + 1, center_y + 1))
+	if center_x > 0 && center_y < map.height - 1:
+		result.append(map.get_tile(center_x - 1, center_y + 1))
+	if center_x < map.width - 1 && center_y > 0:
+		result.append(map.get_tile(center_x + 1, center_y - 1))
+	if center_x > 0 && center_y > 0:
+		result.append(map.get_tile(center_x - 1, center_y - 1))
 
 func get_tile_circle_new(center_x : int, center_y : int, radius : int, return_self = true) -> Array:
 	var result := []
@@ -69,53 +84,53 @@ func get_walkable_pos(coord : Coord, include_current = true) -> Vector2:
 				return coord.to_random_pos()
 
 			1:
-				if map.is_tile_type(coord.x - 1, coord.y, TileType.GROUND):
+				if map.is_tile_type(coord.x - 1, coord.y, TileType.OPEN):
 					return Vector2(
 						coord.x * 32.0 + randf() * 32.0,
 						coord.y * 32.0 + randf() * 32.0)
 
 			2:
-				if map.is_tile_type(coord.x + 1, coord.y, TileType.GROUND):
+				if map.is_tile_type(coord.x + 1, coord.y, TileType.OPEN):
 					return Vector2(
 						(coord.x + 1) * 32.0 + randf() * 32.0,
 						coord.y * 32.0 + randf() * 32.0)
 
 			3:
-				if map.is_tile_type(coord.x, coord.y - 1, TileType.GROUND):
+				if map.is_tile_type(coord.x, coord.y - 1, TileType.OPEN):
 					return Vector2(
 						coord.x * 32.0 + randf() * 32.0,
 						(coord.y - 1) * 32.0 + randf() * 32.0)
 
 			4:
-				if map.is_tile_type(coord.x, coord.y + 1, TileType.GROUND):
+				if map.is_tile_type(coord.x, coord.y + 1, TileType.OPEN):
 					return Vector2(
 						coord.x * 32.0 + randf() * 32.0,
 						(coord.y + 1) * 32.0 + randf() * 32.0)
 
 			5:
-				if map.is_tile_type(coord.x - 1, coord.y - 1, TileType.GROUND):
-					if map.is_tile_type(coord.x - 1, coord.y, TileType.GROUND) && map.is_tile_type(coord.x, coord.y - 1, TileType.GROUND):
+				if map.is_tile_type(coord.x - 1, coord.y - 1, TileType.OPEN):
+					if map.is_tile_type(coord.x - 1, coord.y, TileType.OPEN) && map.is_tile_type(coord.x, coord.y - 1, TileType.OPEN):
 						return Vector2(
 							(coord.x - 1) * 32.0 + randf() * 32.0,
 							(coord.y - 1) * 32.0 + randf() * 32.0)
 
 			6:
-				if map.is_tile_type(coord.x + 1, coord.y - 1, TileType.GROUND):
-					if map.is_tile_type(coord.x + 1, coord.y, TileType.GROUND) && map.is_tile_type(coord.x, coord.y - 1, TileType.GROUND):
+				if map.is_tile_type(coord.x + 1, coord.y - 1, TileType.OPEN):
+					if map.is_tile_type(coord.x + 1, coord.y, TileType.OPEN) && map.is_tile_type(coord.x, coord.y - 1, TileType.OPEN):
 						return Vector2(
 							(coord.x + 1) * 32.0 + randf() * 32.0,
 							(coord.y - 1) * 32.0 + randf() * 32.0)
 
 			7:
-				if map.is_tile_type(coord.x + 1, coord.y + 1, TileType.GROUND):
-					if map.is_tile_type(coord.x + 1, coord.y, TileType.GROUND) && map.is_tile_type(coord.x, coord.y + 1, TileType.GROUND):
+				if map.is_tile_type(coord.x + 1, coord.y + 1, TileType.OPEN):
+					if map.is_tile_type(coord.x + 1, coord.y, TileType.OPEN) && map.is_tile_type(coord.x, coord.y + 1, TileType.OPEN):
 						return Vector2(
 							(coord.x + 1) * 32.0 + randf() * 32.0,
 							(coord.y + 1) * 32.0 + randf() * 32.0)
 
 			8:
-				if map.is_tile_type(coord.x - 1, coord.y + 1, TileType.GROUND):
-					if map.is_tile_type(coord.x - 1, coord.y, TileType.GROUND) && map.is_tile_type(coord.x, coord.y + 1, TileType.GROUND):
+				if map.is_tile_type(coord.x - 1, coord.y + 1, TileType.OPEN):
+					if map.is_tile_type(coord.x - 1, coord.y, TileType.OPEN) && map.is_tile_type(coord.x, coord.y + 1, TileType.OPEN):
 						return Vector2(
 							(coord.x - 1) * 32.0 + randf() * 32.0,
 							(coord.y + 1) * 32.0 + randf() * 32.0)

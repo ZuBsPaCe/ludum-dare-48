@@ -35,6 +35,11 @@ _global_script_classes=[ {
 "path": "res://scripts/Prison.gd"
 }, {
 "base": "Reference",
+"class": "RegionSampler",
+"language": "GDScript",
+"path": "res://scripts/RegionSampler.gd"
+}, {
+"base": "Reference",
 "class": "Tile",
 "language": "GDScript",
 "path": "res://scripts/Tile.gd"
@@ -65,6 +70,7 @@ _global_script_class_icons={
 "Map": "",
 "Minion": "",
 "Prison": "",
+"RegionSampler": "",
 "Tile": "",
 "WorldCircle": "",
 "WorldConnection": "",

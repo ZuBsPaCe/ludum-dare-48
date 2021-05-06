@@ -1,7 +1,7 @@
 enum TileType {
+	OPEN,
 	DIRT,
 	ROCK,
-	GROUND,
 	PRISON,
 	MINION_START,
 	MONSTER_START,

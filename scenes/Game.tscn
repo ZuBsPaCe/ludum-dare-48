@@ -925,6 +925,7 @@ in_animation = true
 [node name="CanvasLayer" type="CanvasLayer" parent="SpecialIntro"]
 
 [node name="VBoxContainer" type="VBoxContainer" parent="SpecialIntro/CanvasLayer"]
+visible = false
 margin_left = 509.909
 margin_top = 441.043
 margin_right = 1005.91

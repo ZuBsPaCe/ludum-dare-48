@@ -102,7 +102,7 @@ func _ready() -> void:
 	var init_coord := Coord.new()
 	init_coord.set_vector(position)
 	tile = State.map.get_tile(init_coord.x, init_coord.y)
-	assert(tile.tile_type == TileType.GROUND)
+	assert(tile.tile_type == TileType.OPEN)
 
 
 func setup(faction : int, archer = false, prisoner = false, king = false) -> void:
@@ -164,12 +164,12 @@ func _physics_process(delta: float) -> void:
 #		var debug_coord := Coord.new()
 #		debug_coord.set_vector(position)
 #		var debug_tile = State.map.get_tile(debug_coord.x, debug_coord.y)
-#		assert(debug_tile.tile_type == TileType.GROUND)
+#		assert(debug_tile.tile_type == TileType.OPEN)
 
 		coord.set_vector(position)
 		tile = State.map.get_tile(coord.x, coord.y)
 
-		assert(tile.tile_type == TileType.GROUND)
+		assert(tile.tile_type == TileType.OPEN)
 
 		if faction == 0:
 			tile.minions.append(self)
@@ -194,7 +194,7 @@ func _physics_process(delta: float) -> void:
 					if dig_tile.dig_highlight != null:
 						dig_tile.dig_highlight.queue_free()
 						dig_tile.dig_highlight = null
-					State.map.set_tile_type(dig_tile.x, dig_tile.y, TileType.GROUND)
+					State.map.set_tile_type(dig_tile.x, dig_tile.y, TileType.OPEN)
 					State.tilemap32.set_cell(dig_tile.x, dig_tile.y, 0)
 					State.map.dig_tiles.erase(dig_tile)
 					_move_near(dig_tile.x, dig_tile.y)

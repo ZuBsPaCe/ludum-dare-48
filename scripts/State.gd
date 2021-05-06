@@ -3,7 +3,7 @@ extends Node
 const GameState = preload("res://scripts/GameState.gd").GameState
 const NodeType = preload("res://scripts/NodeType.gd").NodeType
 
-const random_seed := 2241771032
+const random_seed := 0
 
 var game_state = GameState.TITLE_SCREEN
 
@@ -78,6 +78,7 @@ var entity_container : Node2D
 
 
 var tile_circle := []
+var area_limits := [0, 0, 0, 0]
 
 func _ready() -> void:
 	pass
@@ -99,8 +100,6 @@ func world_reset() -> void:
 
 	level_monster_count = 10
 	bomb_count = 10
-
-	minion_count = 50
 
 	# Part of minion_count
 	archer_count = 2

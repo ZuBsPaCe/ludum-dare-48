@@ -38,6 +38,9 @@ func _ready() -> void:
 	reset_eyes()
 	reset_mouths()
 
+	if !merchant:
+		$CanvasLayer/VBoxContainer.visible = false
+
 	visible = false
 	set_process(false)
 

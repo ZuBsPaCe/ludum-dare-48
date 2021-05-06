@@ -5,6 +5,7 @@ const TileType = preload("res://scripts/TileType.gd").TileType
 const AudioType = preload("res://scripts/AudioType.gd").AudioType
 const NodeType = preload("res://scripts/NodeType.gd").NodeType
 const RoomType = preload("res://scripts/RoomType.gd").RoomType
+const RegionType = preload("res://scripts/RegionType.gd").RegionType
 
 const bomb_distance := 160.0
 const bomb_distance_sq := bomb_distance * bomb_distance
@@ -50,6 +51,8 @@ var _spawn_cooldown := Cooldown.new(5.0)
 
 var _map := Map.new()
 
+var _region_sampler := RegionSampler.new()
+
 var _offsets4 := [
 	Coord.new(0, -1),
 	Coord.new(-1, 0),
@@ -78,6 +81,15 @@ enum CommandType {
 	ADD_DIG,
 	REMOVE_DIG,
 	ADD_RALLY
+}
+
+
+enum SizeType {
+	SINGLE,
+	TINY,
+	SMALL,
+	MEDIUM,
+	LARGE
 }
 
 
@@ -423,7 +435,7 @@ func _process(delta: float) -> void:
 
 						Helper.get_tile_circle(_tiles, mouse_coord.x, mouse_coord.y, State.rally_radius)
 						for i in range(_tiles.size() - 1, -1, -1):
-							if _tiles[i].tile_type != TileType.GROUND:
+							if _tiles[i].tile_type != TileType.OPEN:
 								_tiles.remove(i)
 
 						for current_tile in _tiles:
@@ -479,7 +491,7 @@ func _process(delta: float) -> void:
 
 				var can_bomb : bool = (
 					has_bombs &&
-					mouse_tile == TileType.GROUND &&
+					mouse_tile == TileType.OPEN &&
 					nearest_minion != null &&
 					nearest_minion_visible &&
 					nearest_minion_distance_sq <= bomb_distance_sq)
@@ -540,7 +552,7 @@ func _process(delta: float) -> void:
 				while _tiles.size() > 0:
 					var index = randi() % _tiles.size()
 					var check_tile = _tiles[index]
-					if check_tile.tile_type == TileType.GROUND:
+					if check_tile.tile_type == TileType.OPEN:
 						var monster : Minion = minion_scene.instance()
 						monster.setup(1, randf() < State.monster_archer_fraction)
 						monster.position = check_tile.coord.to_random_pos()
@@ -626,8 +638,8 @@ func world_start() -> void:
 	var layer_connections := []
 	var layer_node_types := []
 
-	var first_node_type = NodeType.PORTAL
-	#var first_node_type = NodeType.RESCUE
+	#var first_node_type = NodeType.PORTAL
+	var first_node_type = NodeType.RESCUE
 
 	var node_to_node_types := {}
 	node_to_node_types[0] = first_node_type
@@ -754,172 +766,158 @@ func map_generate(width : int, height : int) -> void:
 	_camera.limit_bottom = height * 32
 	_bomb_count_label.text = str(State.bomb_count)
 
-
-	_map.setup(width, height, TileType.DIRT)
-
-
-
-
-
-#	var start_radius := randi() % 4 + 3
-#	var start_x := randi() % (width - 10) + 5
-#	var start_y := start_radius + 2
-#	var start_coord := Coord.new(start_x, start_y)
-
-	#start_radius = 5
-
-#	for x in range(2, width-2):
-#		for y in range(2, 11):
-#			_map.set_tile_type(x, y, TileType.GROUND)
-
-#	_map.set_tile_type(start_coord.x, start_coord.y, TileType.START_PORTAL)
-#
-#	var start_tiles := Helper.get_tile_circle_new(start_x, start_y, start_radius, false)
-#	for tile in start_tiles:
-#		_map.set_tile_type(tile.x, tile.y, TileType.MINION_START)
-
-
-
-#	if State.world_node_type == NodeType.PORTAL || State.world_node_type == NodeType.RESCUE:
-#		var end_radius := randi() % 4 + 3
-#		var end_x := randi() % (width - 10) + 5
-#		var end_y := height - end_radius - 2
-#		var end_coord := Coord.new(end_x, end_y)
-#
-#		_map.set_tile_type(end_coord.x, end_coord.y, TileType.END_PORTAL)
-#
-#		var end_tiles := Helper.get_tile_circle_new(end_x, end_y, end_radius, false)
-#		for tile in end_tiles:
-#			_map.set_tile_type(tile.x, tile.y, TileType.MONSTER_START)
-#
-#
-#		var total_prison_count := State.level + 1
-#		var prison_count := 0
-#
-#		var total_cave_count := randi() % (8 + State.level) + (8 + State.level)
-#		var cave_count := 0
-#
-#		var monster_tiles := []
-#
-#		while cave_count < total_cave_count || monster_tiles.size() == 0:
-#			var radius := randi() % 6 + 1
-#
-#			var center := Coord.new(randi() % (width - 4) + 2, randi() % (height - 4) + 2)
-#			if center.distance_to(start_coord) <= radius + start_radius + 3:
-#				continue
-#
-#			var cave_tiles := Helper.get_tile_circle_new(center.x, center.y, radius)
-#
-#			if prison_count < total_prison_count:
-#				var prison_center_tile = cave_tiles[randi() % cave_tiles.size()]
-#				var check_prison_tiles := Helper.get_tile_circle_new(prison_center_tile.x, prison_center_tile.y, 8, true)
-#
-#				var valid_prison := true
-#				for check_tile in check_prison_tiles:
-#					if check_tile.tile_type != TileType.DIRT && check_tile.tile_type != TileType.GROUND && check_tile.tile_type != TileType.ROCK:
-#						valid_prison = false
-#						break
-#
-#				if valid_prison:
-#					var prison_tiles := Helper.get_tile_circle_new(prison_center_tile.x, prison_center_tile.y, 2, true)
-#					var inner_tiles := prison_tiles.duplicate()
-#
-#					var inner_tile_count := 1 + randi() % (prison_tiles.size() - 1)
-#
-#					while inner_tiles.size() > inner_tile_count:
-#						inner_tiles.remove(randi() % inner_tiles.size())
-#
-#					for i in range(inner_tiles.size() - 1, -1, -1):
-#						var inner_tile = inner_tiles[i]
-#						if inner_tile.coord.x == 0 || inner_tile.coord.y == 0 || inner_tile.coord.x == _map.width - 1 || inner_tile.coord.y == _map.height - 1:
-#							inner_tiles.remove(i)
-#
-#					valid_prison = inner_tiles.size() > 0
-#
-#					if valid_prison:
-#						for inner_tile in inner_tiles:
-#							_map.set_tile_type(inner_tile.x, inner_tile.y, TileType.PRISON_START)
-#							inner_tile.inner_prison = true
-#
-#						for inner_tile in inner_tiles:
-#							for y in range(inner_tile.coord.y - 1, inner_tile.coord.y + 2):
-#								for x in range(inner_tile.coord.x - 1, inner_tile.coord.x + 2):
-#									if _map.is_valid(x, y) && _map.get_tile_type(x, y) == TileType.DIRT:
-#										_map.set_tile_type(x, y, TileType.PRISON)
-#
-#						var prison := Prison.new()
-#						prison.inner_tiles = inner_tiles
-#						State.prisons.append(prison)
-#
-#						prison_count += 1
-#
-#			for tile in cave_tiles:
-#				if tile.tile_type == TileType.DIRT:
-#					_map.set_tile_type(tile.x, tile.y, TileType.MONSTER_START)
-#					monster_tiles.append(tile)
-#
-#			cave_count += 1
-#
-#		var total_rock_cave_count := 3 + State.level
-#		var rock_cave_count := 0
-#
-#		while rock_cave_count < total_rock_cave_count:
-#			var radius := randi() % 8 + 1
-#
-#			var center := Coord.new(randi() % (width - 4) + 2, randi() % (height - 4) + 2)
-#			if center.distance_to(start_coord) <= radius + start_radius + 3:
-#				continue
-#
-#			var rock_tiles := Helper.get_tile_circle_new(center.x, center.y, radius)
-#			for tile in rock_tiles:
-#				if tile.tile_type == TileType.DIRT:
-#					if randi() % 3 == 0:
-#						_map.set_tile_type(tile.x, tile.y, TileType.ROCK)
-#
-#			rock_cave_count += 1
-
 	var areas := []
 
-#	if State.world_node_type == NodeType.PORTAL:
-#		add_circle_area(RoomType.START, 4, true, 0, 0, width, height * 0.33, areas)
-#		add_circle_area(RoomType.PORTAL, 4, true, 0, height * 0.66, width, height, areas)
-#
-#		for i in 1000:
-#			add_circle_area(RoomType.CAVE, 2 + (randi() % 5), false, 0, 0, width, height, areas, [RoomType.CAVE])
-
-
-	if State.world_node_type == NodeType.PORTAL:
+	if true || State.world_node_type == NodeType.PORTAL:
 		if State.level <= 3:
-			add_rect_area(RoomType.START, 3 + randi() % 2, 3 + randi() % 2, true, 0, 0, width, height * 0.25, areas)
-			add_rect_area(RoomType.PORTAL, 3 + randi() % 2, 3 + randi() % 2, true, 0, height * 0.75, width, height * 0.25, areas)
+			if false:
+				_map.setup(width, height, TileType.OPEN)
+				if false:
+					add_rect_area(RoomType.START, SizeType.SMALL, SizeType.SMALL, RegionType.HOR_TOP, true, areas, [])
+					add_rect_area(RoomType.PORTAL, SizeType.SMALL, SizeType.SMALL, RegionType.HOR_BOTTOM, true, areas, [])
 
-			for i in 10:
-				add_circle_area(RoomType.CAVE, 3 + randi() % 3, false, 0, 0, width, height, areas)
+					for i in 10:
+						var cave := add_circle_area(RoomType.CAVE, SizeType.MEDIUM, RegionType.ALL, false, areas, [])
+						if cave != null:
+							add_rect_area(RoomType.PRISON, SizeType.MEDIUM, SizeType.SMALL, RegionType.SPECIFIC_AREAS, false, areas, [RoomType.CAVE], [cave])
 
-			for i in 10:
-				add_circle_area(RoomType.CAVE, 2 + randi() % 3, false, 0, 0, width, height, areas, [RoomType.CAVE])
+	#			for i in 50:
+	#				add_rect_area(RoomType.PRISON, SizeType.SMALL, SizeType.SMALL, RegionType.ALL, false, areas, [RoomType.PRISON])
 
-			for i in 10:
-				add_circle_area(RoomType.ROCK, 2 + randi() % 3, false, 0, 0, width, height, areas, [RoomType.ROCK])
+	#			for i in 5:
+	#				add_circle_area(RoomType.CAVE, SizeType.TINY, RegionType.ALL, false, areas, [RoomType.CAVE])
+	#				add_circle_area(RoomType.CAVE, SizeType.SMALL, RegionType.ALL, false, areas, [RoomType.CAVE])
 
 
-	for area in areas:
-		match area.room_type:
-			RoomType.START:
-				fill_area(TileType.MINION_START, area)
-				_map.set_tile_type(area.center_x, area.center_y, TileType.START_PORTAL)
+				fill_areas(areas)
 
-			RoomType.PORTAL:
-				fill_area(TileType.MONSTER_START, area)
-				_map.set_tile_type(area.center_x, area.center_y, TileType.END_PORTAL)
 
-			RoomType.CAVE:
-				fill_area(TileType.GROUND, area)
+				add_rock_borders()
+				#apply_cave_randomization(0.3, 3, 3, 2)
+				apply_cave_randomization_2(null, TileType.OPEN, TileType.DIRT, true, 0.3, 3, 3, 2)
+				apply_cave_randomization_2(TileType.DIRT, TileType.DIRT, TileType.ROCK, true, 0.2, 3, 3, 2)
+			else:
+				_map.setup(width, height, TileType.DIRT)
+				apply_cave_randomization_2(null, TileType.DIRT, TileType.ROCK, true, 0.3, 3, 3, 2)
 
-			RoomType.ROCK:
-				fill_area(TileType.ROCK, area)
+				add_rect_area(RoomType.START, SizeType.SMALL, SizeType.SMALL, RegionType.HOR_TOP, true, areas, [])
+				add_rect_area(RoomType.PORTAL, SizeType.SMALL, SizeType.SMALL, RegionType.HOR_BOTTOM, true, areas, [])
 
-	apply_cave_randomization(100, 1)
+				for i in 10:
+					var cave := add_circle_area(RoomType.CAVE, SizeType.MEDIUM, RegionType.ALL, false, areas, [])
+					if cave != null:
+						add_rect_area(RoomType.PRISON, SizeType.MEDIUM, SizeType.SMALL, RegionType.SPECIFIC_AREAS, false, areas, [RoomType.CAVE], [cave])
+
+				fill_areas(areas)
+				add_rock_borders()
+
+				fix_closed_areas()
+
+			#_camera.zoom = Vector2(2, 2)
+
+
+func fix_closed_areas() -> void:
+	var tiles := []
+
+	for tile in _map.tiles:
+		if tile.tile_type != TileType.ROCK:
+			tile.checked = false
+			tiles.append(tile)
+		else:
+			tile.checked = true
+
+	var regions := []
+
+	while true:
+		var queue := []
+		var tile : Tile = null
+
+		while tiles.size() > 0:
+			tile = tiles.pop_back()
+			if !tile.checked:
+				break
+
+		if tiles.size() == 0:
+			break
+
+		tile.checked = true
+		queue.append(tile)
+
+		var region := []
+		regions.append(region)
+
+		while queue.size() > 0:
+			tile = queue.pop_back()
+			region.append(tile)
+
+			Helper.get_tile_neighbours_4(State.tile_circle, tile.x, tile.y)
+			for neighbour in State.tile_circle:
+				if neighbour.checked:
+					continue
+				neighbour.checked = true
+				queue.append(neighbour)
+
+	if regions.size() <= 1:
+		return
+
+	var astar := AStar2D.new()
+	astar.reserve_space(_map.size)
+	var id := 0
+	for y in _map.height:
+		for x in _map.width:
+			var tile : Tile = _map.get_tile(x, y)
+			if tile.tile_type == TileType.ROCK:
+				astar.add_point(id, Vector2(x, y), 2)
+			else:
+				astar.add_point(id, Vector2(x, y), 1)
+
+			if y > 0:
+				astar.connect_points(id, id - _map.width)
+
+			if x > 0:
+				astar.connect_points(id, id - 1)
+
+			id += 1
+
+	regions.sort_custom(self, "sort_regions")
+
+	for from_index in range(0, regions.size() - 1):
+		var path_set := false
+		var smallest_id_path : Array
+
+		for to_index in range(from_index + 1, regions.size()):
+			var from_region : Array = regions[from_index]
+			var to_region : Array = regions[to_index]
+
+			var id_path := astar.get_id_path(
+				from_region[randi() % from_region.size()].id,
+				to_region[randi() % to_region.size()].id)
+
+			assert(id_path.size() > 0)
+
+			if !path_set || id_path.size() < smallest_id_path.size():
+				path_set = true
+				smallest_id_path = id_path
+
+		for path_id in smallest_id_path:
+			var tile : Tile = _map.tiles[path_id]
+			if tile.tile_type == TileType.ROCK:
+				_map.set_tile_type(tile.x, tile.y, TileType.DIRT)
+
+
+
+
+
+func sort_regions(a : Array, b : Array) -> bool:
+	if a.size() < b.size():
+		return true
+	elif a.size() > b.size():
+		return false
+	return a[0].id < b[0].id
+
+func add_rock_borders() -> void:
+	var width := _map.width
+	var height := _map.height
 
 	for x in range(0, width):
 		assert(can_change_tile_type(x, 0))
@@ -956,97 +954,254 @@ func can_change_tile_type(x : int, y : int) -> bool:
 	var tile_type = _map.get_tile_type(x, y)
 	return (
 		tile_type == TileType.DIRT ||
-		tile_type == TileType.GROUND ||
+		tile_type == TileType.OPEN ||
 		tile_type == TileType.ROCK ||
 		tile_type == TileType.MONSTER_START ||
-		tile_type == TileType.MINION_START)
+		tile_type == TileType.MINION_START ||
+		tile_type == TileType.PRISON)
 
-func fill_area(tile_type, area) -> void:
+func fill_areas(areas : Array) -> void:
+	for area in areas:
+		match area.room_type:
+			RoomType.START:
+				fill_area(TileType.MINION_START, area)
+				_map.set_tile_type(area.center_x, area.center_y, TileType.START_PORTAL)
+
+			RoomType.PORTAL:
+				fill_area(TileType.MONSTER_START, area)
+				_map.set_tile_type(area.center_x, area.center_y, TileType.END_PORTAL)
+
+			RoomType.CAVE:
+				fill_area(TileType.OPEN, area)
+
+			RoomType.ROCK:
+				fill_area(TileType.ROCK, area)
+
+			RoomType.PRISON:
+				var prison_tiles = fill_area(TileType.PRISON, area)
+				var prison_start_tiles := []
+				for prison_tile in prison_tiles:
+					if (prison_tile.x <= 1 ||
+						prison_tile.y <= 1 ||
+						prison_tile.x >= _map.width - 2 ||
+						prison_tile.y >= _map.height - 2):
+						continue
+
+					Helper.get_tile_neighbours_4(State.tile_circle, prison_tile.x, prison_tile.y)
+					var is_prison_start := true
+					for tile in State.tile_circle:
+						if tile.tile_type != TileType.PRISON:
+							is_prison_start = false
+							break
+					if is_prison_start:
+						prison_start_tiles.append(prison_tile)
+				assert(prison_start_tiles.size() > 0)
+				for prison_tile in prison_start_tiles:
+					_map.set_tile_type(prison_tile.x, prison_tile.y, TileType.PRISON_START)
+					prison_tile.inner_prison = true
+
+				var prison := Prison.new()
+				prison.inner_tiles = prison_start_tiles
+				State.prisons.append(prison)
+
+
+func fill_area(tile_type, area) -> Array:
+	var tiles := []
 	if area.get_class() == "WorldCircle":
 		Helper.get_tile_circle(State.tile_circle, area.center_x, area.center_y, area.radius - 1)
 		for tile in State.tile_circle:
 			_map.set_tile_type(tile.x, tile.y, tile_type)
+			tiles.append(tile)
 	else:
 		for y in range(area.y, area.y + area.height):
 			for x in range(area.x, area.x + area.width):
 				if _map.is_valid(x, y):
 					_map.set_tile_type(x, y, tile_type)
+					tiles.append(_map.get_tile(x, y))
+	return tiles
 
-func apply_cave_randomization(switch_iterations : int, cell_iterations : int, lower_limit = 2, upper_limit = 7) -> void:
-	for i in switch_iterations:
-		var x := randi() % _map.width
-		var y := randi() % _map.height
-
-		Helper.get_tile_circle(State.tile_circle, x, y, 2)
-		var valid := true
-		for tile in State.tile_circle:
-			if tile.tile_type != TileType.DIRT && tile.tile_type != TileType.GROUND:
-				valid = false
-				break
-		if !valid:
-			continue
-
-		if _map.get_tile_type(x, y) == TileType.DIRT:
-			_map.set_tile_type(x, y, TileType.GROUND)
-		else:
-			_map.set_tile_type(x, y, TileType.DIRT)
-
-	var make_ground_tiles := []
+func apply_cave_randomization(set_dirt_factor : float, iterations : int, dirt_birth_limit : int = 3, dirt_death_limit : int = 2) -> void:
+	var make_open_tiles := []
 	var make_dirt_tiles := []
 
-	for i in cell_iterations:
+	if set_dirt_factor > 0:
 		for y in _map.height:
 			for x in _map.width:
-				var valid := true
-				var ground_count := 0
-
-				var center_tile
-
-				Helper.get_tile_circle(State.tile_circle, x, y, 2)
-				for tile in State.tile_circle:
-					if tile.tile_type != TileType.DIRT && tile.tile_type != TileType.GROUND:
-						valid = false
-						break
-					if tile.x == x && tile.y == y:
-						center_tile = tile
-					elif tile.tile_type == TileType.GROUND:
-						ground_count += 1
-				if !valid:
+				var center_tile := _map.get_tile(x, y)
+				if center_tile.tile_type != TileType.OPEN:
 					continue
 
-				if ground_count >= upper_limit:
-					make_ground_tiles.append(center_tile)
-				elif ground_count <= lower_limit:
+				if randf() < set_dirt_factor:
 					make_dirt_tiles.append(center_tile)
+
+	for tile in make_dirt_tiles:
+		_map.set_tile_type(tile.x, tile.y, TileType.DIRT)
+
+	for tile in make_open_tiles:
+		_map.set_tile_type(tile.x, tile.y, TileType.OPEN)
+
+	make_dirt_tiles.clear()
+	make_open_tiles.clear()
+
+
+	var dirt_stay_alive_limit := 8 - dirt_death_limit
+
+	for i in iterations:
+		for y in _map.height:
+			for x in _map.width:
+				var center_tile := _map.get_tile(x, y)
+				if center_tile.tile_type == TileType.OPEN:
+					var dirt_count := 0
+					Helper.get_tile_neighbours_8(State.tile_circle, x, y)
+					for tile in State.tile_circle:
+						if tile.tile_type != TileType.OPEN:
+							dirt_count += 1
+							if dirt_count > dirt_birth_limit:
+								make_dirt_tiles.append(center_tile)
+								break
+				elif center_tile.tile_type == TileType.DIRT:
+					var dirt_count := 0
+					Helper.get_tile_neighbours_8(State.tile_circle, x, y)
+					for tile in State.tile_circle:
+						if tile.tile_type != TileType.OPEN:
+							dirt_count += 1
+					if dirt_count < dirt_death_limit:
+						make_open_tiles.append(center_tile)
 
 		for tile in make_dirt_tiles:
 			_map.set_tile_type(tile.x, tile.y, TileType.DIRT)
 
-		for tile in make_ground_tiles:
-			_map.set_tile_type(tile.x, tile.y, TileType.GROUND)
+		for tile in make_open_tiles:
+			_map.set_tile_type(tile.x, tile.y, TileType.OPEN)
 
 		make_dirt_tiles.clear()
-		make_ground_tiles.clear()
+		make_open_tiles.clear()
+
+func apply_cave_randomization_2(filter_type, from_type, to_type, eager : bool, set_factor : float, iterations : int, birth_limit : int = 3, death_limit : int = 2) -> void:
+	var filtered_tiles := []
+
+	if filter_type == null:
+		filtered_tiles = _map.tiles
+	else:
+		for tile in _map.tiles:
+			if tile.tile_type == filter_type:
+				filtered_tiles.append(tile)
+
+	var birth_tiles := []
+	var death_tiles := []
+
+	if set_factor > 0:
+		for tile in filtered_tiles:
+			if tile.tile_type != from_type:
+				continue
+
+			if randf() < set_factor:
+				birth_tiles.append(tile)
+
+	for tile in birth_tiles:
+		_map.set_tile_type(tile.x, tile.y, to_type)
+
+	birth_tiles.clear()
+
+
+	#var dirt_stay_alive_limit := 8 - dirt_death_limit
+
+	for i in iterations:
+		for tile in filtered_tiles:
+			if tile.tile_type == from_type:
+				var happy_count := 0
+				Helper.get_tile_neighbours_8(State.tile_circle, tile.x, tile.y)
+
+				if eager:
+					happy_count += 8 - State.tile_circle.size()
+
+				for neighbour in State.tile_circle:
+					if eager:
+						if neighbour.tile_type != from_type:
+							happy_count += 1
+						else:
+							continue
+					else:
+						if neighbour.tile_type == to_type:
+							happy_count += 1
+						else:
+							continue
+
+					if happy_count > birth_limit:
+						birth_tiles.append(tile)
+						break
+
+			elif tile.tile_type == to_type:
+				var happy_count := 0
+				Helper.get_tile_neighbours_8(State.tile_circle, tile.x, tile.y)
+
+				if eager:
+					happy_count += 8 - State.tile_circle.size()
+
+				for neighbour in State.tile_circle:
+					if eager:
+						if neighbour.tile_type != from_type:
+							happy_count += 1
+						else:
+							continue
+					else:
+						if neighbour.tile_type == to_type:
+							happy_count += 1
+						else:
+							continue
+				if happy_count < death_limit:
+					death_tiles.append(tile)
+
+		for tile in birth_tiles:
+			_map.set_tile_type(tile.x, tile.y, to_type)
+
+		for tile in death_tiles:
+			_map.set_tile_type(tile.x, tile.y, from_type)
+
+		birth_tiles.clear()
+		death_tiles.clear()
 
 
 
 
 
+func get_random_circle_radius(size_type) -> int:
+	match size_type:
+		SizeType.SINGLE:
+			return 1
+		SizeType.TINY:
+			return 2
+		SizeType.SMALL:
+			return 3
+		SizeType.MEDIUM:
+			return 3 + (randi() % 2)
+		SizeType.LARGE:
+			return 4 + (randi() % 2)
+	assert(false)
+	return 0
 
+func get_random_rect_size(size_type) -> int:
+	match size_type:
+		SizeType.SINGLE:
+			return 1
+		SizeType.TINY:
+			return 2 + (randi() % 2)
+		SizeType.SMALL:
+			return 3 + (randi() % 2)
+		SizeType.MEDIUM:
+			return 4 + (randi() % 3)
+		SizeType.LARGE:
+			return 6 + (randi() % 4)
+	assert(false)
+	return 0
 
-func add_circle_area(room_type, radius : int, important : bool, min_x : int, min_y : int, max_x : int, max_y : int, areas : Array, allowed_room_type_overlaps : Array = []) -> WorldCircle:
-	min_x = clamp(min_x, 2, _map.width - 2)
-	max_x = clamp(max_x, 2, _map.width - 2)
+func add_circle_area(room_type, size_type, region_type, important : bool, areas : Array, allowed_room_type_overlaps, specific_areas = []) -> WorldCircle:
+	_region_sampler.setup(region_type, specific_areas)
 
-	min_y = clamp(min_y, 2, _map.height - 2)
-	max_y = clamp(max_y, 2, _map.height - 2)
-
-	var circle := WorldCircle.new(radius, room_type)
+	var circle := WorldCircle.new(get_random_circle_radius(size_type), room_type)
 
 	for i in 1000:
-		circle.set_position(
-			min_x + randi() % (max_x - min_x),
-			min_y + randi() % (max_y - min_y))
+		_region_sampler.set_random_position(circle)
 
 		var valid := true
 		for other_area in areas:
@@ -1063,19 +1218,22 @@ func add_circle_area(room_type, radius : int, important : bool, min_x : int, min
 	assert(!important)
 	return null
 
-func add_rect_area(room_type, width, height, important : bool, min_x : int, min_y : int, max_x : int, max_y : int, areas : Array, allowed_room_type_overlaps : Array = []) -> WorldRect:
-	min_x = clamp(min_x, 2, _map.width - 2)
-	max_x = clamp(max_x, 2, _map.width - 2)
+func add_rect_area(room_type, size_type1, size_type2, region_type, important : bool, areas : Array, allowed_room_type_overlaps, specific_areas = []) -> WorldRect:
+	_region_sampler.setup(region_type, specific_areas)
 
-	min_y = clamp(min_y, 2, _map.height - 2)
-	max_y = clamp(max_y, 2, _map.height - 2)
+	var width : int
+	var height : int
+	if size_type1 == size_type2 || randi() % 2 == 0:
+		width = get_random_rect_size(size_type1)
+		height = get_random_rect_size(size_type2)
+	else:
+		width = get_random_rect_size(size_type2)
+		height = get_random_rect_size(size_type1)
 
 	var rect := WorldRect.new(width, height, room_type)
 
 	for i in 1000:
-		rect.set_position(
-			min_x + randi() % (max_x - min_x),
-			min_y + randi() % (max_y - min_y))
+		_region_sampler.set_random_position(rect)
 
 		var valid := true
 		for other_area in areas:
@@ -1143,7 +1301,7 @@ func map_fill() -> void:
 
 				TileType.PRISON_START:
 					_tilemap32.set_cell(x, y, 0)
-					_map.set_tile_type(x, y, TileType.GROUND)
+					_map.set_tile_type(x, y, TileType.OPEN)
 
 				TileType.START_PORTAL:
 					_tilemap32.set_cell(x, y, 4)
@@ -1165,27 +1323,36 @@ func map_fill() -> void:
 					end_portal.set_active(true)
 					State.end_portals.append(end_portal)
 
-				TileType.GROUND:
+				TileType.OPEN:
 					_tilemap32.set_cell(x, y, 0)
 
 				TileType.MINION_START:
 					_tilemap32.set_cell(x, y, 0)
-					_map.set_tile_type(x, y, TileType.GROUND)
+					_map.set_tile_type(x, y, TileType.OPEN)
 					minion_tiles.append(_map.get_tile(x, y))
 
 				TileType.MONSTER_START:
 					_tilemap32.set_cell(x, y, 0)
-					_map.set_tile_type(x, y, TileType.GROUND)
+					_map.set_tile_type(x, y, TileType.OPEN)
 					monster_tiles.append(_map.get_tile(x, y))
 
 	_map.finalize_waypoints()
 
 
 	if minion_tiles.size() > 0:
+		var kings_added := 0
+		var archers_added := 0
 		for i in range(State.minion_count):
 			var tile : Tile = minion_tiles[randi() % minion_tiles.size()]
 			var minion : Minion = minion_scene.instance()
-			minion.setup(0, i < State.archer_count)
+			if kings_added < State.minion_king_count:
+				kings_added += 1
+				minion.setup(0, false, false, true)
+			elif archers_added < State.archer_count:
+				archers_added += 1
+				minion.setup(0, true)
+			else:
+				minion.setup(0)
 			minion.position = tile.coord.to_random_pos()
 			_entity_container.add_child(minion)
 
@@ -1200,21 +1367,42 @@ func map_fill() -> void:
 			monster.position = tile.coord.to_random_pos()
 			_entity_container.add_child(monster)
 
-	var add_prison_king : bool = State.world_node_type == NodeType.RESCUE
-	for prison in State.prisons:
+	# We want to put the prison king far away.
+	State.prisons.sort_custom(self, "sort_prisons_far_to_near")
+
+	var king_prison_index := -1
+	if State.world_node_type == NodeType.RESCUE:
+		if State.prisons.size() <= 3:
+			king_prison_index = 0
+		else:
+			king_prison_index = randi() % (State.prisons.size() / 2 + 1)
+
+	for prison_index in State.prisons.size():
+		var prison : Prison = State.prisons[prison_index]
+
 		var amount = max(1.0, randi() % (State.level + 2))
 		for i in range(0, amount):
 			var tile : Tile = prison.inner_tiles[randi() %  prison.inner_tiles.size()]
 			var minion : Minion = minion_scene.instance()
-			if add_prison_king:
+			if prison_index == king_prison_index:
 				minion.setup(0, randf() < 0.5, true, true)
-				add_prison_king = false
+				prison_index = -1
 			else:
 				minion.setup(0, randf() < 0.5, true)
 			minion.position = tile.coord.to_random_pos()
 			_entity_container.add_child(minion)
 			tile.prisoners.append(minion)
 
+func sort_prisons_far_to_near(prison1 : Prison, prison2 : Prison) -> bool:
+	var start_portal_pos : Vector2 = State.start_portals[0].position
+	var dist1 : float = prison1.inner_tiles[0].coord.to_pos().distance_squared_to(start_portal_pos)
+	var dist2 : float = prison2.inner_tiles[0].coord.to_pos().distance_squared_to(start_portal_pos)
+
+	if dist1 > dist2:
+		return true
+	if dist1 < dist2:
+		return false
+	return hash(prison1) < hash(prison2)
 
 func game_traverse_dig_tiles():
 	if _map.dig_tiles.size() == 0:
@@ -1241,7 +1429,7 @@ func game_traverse_dig_tiles():
 			tile_index = posmod(tile_index + 1, tile_count)
 
 			var from_tile : Tile = State.tile_circle[tile_index]
-			if from_tile.tile_type != TileType.GROUND:
+			if from_tile.tile_type != TileType.OPEN:
 				continue
 
 			for minion in from_tile.minions:
@@ -1375,36 +1563,26 @@ func game_check_level_done():
 	if State.monsters.size() == 0:
 		all_monsters_dead = true
 
+	for minion_king in State.minion_kings:
+		if minion_king.prisoner:
+			minion_kings_in_prison = true
 
-	if State.world_node_type == NodeType.RESCUE:
-		for minion_king in State.minion_kings:
-			if minion_king.prisoner:
-				minion_kings_in_prison = true
-
-		if State.minion_kings_died_count >= State.minion_kings_created_count:
-			all_minion_kings_dead = true
+	if State.minion_kings_died_count >= State.minion_kings_created_count:
+		all_minion_kings_dead = true
 
 	var done := false
 	var failed := false
 
-	if State.world_node_type == NodeType.PORTAL:
-		if all_minions_dead:
-			State.end_level_info = "GAME OVER"
-			done = true
-			failed = true
-		elif all_minions_fled:
-			State.end_level_info = "PORTAL REACHED"
-			done = true
+	if all_minions_dead:
+		State.end_level_info = "GAME OVER"
+		done = true
+		failed = true
+	elif all_minion_kings_dead:
+		State.end_level_info = "YOUR KING DIED"
+		done = true
+		failed = true
 	elif State.world_node_type == NodeType.RESCUE:
-		if all_minions_dead:
-			State.end_level_info = "GAME OVER"
-			done = true
-			failed = true
-		elif all_minion_kings_dead:
-			State.end_level_info = "YOUR KING DIED"
-			done = true
-			failed = true
-		elif all_minions_fled:
+		if all_minions_fled:
 			if minion_kings_in_prison:
 				State.end_level_info = "KING LEFT BEHIND"
 				done = true
@@ -1412,8 +1590,9 @@ func game_check_level_done():
 			else:
 				State.end_level_info = "KING RESCUED"
 				done = true
-	else:
-		assert(false)
+	elif all_minions_fled:
+		State.end_level_info = "PORTAL REACHED"
+		done = true
 
 	if done:
 		if !_level_done:

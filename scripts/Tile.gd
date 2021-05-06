@@ -22,6 +22,8 @@ var rally_time := 0.0
 var rally_countdown := 0.0
 var rally_end_tiles := []
 
+var checked := false
+
 func _init(id : int, x : int, y : int, tile_type) -> void:
 	self.id = id
 	self.x = x
@@ -29,3 +31,6 @@ func _init(id : int, x : int, y : int, tile_type) -> void:
 	self.coord = Coord.new(x, y)
 	self.tile_type = tile_type
 	health = State.dirt_health
+
+func _to_string() -> String:
+	return "%d / %d: %d" % [x, y, tile_type]
