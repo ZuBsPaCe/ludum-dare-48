@@ -67,12 +67,17 @@ var end_level_info := ""
 
 var spawn_cooldown := 20
 
+var swarm_cooldown_init := 30
+var swarm_cooldown_min := 15
+var swarm_cooldown_max := 45
+
 const config_path = "res://settings.ini"
 var config : ConfigFile
 
 var game_camera : Camera2D
 
 var prisons := []
+var monster_swarms := []
 
 var entity_container : Node2D
 
@@ -161,13 +166,15 @@ func increase_level():
 
 		level_monster_count *= 1.5
 
-		spawn_cooldown = max(10, 45 - State.level * 6)
 
 		bomb_count += increase_bomb_count
 
 		increase_minion_count = 0
 		increase_archer_count = 0
 		increase_bomb_count = 0
+
+
+	spawn_cooldown = max(10, 45 - State.level * 6)
 
 func game_reset():
 	start_portals.clear()
@@ -176,6 +183,8 @@ func game_reset():
 	minions.clear()
 	prisons.clear()
 	minion_kings.clear()
+
+	monster_swarms.clear()
 
 	minion_kings_created_count = 0
 	minion_kings_died_count = 0

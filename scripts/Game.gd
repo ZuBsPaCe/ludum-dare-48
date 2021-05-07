@@ -47,6 +47,7 @@ var _start_battle_cooldown := Cooldown.new()
 var _level_done_cooldown := Cooldown.new(2.0)
 var _check_level_done_cooldown := Cooldown.new(2.0)
 var _spawn_cooldown := Cooldown.new(5.0)
+var _swarm_cooldown := Cooldown.new()
 
 
 var _map := Map.new()
@@ -365,6 +366,7 @@ func _process(delta: float) -> void:
 		_level_done_cooldown.step(delta)
 		_check_level_done_cooldown.step(delta)
 		_spawn_cooldown.step(delta)
+		_swarm_cooldown.step(delta)
 
 		var mouse_tile = -1
 		var mouse_coord := Coord.new()
@@ -440,7 +442,7 @@ func _process(delta: float) -> void:
 
 						for current_tile in _tiles:
 							var distance := mouse_coord.distance_to(current_tile.coord)
-							var rally_countdown := (1.0 - distance / (State.rally_radius + 1)) * State.rally_duration
+							var rally_countdown : float = (1.0 - distance / (State.rally_radius + 1)) * State.rally_duration
 
 							if current_tile.rally_countdown < rally_countdown:
 								current_tile.rally_countdown = rally_countdown
@@ -475,7 +477,7 @@ func _process(delta: float) -> void:
 				var nearest_minion = null
 				var nearest_minion_visible = false
 
-				var has_bombs := State.bomb_count > 0
+				var has_bombs : bool = State.bomb_count > 0
 
 				if has_bombs:
 					for minion in State.minions:
@@ -538,28 +540,9 @@ func _process(delta: float) -> void:
 
 		game_traverse_rally_tiles(delta)
 		game_start_battles()
-
-		if _check_level_done_cooldown.done:
-			_check_level_done_cooldown.restart()
-			game_check_level_done()
-
-		if _spawn_cooldown.done && !_level_done && State.monsters.size() > 6 && State.monsters.size() < 100:
-			_spawn_cooldown.restart()
-
-			for portal in State.end_portals:
-				Helper.get_tile_circle(_tiles, portal.tile.coord.x, portal.tile.coord.y, 2, false)
-
-				while _tiles.size() > 0:
-					var index = randi() % _tiles.size()
-					var check_tile = _tiles[index]
-					if check_tile.tile_type == TileType.OPEN:
-						var monster : Minion = minion_scene.instance()
-						monster.setup(1, randf() < State.monster_archer_fraction)
-						monster.position = check_tile.coord.to_random_pos()
-						_entity_container.add_child(monster)
-						break
-
-					_tiles.remove(index)
+		game_check_level_done()
+		game_spawn_monsters()
+		game_command_swarms()
 
 		if Input.is_action_just_pressed("tool1"):
 			set_tool(ToolType.DIG)
@@ -639,7 +622,8 @@ func world_start() -> void:
 	var layer_node_types := []
 
 	#var first_node_type = NodeType.PORTAL
-	var first_node_type = NodeType.RESCUE
+	#var first_node_type = NodeType.RESCUE
+	var first_node_type = NodeType.DEFEND
 
 	var node_to_node_types := {}
 	node_to_node_types[0] = first_node_type
@@ -754,6 +738,7 @@ func game_start() -> void:
 
 	State.increase_level()
 	_spawn_cooldown.restart(State.spawn_cooldown)
+	_swarm_cooldown.restart(State.swarm_cooldown_init)
 
 	_level_done = false
 
@@ -768,7 +753,57 @@ func map_generate(width : int, height : int) -> void:
 
 	var areas := []
 
-	if true || State.world_node_type == NodeType.PORTAL:
+	if State.world_node_type == NodeType.DEFEND:
+		_map.setup(width, height, TileType.DIRT)
+
+		apply_cave_randomization_2(null, TileType.DIRT, TileType.ROCK, true, 0.3, 1)
+
+		for i in 2:
+			add_circle_area(RoomType.CAVE, SizeType.MEDIUM, RegionType.SINGLE_CENTER, false, areas, [RoomType.CAVE])
+
+		for i in 2:
+			add_circle_area(RoomType.CAVE, SizeType.SMALL, RegionType.SINGLE_CENTER, false, areas, [RoomType.CAVE])
+
+		var start_area := add_rect_area(RoomType.START, SizeType.LARGE, SizeType.LARGE, RegionType.SINGLE_CENTER, true, areas, [RoomType.CAVE])
+
+		var portal_areas := [
+			RegionType.SINGLE_TOP_LEFT, RegionType.SINGLE_TOP, RegionType.SINGLE_TOP_RIGHT,
+			RegionType.SINGLE_RIGHT, RegionType.SINGLE_BOTTOM_RIGHT, RegionType.SINGLE_BOTTOM,
+			RegionType.SINGLE_BOTTOM_LEFT, RegionType.SINGLE_LEFT]
+
+		add_rect_area(RoomType.PORTAL, SizeType.SMALL, SizeType.SMALL, Helper.rand_pop(portal_areas), true, areas, [])
+		add_rect_area(RoomType.PORTAL, SizeType.SMALL, SizeType.SMALL, Helper.rand_pop(portal_areas), true, areas, [])
+		add_rect_area(RoomType.PORTAL, SizeType.SMALL, SizeType.SMALL, Helper.rand_pop(portal_areas), true, areas, [])
+
+		fill_areas(areas)
+
+		var open1 := start_area.x + 1 + randi() % (start_area.width - 3)
+		var open2 := start_area.x + 1 + randi() % (start_area.width - 3)
+		for x in range(start_area.x, start_area.x + start_area.width):
+			if x != open1 && x - 1 != open1:
+				_map.set_tile_type(x, start_area.y, TileType.ROCK)
+			else:
+				_map.set_tile_type(x, start_area.y, TileType.DIRT)
+			if x != open2 && x - 1 != open2:
+				_map.set_tile_type(x, start_area.y + start_area.height - 1, TileType.ROCK)
+			else:
+				_map.set_tile_type(x, start_area.y + start_area.height - 1, TileType.DIRT)
+
+		open1 = start_area.y + 1 + randi() % (start_area.height - 3)
+		open2 = start_area.y + 1 + randi() % (start_area.height - 3)
+		for y in range(start_area.y, start_area.y + start_area.height):
+			if y != open1 && y - 1 != open1:
+				_map.set_tile_type(start_area.x, y, TileType.ROCK)
+			else:
+				_map.set_tile_type(start_area.x, y, TileType.DIRT)
+			if y != open2 && y - 1 != open2:
+				_map.set_tile_type(start_area.x + start_area.width - 1, y, TileType.ROCK)
+			else:
+				_map.set_tile_type(start_area.x + start_area.width - 1, y, TileType.DIRT)
+
+		add_rock_borders()
+		fix_closed_areas()
+	elif true || State.world_node_type == NodeType.PORTAL:
 		if State.level <= 3:
 			if false:
 				_map.setup(width, height, TileType.OPEN)
@@ -1338,7 +1373,7 @@ func map_fill() -> void:
 
 	_map.finalize_waypoints()
 
-
+	_map.start_tiles = minion_tiles
 	if minion_tiles.size() > 0:
 		var kings_added := 0
 		var archers_added := 0
@@ -1347,12 +1382,12 @@ func map_fill() -> void:
 			var minion : Minion = minion_scene.instance()
 			if kings_added < State.minion_king_count:
 				kings_added += 1
-				minion.setup(0, false, false, true)
+				minion.setup_minion(false, false, true)
 			elif archers_added < State.archer_count:
 				archers_added += 1
-				minion.setup(0, true)
+				minion.setup_minion(true)
 			else:
-				minion.setup(0)
+				minion.setup_minion()
 			minion.position = tile.coord.to_random_pos()
 			_entity_container.add_child(minion)
 
@@ -1360,12 +1395,24 @@ func map_fill() -> void:
 				_camera.position = tile.coord.to_center_pos()
 
 	if monster_tiles.size() > 0:
-		for i in range(State.level_monster_count):
-			var tile : Tile = monster_tiles[randi() % monster_tiles.size()]
-			var monster : Minion = minion_scene.instance()
-			monster.setup(1, randf() < State.monster_archer_fraction)
-			monster.position = tile.coord.to_random_pos()
-			_entity_container.add_child(monster)
+		if State.world_node_type != NodeType.DEFEND:
+			var monster_count := State.level_monster_count
+
+			for i in range(State.level_monster_count):
+				var tile : Tile = monster_tiles[randi() % monster_tiles.size()]
+				var monster : Minion = minion_scene.instance()
+				monster.setup_monster(randf() < State.monster_archer_fraction, randf() < 0.33)
+
+				monster.position = tile.coord.to_random_pos()
+				_entity_container.add_child(monster)
+		else:
+			var monsters_per_portal := State.level_monster_count
+
+			for portal in State.end_portals:
+				for monster in spawn_monsters_from_portal(portal, monsters_per_portal):
+					monster.setup_monster(randf() < State.monster_archer_fraction, false, false, true)
+					portal.waiting_monsters.append(monster)
+
 
 	# We want to put the prison king far away.
 	State.prisons.sort_custom(self, "sort_prisons_far_to_near")
@@ -1385,10 +1432,10 @@ func map_fill() -> void:
 			var tile : Tile = prison.inner_tiles[randi() %  prison.inner_tiles.size()]
 			var minion : Minion = minion_scene.instance()
 			if prison_index == king_prison_index:
-				minion.setup(0, randf() < 0.5, true, true)
+				minion.setup_minion(randf() < 0.5, true, true)
 				prison_index = -1
 			else:
-				minion.setup(0, randf() < 0.5, true)
+				minion.setup_minion(randf() < 0.5, true)
 			minion.position = tile.coord.to_random_pos()
 			_entity_container.add_child(minion)
 			tile.prisoners.append(minion)
@@ -1450,7 +1497,7 @@ func game_traverse_dig_tiles():
 					if !astar_enabled:
 						_map.astar.set_point_disabled(dig_tile.id, false)
 
-					var path = _map.astar.get_point_path(minion.tile.id, dig_tile.id)
+					var path = _map.astar.get_id_path(minion.tile.id, dig_tile.id)
 
 					if path.size() == 0 || path.size() > State.minion_view_distance:
 						continue
@@ -1530,6 +1577,10 @@ func game_start_battle(attacker : Minion, target_list : Array, view_distance : i
 			attacker.attack(target)
 
 func game_check_level_done():
+	if _check_level_done_cooldown.running:
+		return
+	_check_level_done_cooldown.restart()
+
 	var fled_minions := []
 
 	for minion in State.minions:
@@ -1567,7 +1618,7 @@ func game_check_level_done():
 		if minion_king.prisoner:
 			minion_kings_in_prison = true
 
-	if State.minion_kings_died_count >= State.minion_kings_created_count:
+	if State.minion_kings_created_count > 0 && State.minion_kings_died_count >= State.minion_kings_created_count:
 		all_minion_kings_dead = true
 
 	var done := false
@@ -1590,9 +1641,14 @@ func game_check_level_done():
 			else:
 				State.end_level_info = "KING RESCUED"
 				done = true
+	elif State.world_node_type == NodeType.DEFEND:
+		if all_monsters_dead:
+			State.end_level_info = "BASE DEFENDED"
+			done = true
 	elif all_minions_fled:
 		State.end_level_info = "PORTAL REACHED"
 		done = true
+
 
 	if done:
 		if !_level_done:
@@ -1603,6 +1659,81 @@ func game_check_level_done():
 				switch_state(GameState.GAME_OVER)
 			else:
 				switch_state(GameState.LEVEL_END)
+
+func game_spawn_monsters() -> void:
+	if State.world_node_type == NodeType.DEFEND:
+		return
+
+	if _spawn_cooldown.running || _level_done || State.monsters.size() <= 6 || State.monsters.size() > 100:
+		return
+
+	_spawn_cooldown.restart()
+
+	for portal in State.end_portals:
+		for monster in spawn_monsters_from_portal(portal, 1):
+			monster.setup_monster(randf() < State.monster_archer_fraction, randf() < 0.33)
+
+func spawn_monsters_from_portal(portal, monster_count : int) -> Array:
+	Helper.get_tile_circle(State.tile_circle, portal.tile.coord.x, portal.tile.coord.y, 2, false)
+
+	for i in range(State.tile_circle.size() - 1, -1, -1):
+		if State.tile_circle[i].tile_type != TileType.OPEN:
+			State.tile_circle.remove(i)
+
+	var monsters := []
+	if State.tile_circle.size() == 0:
+		return monsters
+
+	for i in monster_count:
+		var tile : Tile = Helper.rand_item(State.tile_circle)
+
+		var monster : Minion = minion_scene.instance()
+		monster.position = tile.coord.to_random_pos()
+		_entity_container.add_child(monster)
+		monsters.append(monster)
+
+	return monsters
+
+func game_command_swarms() -> void:
+	if _swarm_cooldown.running:
+		return
+
+	_swarm_cooldown.restart(State.swarm_cooldown_min + randi() % (State.swarm_cooldown_max - State.swarm_cooldown_min))
+
+	if State.world_node_type == NodeType.DEFEND:
+		var portal_index := randi() % State.end_portals.size()
+
+		for i in State.end_portals.size():
+			portal_index = posmod(portal_index + 1, State.end_portals.size())
+			var portal = State.end_portals[portal_index]
+			if portal.waiting_monsters.size() == 0:
+				continue
+
+			var possible_monsters := []
+			for monster in portal.waiting_monsters:
+				if monster.can_start_swarm():
+					possible_monsters.append(monster)
+
+			if possible_monsters.size() == 0:
+				continue
+
+			var swarm_size := min(5 + randi() % 6, possible_monsters.size())
+
+			if possible_monsters.size() - swarm_size < 5:
+				swarm_size = possible_monsters.size()
+
+			var swarm := []
+			for swarm_index in swarm_size:
+				var swar_monster = possible_monsters.pop_back()
+				swarm.append(swar_monster)
+				portal.waiting_monsters.erase(swar_monster)
+
+			State.monster_swarms.append(swarm)
+
+			for monster in swarm:
+				monster.swarm(Helper.rand_item(_map.start_tiles))
+
+			break
 
 
 func _on_Button_mouse_entered() -> void:

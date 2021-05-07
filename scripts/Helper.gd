@@ -165,3 +165,12 @@ func raycast_minion_to_pos(from_minion : Minion, to_pos : Vector2) -> bool:
 
 	var collider := raycast.get_collider()
 	return collider == null
+
+func rand_item(array : Array) -> Object:
+	return array[randi() % array.size()]
+
+func rand_pop(array : Array) -> Object:
+	var index := randi() % array.size()
+	var object = array[index]
+	array.remove(index)
+	return object

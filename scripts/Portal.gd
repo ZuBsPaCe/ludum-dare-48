@@ -3,6 +3,8 @@ extends Node2D
 var active := false
 var tile : Tile
 
+var waiting_monsters := []
+
 onready var _portal_animation := $PortalAnimation
 
 func _ready() -> void:

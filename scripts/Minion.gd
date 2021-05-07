@@ -20,6 +20,8 @@ enum MinionTask {
 
 	MOVE,
 
+	SWARM,
+
 	ATTACK,
 	FIGHT
 }
@@ -54,15 +56,19 @@ var victim_lost_cooldown := Cooldown.new(8.0)
 var target_pos := Vector2()
 var target_vec := Vector2()
 
-var path : PoolVector2Array
+var path : PoolIntArray
 var path_index := 0
+
+var swarm_tile : Tile
 
 var dig_tile : Tile
 
 var faction := 0
 var archer := false
+var digger := false
 var prisoner := false
 var king := false
+var swarm := false
 
 var health := 1
 var anger := 0
@@ -78,7 +84,7 @@ var _last_victim_pos := Vector2.ZERO
 var _victim_visible := false
 
 
-var _digger := false
+
 
 
 func _ready() -> void:
@@ -105,41 +111,47 @@ func _ready() -> void:
 	assert(tile.tile_type == TileType.OPEN)
 
 
-func setup(faction : int, archer = false, prisoner = false, king = false) -> void:
-	self.faction = faction
-	if faction == 0:
-		if !prisoner:
-			State.minions.append(self)
-
-		if king:
-			health = State.king_health
-			State.minion_kings.append(self)
-			State.minion_kings_created_count += 1
-		else:
-			health = State.minion_health
-
-	elif faction == 1:
-		_digger = randi() % 2 == 0
-		State.monsters.append(self)
-
-		if king:
-			health = State.king_health
-		else:
-			health = State.monster_health
-
-		modulate = Color.crimson
-
-		collision_layer = 1 << 2
-		collision_mask = 0
-		set_collision_mask_bit(0, true)
-		set_collision_mask_bit(1, true)
+func setup_minion(archer = false, prisoner = false, king = false) -> void:
+	faction = 0
 
 	self.archer = archer
 	self.prisoner = prisoner
 	self.king = king
 
+	if !prisoner:
+		State.minions.append(self)
+
 	if king:
+		health = State.king_health
+		State.minion_kings.append(self)
+		State.minion_kings_created_count += 1
 		scale = Vector2(1.75, 1.75)
+	else:
+		health = State.minion_health
+
+
+func setup_monster(archer = false, digger = false, king = false, swarm = false) -> void:
+	self.faction = 1
+
+	self.archer = archer
+	self.digger = digger
+	self.king = king
+	self.swarm = swarm
+
+	State.monsters.append(self)
+
+	if king:
+		health = State.king_health
+		scale = Vector2(1.75, 1.75)
+	else:
+		health = State.monster_health
+
+	modulate = Color.crimson
+
+	collision_layer = 1 << 2
+	collision_mask = 0
+	set_collision_mask_bit(0, true)
+	set_collision_mask_bit(1, true)
 
 
 func _physics_process(delta: float) -> void:
@@ -197,7 +209,7 @@ func _physics_process(delta: float) -> void:
 					State.map.set_tile_type(dig_tile.x, dig_tile.y, TileType.OPEN)
 					State.tilemap32.set_cell(dig_tile.x, dig_tile.y, 0)
 					State.map.dig_tiles.erase(dig_tile)
-					_move_near(dig_tile.x, dig_tile.y)
+					_move_near(dig_tile)
 
 					var prisoner_tiles := []
 					var check_tiles = [dig_tile]
@@ -232,7 +244,7 @@ func _physics_process(delta: float) -> void:
 					dig_tile = null
 
 				elif dig_tile.health < 0:
-					_move_near(dig_tile.x, dig_tile.y)
+					_move_near(dig_tile)
 					dig_tile = null
 
 			elif task == MinionTask.ATTACK || task == MinionTask.FIGHT:
@@ -272,7 +284,7 @@ func _physics_process(delta: float) -> void:
 			else:
 				var rally_end_tile : Tile = tile.rally_end_tiles[randi() % tile.rally_end_tiles.size()]
 
-				var path = State.map.astar.get_point_path(tile.id, rally_end_tile.id)
+				var path = State.map.astar.get_id_path(tile.id, rally_end_tile.id)
 
 				if path.size() == 0 || path.size() > 25:
 					rally_immune = State.rally_immune
@@ -305,7 +317,7 @@ func _physics_process(delta: float) -> void:
 					animation_pickaxe.play("IdleLeft")
 
 			MinionTask.ROAM:
-				if faction == 0:
+				if faction == 0 || swarm:
 					_set_target(tile.coord.to_random_pos())
 
 #					var debug_coord := Coord.new()
@@ -333,6 +345,10 @@ func _physics_process(delta: float) -> void:
 				task = MinionTask.RALLY
 				#rally_immune = 0.0
 
+			MinionTask.SWARM:
+				_start_path()
+				task = MinionTask.SWARM
+
 			MinionTask.ATTACK:
 				task = MinionTask.ATTACK
 				_set_target(_last_victim_pos)
@@ -349,16 +365,18 @@ func _physics_process(delta: float) -> void:
 
 	match task:
 		MinionTask.IDLE:
-			if task_cooldown.done:
+			if swarm && swarm_tile != null:
+				swarm(swarm_tile)
+			elif task_cooldown.done:
 				var can_dig := false
-				if _digger:
+				if digger:
 					Helper.get_tile_circle(State.tile_circle, coord.x, coord.y, 6, false)
 					while State.tile_circle.size() > 0:
 						var index = randi() % State.tile_circle.size()
 						var check_tile = State.tile_circle[index]
 						if check_tile.tile_type == TileType.DIRT:
 							State.map.astar.set_point_disabled(check_tile.id, false)
-							var path = State.map.astar.get_point_path(tile.id, check_tile.id)
+							var path = State.map.astar.get_id_path(tile.id, check_tile.id)
 							State.map.astar.set_point_disabled(check_tile.id, true)
 
 							if path.size() > 0 && path.size() <= State.monster_view_distance:
@@ -366,8 +384,6 @@ func _physics_process(delta: float) -> void:
 								dig(path, check_tile)
 								break
 						State.tile_circle.remove(index)
-
-
 
 				if !can_dig:
 					_set_next_task(MinionTask.ROAM)
@@ -389,7 +405,7 @@ func _physics_process(delta: float) -> void:
 			if dig_tile.health > 0:
 				_strike()
 			else:
-				_move_near(dig_tile.x, dig_tile.y)
+				_move_near(dig_tile)
 				dig_tile = null
 
 		MinionTask.MOVE:
@@ -404,6 +420,22 @@ func _physics_process(delta: float) -> void:
 			if task_cooldown.done:
 				if !_advance_path():
 					_set_next_task(MinionTask.IDLE)
+
+		MinionTask.SWARM:
+			_move(delta)
+
+			if task_cooldown.done:
+				if !_advance_path():
+						swarm_tile = null
+						_set_next_task(MinionTask.IDLE)
+				else:
+					var next_id := path[path_index]
+					var next_tile : Tile = State.map.tiles[next_id]
+					if next_tile.tile_type == TileType.DIRT:
+						var path := PoolIntArray()
+						path.append(tile.id)
+						path.append(next_tile.id)
+						dig(path, next_tile)
 
 		MinionTask.ATTACK:
 			# ATTACK can be interrupted. After first successful
@@ -433,6 +465,9 @@ func _strike() -> void:
 	striking = true
 	strike_hit = false
 
+	animation_minion.stop(true)
+	animation_pickaxe.stop(true)
+
 	if target_vec.x >= 0.0:
 		animation_minion.play("StrikeRight")
 		animation_pickaxe.play("StrikeRight")
@@ -460,20 +495,26 @@ func _start_path() -> void:
 	if path.size() == 0:
 		task_cooldown.set_done()
 	else:
+		assert(path.size() >= 0)
+		assert(path[0] == tile.id)
+
 		path_index = 0
-		_advance_path()
+		if !_advance_path():
+			task_cooldown.set_done()
 
 func _advance_path() -> bool:
-	path_index += 1
-	if path_index >= path.size():
-		return false
+	var next_tile_id : int
+	while true:
+		path_index += 1
+		if path_index >= path.size():
+			return false
+		next_tile_id = path[path_index]
+		if next_tile_id != tile.id:
+			break
 
-	var pos : Vector2 = path[path_index]
+	var coord : Coord = State.map.tiles[next_tile_id].coord
 
-	var coord_x = int(pos.x / 32.0)
-	var coord_y = int(pos.y / 32.0)
-
-	_set_target(_vary_pos_from_coord(coord_x, coord_y))
+	_set_target(_vary_pos_from_coord(coord.x, coord.y))
 	return true
 
 func can_start_rally() -> bool:
@@ -511,10 +552,33 @@ func can_start_digging() -> bool:
 		task != MinionTask.FIGHT &&
 		!prisoner)
 
-func dig(path : PoolVector2Array, dig_tile : Tile):
+func dig(path : PoolIntArray, dig_tile : Tile):
 	self.path = path
 	self.dig_tile = dig_tile
 	_set_next_task(MinionTask.GO_DIG)
+
+func can_start_swarm() -> bool:
+	return (
+		task != MinionTask.ATTACK &&
+		task != MinionTask.FIGHT)
+
+func swarm(swarm_tile : Tile):
+	self.swarm_tile = swarm_tile
+
+	self.path = State.map.astar_dirty.get_id_path(tile.id, swarm_tile.id)
+	if path.size() == 0:
+		return
+
+	assert(path[0] == tile.id)
+
+	var next_id := path[1]
+	var next_tile : Tile = State.map.tiles[next_id]
+	if next_tile.tile_type == TileType.DIRT:
+		path.resize(2)
+		dig(path, next_tile)
+	else:
+		_set_next_task(MinionTask.SWARM)
+
 
 func attack(victim : Minion):
 	if task == MinionTask.ATTACK && _victim == victim:
@@ -621,10 +685,10 @@ func flee():
 #	dead = true
 	queue_free()
 
-func _move_near(coord_x : int, coord_y : int):
-	path = PoolVector2Array()
-	path.append(position)
-	path.append(_vary_pos_from_coord(coord_x, coord_y))
+func _move_near(near_tile : Tile):
+	path = PoolIntArray()
+	path.append(tile.id)
+	path.append(near_tile.id)
 	_set_next_task(MinionTask.MOVE)
 
 #func _rally_near(coord_x : int, coord_y : int):
@@ -636,7 +700,7 @@ func _move_near(coord_x : int, coord_y : int):
 #	path.append(_vary_pos_from_coord(coord_x, coord_y))
 #	_set_next_task(MinionTask.RALLY)
 
-func _rally(path : PoolVector2Array):
+func _rally(path : PoolIntArray):
 	self.path = path
 	_set_next_task(MinionTask.RALLY)
 
