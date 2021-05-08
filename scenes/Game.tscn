@@ -1,4 +1,4 @@
-[gd_scene load_steps=62 format=2]
+[gd_scene load_steps=63 format=2]
 
 [ext_resource path="res://scenes/Minion.tscn" type="PackedScene" id=1]
 [ext_resource path="res://scripts/Game.gd" type="Script" id=2]
@@ -54,6 +54,7 @@
 [ext_resource path="res://sprites/PortalIcon.png" type="Texture" id=52]
 [ext_resource path="res://sprites/PrisonIcon.png" type="Texture" id=53]
 [ext_resource path="res://sprites/DollarIcon.png" type="Texture" id=54]
+[ext_resource path="res://sprites/ShieldIcon.png" type="Texture" id=55]
 
 [sub_resource type="StyleBoxLine" id=1]
 color = Color( 0.278431, 0.278431, 0.278431, 1 )
@@ -1234,6 +1235,7 @@ portal_icon = ExtResource( 52 )
 flag_icon = ExtResource( 50 )
 prison_icon = ExtResource( 53 )
 dollar_icon = ExtResource( 54 )
+shield_icon = ExtResource( 55 )
 
 [node name="CanvasLayer" type="CanvasLayer" parent="WorldMap"]
 

@@ -2,18 +2,10 @@ extends Reference
 
 class_name WorldLayer
 
+var index : int
+var layer_seed : int
+var nodes := []
 
-var upper_count : int
-var lower_count : int
-var world_connections := []
-
-var visited := false
-
-
-func _init(
-	upper_count : int,
-	lower_count : int,
-	world_connections : Array) -> void:
-	self.upper_count = upper_count
-	self.lower_count = lower_count
-	self.world_connections = world_connections
+func _init(index : int, layer_seed : int) -> void:
+	self.index = index
+	self.layer_seed = layer_seed

@@ -10,6 +10,7 @@ export(Texture) var portal_icon
 export(Texture) var flag_icon
 export(Texture) var prison_icon
 export(Texture) var dollar_icon
+export(Texture) var shield_icon
 
 
 signal world_node_clicked
@@ -24,35 +25,24 @@ func start() -> void:
 
 
 	var viewport_rect := get_viewport_rect()
-	var layer_count : int = State.world_layer_counts.size()
-	var visited_nodes := State.world_visited_nodes
-
-#	visited_nodes.append(0)
-#	visited_nodes.append(0)
-#	visited_nodes.append(0)
-#	visited_nodes.append(0)
-#	visited_nodes.append(0)
-
+	var layer_count : int = State.world_layers.size()
 
 	if State.world_layer_index > 0:
-		State.game_camera.position.y = 128.0 + get_node_pos(State.world_layer_index, 0, 1, viewport_rect).y
+		var current_world_layer : WorldLayer = State.world_layers[State.world_layer_index]
+		State.game_camera.position.y = 128.0 + get_node_pos(current_world_layer, current_world_layer.nodes[0], viewport_rect).y
 
+	for current_layer_index in (layer_count - 1):
+		var current_world_layer : WorldLayer = State.world_layers[current_layer_index]
+		var next_world_layer : WorldLayer = State.world_layers[current_layer_index + 1]
 
+		var current_node_count := current_world_layer.nodes.size()
+		var next_node_count := next_world_layer.nodes.size()
 
-	for layer_index in (layer_count - 1):
-		var node_count : int = State.world_layer_counts[layer_index]
-		var connections : Array = State.world_layer_connections[layer_index]
+		for current_node in current_world_layer.nodes:
+			var from_pos := get_node_pos(current_world_layer, current_node, viewport_rect)
 
-		for node_index in range(node_count):
-
-			for connection in connections:
-				if connection.from != node_index:
-					continue
-
-				var next_node_count : int = State.world_layer_counts[layer_index + 1]
-
-				var from_pos := get_node_pos(layer_index, node_index, node_count, viewport_rect)
-				var to_pos := get_node_pos(layer_index + 1, connection.to, next_node_count, viewport_rect)
+			for next_node in current_node.next_nodes:
+				var to_pos := get_node_pos(next_world_layer, next_node, viewport_rect)
 
 				var texture_rect := TextureRect.new()
 				texture_rect.texture = line_texture
@@ -65,25 +55,23 @@ func start() -> void:
 
 
 	for layer_index in layer_count:
+		var world_layer : WorldLayer = State.world_layers[layer_index]
 
-		var node_count : int = State.world_layer_counts[layer_index]
-		var node_types : Array = State.world_layer_node_types[layer_index]
-		assert(node_count == node_types.size())
-
-		for node_index in range(node_count):
+		for node in world_layer.nodes:
 			var button : Control = button_scene.instance()
-			button.rect_position = get_node_pos(layer_index, node_index, node_count, viewport_rect)
+			button.rect_position = get_node_pos(world_layer, node, viewport_rect)
 			$CanvasLayer.add_child(button)
 
-			var node_type = node_types[node_index]
-			match node_type:
+			match node.node_type:
 				NodeType.PORTAL:
 					button.set_icon(portal_icon)
 				NodeType.TUTORIAL:
 					pass
 				NodeType.ESCORT:
-					button.set_icon(king_icon)
+					button.set_icon(shield_icon)
 				NodeType.RESCUE:
+					button.set_icon(king_icon)
+				NodeType.PRISON:
 					button.set_icon(prison_icon)
 				NodeType.DEFEND:
 					button.set_icon(flag_icon)
@@ -95,7 +83,7 @@ func start() -> void:
 			button.set_disabled(true)
 
 			if layer_index < State.world_layer_index:
-				if visited_nodes[layer_index] == node_index:
+				if node.visited:
 					button.set_highlight(true)
 					var button_disabled : TextureRect = button.get_node("ButtonDisabled")
 					button_disabled.modulate.r8 = 44
@@ -107,17 +95,15 @@ func start() -> void:
 				if layer_index == 0:
 					reachable = true
 				else:
-					var connections : Array = State.world_layer_connections[layer_index - 1]
-					for connection in connections:
-						if connection.to == node_index && visited_nodes[layer_index - 1] == connection.from:
+					for prev_node in node.prev_nodes:
+						if prev_node.visited:
 							reachable = true
 							break
 
 				if reachable:
 					#button.set_highlight(true)
 					button.set_disabled(false)
-					button.tag = node_type
-					button.index = node_index
+					button.tag = node
 					button.connect("pressed", self, "on_button_pressed", [button])
 
 
@@ -127,10 +113,10 @@ func _process(delta: float) -> void:
 	$CanvasLayer.transform.origin.y = -State.game_camera.position.y + get_viewport_rect().size.y / 2
 
 
-func get_node_pos(layer_index : int, node_index : int, node_count : int, viewport_rect : Rect2) -> Vector2:
+func get_node_pos(layer : WorldLayer, node : WorldNode, viewport_rect : Rect2) -> Vector2:
 	return Vector2(
-		(node_index + 1) * (viewport_rect.size.x / (node_count + 1)) - 32.0,
-		(layer_index + 1) * 128.0) + State.world_node_noise[layer_index * 4 + node_index]
+		(node.index_in_layer + 1) * (viewport_rect.size.x / (layer.nodes.size() + 1)) - 32.0,
+		(layer.index + 1) * 128.0) + node.noise
 
 func on_button_pressed(button) -> void:
 	set_process(false)
@@ -139,8 +125,9 @@ func on_button_pressed(button) -> void:
 
 	visible = false
 
+	var world_node : WorldNode = button.tag
+	world_node.visited = true
 
-	State.world_node_type = button.tag
-	State.world_visited_nodes.append(button.index)
+	State.world_node_type = world_node.node_type
 
 	emit_signal("world_node_clicked", button.tag)

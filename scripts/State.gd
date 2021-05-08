@@ -7,13 +7,7 @@ const random_seed := 0
 
 var game_state = GameState.TITLE_SCREEN
 
-var world_layer_seeds := []
-
-var world_layer_counts := []
-var world_layer_connections := []
-var world_layer_node_types := []
-var world_visited_nodes := []
-var world_node_noise := []
+var world_layers := []
 var world_layer_index : int
 
 var world_node_type
@@ -90,13 +84,7 @@ func _ready() -> void:
 
 
 func world_reset() -> void:
-	world_layer_seeds.clear()
-	world_layer_counts.clear()
-	world_layer_connections.clear()
-	world_layer_node_types.clear()
-	world_visited_nodes.clear()
-	world_node_noise.clear()
-
+	world_layers.clear()
 	world_layer_index = 0
 
 	world_node_type = NodeType.PORTAL

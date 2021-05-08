@@ -113,43 +113,43 @@ var _loading := true
 
 var _tiles := []
 
-var _world_layers := [
-	WorldLayer.new(
+var _world_layer_templates := [
+	WorldLayerTemplate.new(
 		1, 1, [
 			WorldConnection.new(0, 0)]),
-	WorldLayer.new(
+	WorldLayerTemplate.new(
 		1, 2, [
 			WorldConnection.new(0, 0),
 			WorldConnection.new(0, 1)]),
-	WorldLayer.new(
+	WorldLayerTemplate.new(
 		1, 3, [
 			WorldConnection.new(0, 0),
 			WorldConnection.new(0, 1),
 			WorldConnection.new(0, 2)]),
-	WorldLayer.new(
+	WorldLayerTemplate.new(
 		1, 4, [
 			WorldConnection.new(0, 0),
 			WorldConnection.new(0, 1),
 			WorldConnection.new(0, 2),
 			WorldConnection.new(0, 3)]),
 
-	WorldLayer.new(
+	WorldLayerTemplate.new(
 		2, 1, [
 			WorldConnection.new(0, 0),
 			WorldConnection.new(1, 0)]),
-	WorldLayer.new(
+	WorldLayerTemplate.new(
 		2, 2, [
 			WorldConnection.new(0, 0),
 			WorldConnection.new(0, 1, "A"),
 			WorldConnection.new(1, 0, "A"),
 			WorldConnection.new(1, 1)]),
-	WorldLayer.new(
+	WorldLayerTemplate.new(
 		2, 3, [
 			WorldConnection.new(0, 0),
 			WorldConnection.new(0, 1),
 			WorldConnection.new(1, 1),
 			WorldConnection.new(1, 2)]),
-	WorldLayer.new(
+	WorldLayerTemplate.new(
 		2, 4, [
 			WorldConnection.new(0, 0),
 			WorldConnection.new(0, 1),
@@ -158,18 +158,18 @@ var _world_layers := [
 			WorldConnection.new(1, 2),
 			WorldConnection.new(1, 3)]),
 
-	WorldLayer.new(
+	WorldLayerTemplate.new(
 		3, 1, [
 			WorldConnection.new(0, 0),
 			WorldConnection.new(1, 0),
 			WorldConnection.new(2, 0)]),
-	WorldLayer.new(
+	WorldLayerTemplate.new(
 		3, 2, [
 			WorldConnection.new(0, 0),
 			WorldConnection.new(1, 0),
 			WorldConnection.new(1, 1),
 			WorldConnection.new(2, 1)]),
-	WorldLayer.new(
+	WorldLayerTemplate.new(
 		3, 3, [
 			WorldConnection.new(0, 0),
 			WorldConnection.new(0, 1, "A"),
@@ -178,7 +178,7 @@ var _world_layers := [
 			WorldConnection.new(1, 2, "B"),
 			WorldConnection.new(2, 1, "B"),
 			WorldConnection.new(2, 2)]),
-	WorldLayer.new(
+	WorldLayerTemplate.new(
 		3, 4, [
 			WorldConnection.new(0, 0),
 			WorldConnection.new(0, 1),
@@ -187,13 +187,13 @@ var _world_layers := [
 			WorldConnection.new(2, 2),
 			WorldConnection.new(2, 3)]),
 
-	WorldLayer.new(
+	WorldLayerTemplate.new(
 		4, 1, [
 			WorldConnection.new(0, 0),
 			WorldConnection.new(1, 0),
 			WorldConnection.new(2, 0),
 			WorldConnection.new(3, 0)]),
-	WorldLayer.new(
+	WorldLayerTemplate.new(
 		4, 2, [
 			WorldConnection.new(0, 0),
 			WorldConnection.new(1, 0),
@@ -201,7 +201,7 @@ var _world_layers := [
 			WorldConnection.new(2, 0, "A"),
 			WorldConnection.new(2, 1),
 			WorldConnection.new(3, 1)]),
-	WorldLayer.new(
+	WorldLayerTemplate.new(
 		4, 3, [
 			WorldConnection.new(0, 0),
 			WorldConnection.new(1, 0),
@@ -209,7 +209,7 @@ var _world_layers := [
 			WorldConnection.new(2, 1),
 			WorldConnection.new(2, 2),
 			WorldConnection.new(3, 2)]),
-	WorldLayer.new(
+	WorldLayerTemplate.new(
 		4, 4, [
 			WorldConnection.new(0, 0),
 			WorldConnection.new(0, 1, "A"),
@@ -566,26 +566,27 @@ func world_start() -> void:
 
 	print("Current world seed: %d" % random_seed)
 
+	# Create world layers and initialize layer seeds. First thing we need to
+	# to after initializing the world seed above.
+
 	var layer_count := 8
-	var layer_seeds := []
-	for i in layer_count:
-		layer_seeds.append(randi())
+	var world_layers := []
 
-	State.world_layer_seeds = layer_seeds
+	for layer_index in layer_count:
+		world_layers.append(WorldLayer.new(layer_index, randi()))
 
-	var layer_counts := []
-
-	for i in (layer_count * 4):
-		State.world_node_noise.append(Vector2(randf() * 64.0 - 32.0, randf() * 64.0 - 32.0))
 
 	var random_node_count := 0
 
 	var prev1 := 0
 	var prev2 := 0
 
-	layer_counts.append(1)
+	# Set random number of nodes per layer (except first and last layer with one node each)
+	world_layers[0].nodes.append(WorldNode.new(0, 0))
 
-	for i in range(1, layer_count - 1):
+	for layer_index in range(1, layer_count - 1):
+		var world_layer : WorldLayer = world_layers[layer_index]
+
 		var next_count : int
 		while true:
 			next_count = randi() % 3 + 2
@@ -593,22 +594,37 @@ func world_start() -> void:
 				continue
 			break
 
-		layer_counts.append(next_count)
+		for node_index in next_count:
+			world_layer.nodes.append(WorldNode.new(layer_index, node_index))
+
 		prev2 = prev1
 		prev1 = next_count
 
 		random_node_count += next_count
 
-	layer_counts.append(1)
+	var last_node : WorldNode = WorldNode.new(layer_count - 1, 0)
+	world_layers[layer_count - 1].nodes.append(last_node)
 
+
+	# Assign random noise to each node. Used for offsetting the node in the world map
+
+	for world_layer in world_layers:
+		for node in world_layer.nodes:
+			node.noise = Vector2(randf() * 64.0 - 32.0, randf() * 64.0 - 32.0)
+
+
+	# Create a list of random but evenly distributed node types, which will
+	# be randomly assigned to the nodes.
 
 	var valid_node_types := [
 		NodeType.PORTAL,
-		NodeType.ESCORT,
+		NodeType.DEFEND,
+		NodeType.PRISON,
 		NodeType.RESCUE,
-		NodeType.DEFEND]
+		NodeType.ESCORT]
 
 	var random_node_types := []
+
 	var valid_node_types_index = 0
 	for i in random_node_count:
 		if i <= 2:
@@ -618,25 +634,19 @@ func world_start() -> void:
 			valid_node_types_index = posmod(valid_node_types_index + 1, valid_node_types.size())
 
 
-	var layer_connections := []
-	var layer_node_types := []
+	# Assign connections to each layer and connect nodes
 
-	#var first_node_type = NodeType.PORTAL
-	#var first_node_type = NodeType.RESCUE
-	var first_node_type = NodeType.DEFEND
+	for layer_index in range(0, world_layers.size() - 1):
+		var upper_world_layer : WorldLayer = world_layers[layer_index]
+		var lower_world_layer : WorldLayer = world_layers[layer_index + 1]
 
-	var node_to_node_types := {}
-	node_to_node_types[0] = first_node_type
-	layer_node_types.append([first_node_type])
-
-	for i in range(0, layer_counts.size() - 1):
-		var upper_count : int = layer_counts[i]
-		var lower_count : int = layer_counts[i + 1]
+		var upper_count : int = upper_world_layer.nodes.size()
+		var lower_count : int = lower_world_layer.nodes.size()
 
 		var possible_connections := []
-		for world_layer in _world_layers:
-			if world_layer.upper_count == upper_count && world_layer.lower_count == lower_count:
-				possible_connections = world_layer.world_connections
+		for world_layer_template in _world_layer_templates:
+			if world_layer_template.upper_count == upper_count && world_layer_template.lower_count == lower_count:
+				possible_connections = world_layer_template.world_connections
 				break
 
 		assert(possible_connections.size() > 0)
@@ -653,7 +663,7 @@ func world_start() -> void:
 			for bit_offset in range(bit_count):
 				var bit_set : bool = (permutation & (1 << bit_offset)) > 0
 				if bit_set:
-					var connection : WorldConnection= possible_connections[bit_offset]
+					var connection : WorldConnection = possible_connections[bit_offset]
 					if connection.group != "":
 						if groups.has(connection.group):
 							valid = false
@@ -674,40 +684,74 @@ func world_start() -> void:
 
 		assert(valid_permutations.size() > 0)
 		var selected_permutation : int = valid_permutations[randi() % valid_permutations.size()]
-		var selected_connections := []
 		for bit_offset in range(bit_count):
 			var bit_set : bool = (selected_permutation & (1 << bit_offset)) > 0
 			if bit_set:
-				selected_connections.append(possible_connections[bit_offset])
+				var selected_connection : WorldConnection = possible_connections[bit_offset]
+				var upper_from_node : WorldNode = upper_world_layer.nodes[selected_connection.from]
+				var lower_to_node : WorldNode = lower_world_layer.nodes[selected_connection.to]
 
-		layer_connections.append(selected_connections)
+				upper_from_node.next_nodes.append(lower_to_node)
+				lower_to_node.prev_nodes.append(upper_from_node)
 
-		if i < layer_counts.size() - 2:
-			var current_node_types := []
+	for node in world_layers[world_layers.size() - 2].nodes:
+		node.next_nodes.append(last_node)
+		last_node.prev_nodes.append(node)
 
-			for lower_index in lower_count:
-				var upper_node_types := []
-				for connection in selected_connections:
-					if connection.to == lower_index:
-						upper_node_types.append(node_to_node_types[i * 4 + connection.from])
 
-				var node_type = null
-				for test in 10:
-					var random_index = randi() % random_node_types.size()
-					node_type = random_node_types[random_index]
-					if !upper_node_types.has(node_type) || test == 9:
-						random_node_types.remove(random_index)
-						current_node_types.append(node_type)
-						node_to_node_types[(i + 1) * 4 + lower_index] = node_type
-						break
+	# Assign a node type to each node
 
-			layer_node_types.append(current_node_types)
+	var first_node_type = NodeType.PORTAL
+	#var first_node_type = NodeType.RESCUE
+	#var first_node_type = NodeType.DEFEND
 
-	layer_node_types.append([NodeType.HELL])
+	world_layers[0].nodes[0].node_type = first_node_type
 
-	State.world_layer_counts = layer_counts
-	State.world_layer_connections = layer_connections
-	State.world_layer_node_types = layer_node_types
+	for layer_index in range(0, world_layers.size() - 2):
+		var upper_world_layer : WorldLayer = world_layers[layer_index]
+		var lower_world_layer : WorldLayer = world_layers[layer_index + 1]
+
+		for lower_node in lower_world_layer.nodes:
+			var upper_node_types := []
+			var check_nodes := []
+
+			for upper_node in lower_node.prev_nodes:
+				upper_node_types.append(upper_node.node_type)
+				check_nodes.append(upper_node)
+
+			var all_prev_nodes := []
+
+			while check_nodes.size() > 0:
+				var current_count := check_nodes.size()
+				for check_index in current_count:
+					var check_node : WorldNode = check_nodes.pop_front()
+					if all_prev_nodes.has(check_node):
+						continue
+
+					all_prev_nodes.append(check_node)
+					check_nodes.append_array(check_node.prev_nodes)
+
+
+			var rescue_in_path := false
+			for check_node in all_prev_nodes:
+				if check_node.node_type == NodeType.RESCUE:
+					rescue_in_path = true
+					break
+
+			var node_type = null
+			for test in 3:
+				var random_index = randi() % random_node_types.size()
+				node_type = random_node_types[random_index]
+
+				if (!upper_node_types.has(node_type) && (node_type != NodeType.RESCUE || !rescue_in_path) ||
+					test == 2):
+					random_node_types.remove(random_index)
+					lower_node.node_type = node_type
+					break
+
+	world_layers[world_layers.size() - 1].nodes[0].node_type = NodeType.HELL
+
+	State.world_layers = world_layers
 
 
 func game_reset() -> void:
@@ -732,7 +776,7 @@ func game_reset() -> void:
 	State.game_reset()
 
 func game_start() -> void:
-	var layer_seed : int = State.world_layer_seeds[State.world_layer_index]
+	var layer_seed : int = State.world_layers[State.world_layer_index].layer_seed
 	print("Current layer seed: %d" % layer_seed)
 	seed(layer_seed)
 

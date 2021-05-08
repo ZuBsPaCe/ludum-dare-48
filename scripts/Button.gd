@@ -15,7 +15,6 @@ signal pressed
 signal toggled
 
 var tag
-var index
 
 func _ready() -> void:
 	_icon.texture = icon

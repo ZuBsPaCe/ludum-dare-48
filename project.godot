@@ -60,6 +60,16 @@ _global_script_classes=[ {
 "path": "res://scripts/WorldLayer.gd"
 }, {
 "base": "Reference",
+"class": "WorldLayerTemplate",
+"language": "GDScript",
+"path": "res://scripts/WorldLayerTemplate.gd"
+}, {
+"base": "Reference",
+"class": "WorldNode",
+"language": "GDScript",
+"path": "res://scripts/WorldNode.gd"
+}, {
+"base": "Reference",
 "class": "WorldRect",
 "language": "GDScript",
 "path": "res://scripts/WorldRect.gd"
@@ -75,6 +85,8 @@ _global_script_class_icons={
 "WorldCircle": "",
 "WorldConnection": "",
 "WorldLayer": "",
+"WorldLayerTemplate": "",
+"WorldNode": "",
 "WorldRect": ""
 }
 
