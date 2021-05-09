@@ -375,7 +375,6 @@ func _process(delta: float) -> void:
 		if _map.is_valid(mouse_coord.x, mouse_coord.y):
 			mouse_tile = _map.get_tile_type(mouse_coord.x, mouse_coord.y)
 
-
 		match _tool_type:
 			ToolType.DIG:
 				if (mouse_tile == TileType.DIRT || mouse_tile == TileType.PRISON) && !_mouse_on_button:
@@ -848,8 +847,15 @@ func map_generate(width : int, height : int) -> void:
 		add_rock_borders()
 		fix_closed_areas()
 	elif true || State.world_node_type == NodeType.PORTAL:
-		if State.level <= 3:
+		if true || State.level <= 3:
 			if false:
+				_map.setup(width, height, TileType.OPEN)
+				add_rect_area(RoomType.START, SizeType.SMALL, SizeType.SMALL, RegionType.SINGLE_CENTER, true, areas, [])
+				add_rect_area(RoomType.PORTAL, SizeType.SMALL, SizeType.SMALL, RegionType.SINGLE_BOTTOM, true, areas, [])
+				fill_areas(areas)
+				add_rock_borders()
+
+			elif false:
 				_map.setup(width, height, TileType.OPEN)
 				if false:
 					add_rect_area(RoomType.START, SizeType.SMALL, SizeType.SMALL, RegionType.HOR_TOP, true, areas, [])
@@ -1455,6 +1461,7 @@ func map_fill() -> void:
 			for portal in State.end_portals:
 				for monster in spawn_monsters_from_portal(portal, monsters_per_portal):
 					monster.setup_monster(randf() < State.monster_archer_fraction, false, false, true)
+					_entity_container.add_child(monster)
 					portal.waiting_monsters.append(monster)
 
 
@@ -1482,7 +1489,6 @@ func map_fill() -> void:
 				minion.setup_minion(randf() < 0.5, true)
 			minion.position = tile.coord.to_random_pos()
 			_entity_container.add_child(minion)
-			tile.prisoners.append(minion)
 
 func sort_prisons_far_to_near(prison1 : Prison, prison2 : Prison) -> bool:
 	var start_portal_pos : Vector2 = State.start_portals[0].position
@@ -1716,7 +1722,9 @@ func game_spawn_monsters() -> void:
 	for portal in State.end_portals:
 		for monster in spawn_monsters_from_portal(portal, 1):
 			monster.setup_monster(randf() < State.monster_archer_fraction, randf() < 0.33)
+			_entity_container.add_child(monster)
 
+# WARNING: Caller must call setup_monster and add monster to _entity_container!
 func spawn_monsters_from_portal(portal, monster_count : int) -> Array:
 	Helper.get_tile_circle(State.tile_circle, portal.tile.coord.x, portal.tile.coord.y, 2, false)
 
@@ -1733,7 +1741,6 @@ func spawn_monsters_from_portal(portal, monster_count : int) -> Array:
 
 		var monster : Minion = minion_scene.instance()
 		monster.position = tile.coord.to_random_pos()
-		_entity_container.add_child(monster)
 		monsters.append(monster)
 
 	return monsters
@@ -1894,7 +1901,7 @@ func switch_state(new_game_state):
 			world_reset()
 			game_reset()
 			world_start()
-			switch_state(GameState.WORLD_MAP)
+			switch_state(GameState.INTRO)
 			title_music_target = -80
 			track1_target = -80
 
@@ -1991,7 +1998,7 @@ func _on_LevelInterlude_stop_level_start() -> void:
 
 
 func _on_LevelInterlude_stop_level_end() -> void:
-	switch_state(GameState.WORLD_MAP)
+	switch_state(GameState.MERCHANT)
 
 
 func _on_GameOver_stop_game_over() -> void:

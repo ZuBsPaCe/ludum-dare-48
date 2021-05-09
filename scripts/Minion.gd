@@ -84,9 +84,6 @@ var _last_victim_pos := Vector2.ZERO
 var _victim_visible := false
 
 
-
-
-
 func _ready() -> void:
 	$Sprites/Feather.visible = archer
 	$Sprites/Pickaxe.visible = !prisoner
@@ -105,13 +102,12 @@ func _ready() -> void:
 	_path_variation_x += randf() * 28.0 - 14.0
 	_path_variation_y += randf() * 28.0 - 14.0
 
-	var init_coord := Coord.new()
-	init_coord.set_vector(position)
-	tile = State.map.get_tile(init_coord.x, init_coord.y)
-	assert(tile.tile_type == TileType.OPEN)
+	init_tile_coord()
 
 
 func setup_minion(archer = false, prisoner = false, king = false) -> void:
+	assert(tile == null, "Minion setup must happen before ready()")
+
 	faction = 0
 
 	self.archer = archer
@@ -131,6 +127,8 @@ func setup_minion(archer = false, prisoner = false, king = false) -> void:
 
 
 func setup_monster(archer = false, digger = false, king = false, swarm = false) -> void:
+	assert(tile == null, "Minion setup must happen before ready()")
+
 	self.faction = 1
 
 	self.archer = archer
@@ -153,19 +151,21 @@ func setup_monster(archer = false, digger = false, king = false, swarm = false) 
 	set_collision_mask_bit(0, true)
 	set_collision_mask_bit(1, true)
 
+func init_tile_coord() -> void:
+	coord.set_vector(position)
+	tile = State.map.get_tile(coord.x, coord.y)
 
-func _physics_process(delta: float) -> void:
-	task_cooldown.step(delta)
-	strike_cooldown.step(delta)
-	strike_hit_cooldown.step(delta)
-	attack_cooldown.step(delta)
-	victim_lost_cooldown.step(delta)
+	if faction == 0:
+		tile.minions.append(self)
+	else:
+		tile.monsters.append(self)
 
-	if rally_immune > 0.0:
-		rally_immune -= delta
-		if rally_immune < 0.0:
-			rally_immune = 0.0
+	if prisoner:
+		tile.prisoners.append(self)
 
+	assert(tile.tile_type == TileType.OPEN)
+
+func update_tile_coord() -> void:
 	check_coord.set_vector(position)
 	if check_coord.x != coord.x || check_coord.y != coord.y:
 		if faction == 0:
@@ -187,6 +187,22 @@ func _physics_process(delta: float) -> void:
 			tile.minions.append(self)
 		else:
 			tile.monsters.append(self)
+
+		assert(tile.tile_type == TileType.OPEN)
+
+func _physics_process(delta: float) -> void:
+	assert(!dead)
+
+	task_cooldown.step(delta)
+	strike_cooldown.step(delta)
+	strike_hit_cooldown.step(delta)
+	attack_cooldown.step(delta)
+	victim_lost_cooldown.step(delta)
+
+	if rally_immune > 0.0:
+		rally_immune -= delta
+		if rally_immune < 0.0:
+			rally_immune = 0.0
 
 	if striking:
 		if !strike_hit:
@@ -446,7 +462,6 @@ func _physics_process(delta: float) -> void:
 			_attack(delta)
 
 
-
 func _set_next_task(new_task):
 	next_task = new_task
 
@@ -457,6 +472,8 @@ func _move(delta : float) -> void:
 	# lie WITHIN dig tiles, blocking the path, which can suddenly disappear, dub by another minion.
 	if task_cooldown.timer >= delta:
 		move_and_slide(target_vec)
+
+		update_tile_coord()
 
 func _strike() -> void:
 	strike_cooldown.restart()
@@ -642,9 +659,14 @@ func show_blood_drop_effect(container : Node2D) -> void:
 	container.add_child(blood_drop_particles)
 
 func die():
+	assert(!dead)
+	print_debug("Minion %s died on %s. Faction: %s" % [get_instance_id(), coord, faction])
+
 	Sounds.play(AudioType.DIE)
 
 	if faction == 0:
+		assert(tile.minions.has(self))
+
 		State.minions.erase(self)
 		tile.minions.erase(self)
 
@@ -652,6 +674,8 @@ func die():
 			State.minion_kings_died_count += 1
 			State.minion_kings.erase(self)
 	else:
+		assert(tile.monsters.has(self))
+
 		State.monsters.erase(self)
 		tile.monsters.erase(self)
 

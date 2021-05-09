@@ -92,7 +92,7 @@ func set_tile_type(x : int, y : int, value) -> void:
 
 	if auto_fix_waypoints:
 
-		assert(tile.tile_type == TileType.DIRT)
+		assert(tile.tile_type == TileType.DIRT || tile.tile_type == TileType.PRISON)
 		assert(value == TileType.OPEN)
 
 		tile.tile_type = value
