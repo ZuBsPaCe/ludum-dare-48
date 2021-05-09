@@ -103,6 +103,14 @@ State="*res://scripts/State.gd"
 Helper="*res://scripts/Helper.gd"
 Sounds="*res://scenes/Sounds.tscn"
 
+[debug]
+
+gdscript/warnings/unused_variable=false
+gdscript/warnings/shadowed_variable=false
+gdscript/warnings/unused_argument=false
+gdscript/warnings/narrowing_conversion=false
+gdscript/warnings/return_value_discarded=false
+
 [display]
 
 window/size/height=576
@@ -199,6 +207,9 @@ tool3={
 [network]
 
 limits/debugger_stdout/max_chars_per_second=20000
+limits/debugger_stdout/max_messages_per_frame=1000
+limits/debugger_stdout/max_errors_per_second=1000
+limits/debugger_stdout/max_warnings_per_second=1000
 
 [physics]
 
