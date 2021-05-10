@@ -2,9 +2,6 @@
 
 [ext_resource path="res://sprites/Blood.png" type="Texture" id=1]
 
-[node name="Sprite" type="Sprite"]
-
-[node name="Blood" type="Sprite" parent="."]
-position = Vector2( 0, -8 )
+[node name="Blood" type="Sprite"]
 texture = ExtResource( 1 )
 hframes = 3

@@ -3,7 +3,7 @@ extends Node
 const GameState = preload("res://scripts/GameState.gd").GameState
 const NodeType = preload("res://scripts/NodeType.gd").NodeType
 
-const random_seed := 0
+const random_seed := 945005147
 
 var game_state = GameState.TITLE_SCREEN
 
@@ -73,7 +73,10 @@ var game_camera : Camera2D
 var prisons := []
 var monster_swarms := []
 
+var arrows := []
+
 var entity_container : Node2D
+var decal_container : Node2D
 
 
 var tile_circle := []
@@ -173,6 +176,8 @@ func game_reset():
 	minion_kings.clear()
 
 	monster_swarms.clear()
+
+	arrows.clear()
 
 	minion_kings_created_count = 0
 	minion_kings_died_count = 0

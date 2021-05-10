@@ -102,15 +102,19 @@ func set_tile_type(x : int, y : int, value) -> void:
 		astar.set_point_disabled(id, false)
 		_check_diagonal_connections(astar, tile, TileType.OPEN)
 
+		# Diagonal connections for top tile
 		if y > 0 && tiles_types[id - width] == TileType.OPEN:
 			_check_diagonal_connections(astar, tiles[id - width], TileType.OPEN)
 
+		# Diagonal connections for left tile
 		if x > 0 && tiles_types[id - 1] == TileType.OPEN:
 			_check_diagonal_connections(astar, tiles[id - 1], TileType.OPEN)
 
+		# Diagonal connections for bottom tile
 		if y < height - 1 && tiles_types[id + width] == TileType.OPEN:
 			_check_diagonal_connections(astar, tiles[id + width], TileType.OPEN)
 
+		# Diagonal connections for right tile
 		if x < width - 1 && tiles_types[id + 1] == TileType.OPEN:
 			_check_diagonal_connections(astar, tiles[id + 1], TileType.OPEN)
 
@@ -132,7 +136,7 @@ func finalize_waypoints() -> void:
 
 			if tile.tile_type <= TileType.DIRT:
 				astar_dirty.set_point_disabled(tile.id, false)
-				_check_diagonal_connections(astar, tile, TileType.DIRT)
+				_check_diagonal_connections(astar_dirty, tile, TileType.DIRT)
 			else:
 				astar_dirty.set_point_disabled(tile.id, true)
 

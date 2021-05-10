@@ -23,6 +23,7 @@ export(PackedScene) var portal_scene
 export(PackedScene) var explosion_scene
 
 onready var _tilemap32 := $TileMap32
+onready var _decal_container := $DecalContainer
 onready var _entity_container := $EntityContainer
 onready var _explosion_container := $ExplosionContainer
 onready var _highlight_container := $HighlightContainer
@@ -240,7 +241,9 @@ func _ready() -> void:
 	$Screens/Title/MusicSlider.value = State.config.get_value("Audio", "Music")
 	$Screens/Title/SoundSlider.value = State.config.get_value("Audio", "Sound")
 
-	State.entity_container = $EntityContainer
+	State.decal_container = _decal_container
+	State.entity_container = _entity_container
+
 	State.map = _map
 	Helper.map = _map
 	Helper.raycast = _raycast
@@ -435,10 +438,6 @@ func _process(delta: float) -> void:
 					if set_rally:
 
 						Helper.get_tile_circle(_tiles, mouse_coord.x, mouse_coord.y, State.rally_radius)
-						for i in range(_tiles.size() - 1, -1, -1):
-							if _tiles[i].tile_type != TileType.OPEN:
-								_tiles.remove(i)
-
 						for current_tile in _tiles:
 							var distance := mouse_coord.distance_to(current_tile.coord)
 							var rally_countdown : float = (1.0 - distance / (State.rally_radius + 1)) * State.rally_duration
@@ -510,19 +509,27 @@ func _process(delta: float) -> void:
 						State.bomb_count -= 1
 						_bomb_count_label.text = str(State.bomb_count)
 
+						var bomb_tile_radius := 8
+						var bomb_vec_radius_sq := pow(bomb_tile_radius * 32.0, 2)
+
 						var entities := []
-						Helper.get_tile_circle(_tiles, mouse_coord.x, mouse_coord.y, 8)
+						Helper.get_tile_circle(_tiles, mouse_coord.x, mouse_coord.y, bomb_tile_radius)
 						for tile in _tiles:
 							for monster in tile.monsters:
 								if monster.position.distance_to(mouse_pos) > bomb_distance_half:
 									continue
-								monster.show_blood_effect(State.entity_container)
+								monster.show_blood_effect()
 								entities.append(monster)
 							for minion in tile.minions:
 								if minion.position.distance_to(mouse_pos) > bomb_distance_half:
 									continue
-								minion.show_blood_effect(State.entity_container)
+								minion.show_blood_effect()
 								entities.append(minion)
+
+						for arrow in State.arrows:
+							print(mouse_pos.distance_to(arrow.position) / 32.0)
+							if mouse_pos.distance_squared_to(arrow.position) <= bomb_vec_radius_sq:
+								arrow.die()
 
 						var explosion : Node2D = explosion_scene.instance()
 						explosion.position = mouse_pos
@@ -764,10 +771,13 @@ func game_reset() -> void:
 	_command_type = CommandType.NONE
 	_mouse_on_button = false
 
-	for child in $EntityContainer.get_children():
+	for child in _decal_container.get_children():
 		child.queue_free()
 
-	for child in $HighlightContainer.get_children():
+	for child in _entity_container.get_children():
+		child.queue_free()
+
+	for child in _highlight_container.get_children():
 		child.queue_free()
 
 	_tilemap32.clear()
@@ -848,7 +858,7 @@ func map_generate(width : int, height : int) -> void:
 		fix_closed_areas()
 	elif true || State.world_node_type == NodeType.PORTAL:
 		if true || State.level <= 3:
-			if false:
+			if true:
 				_map.setup(width, height, TileType.OPEN)
 				add_rect_area(RoomType.START, SizeType.SMALL, SizeType.SMALL, RegionType.SINGLE_CENTER, true, areas, [])
 				add_rect_area(RoomType.PORTAL, SizeType.SMALL, SizeType.SMALL, RegionType.SINGLE_BOTTOM, true, areas, [])

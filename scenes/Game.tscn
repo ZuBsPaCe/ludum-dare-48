@@ -610,6 +610,8 @@ tile_set = ExtResource( 3 )
 cell_size = Vector2( 32, 32 )
 format = 1
 
+[node name="DecalContainer" type="Node2D" parent="."]
+
 [node name="EntityContainer" type="YSort" parent="."]
 pause_mode = 1
 

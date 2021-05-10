@@ -641,17 +641,21 @@ func hurt():
 
 		Sounds.play(AudioType.FIGHT)
 
-		show_blood_effect(State.entity_container)
+		show_blood_effect()
 		show_blood_drop_effect(State.entity_container)
 
 	if health == 0:
 		die()
 
-func show_blood_effect(container : Node2D) -> void:
+func show_blood_effect() -> void:
 	var blood : Sprite = blood_scene.instance()
-	blood.position = position + Vector2(randf() * 10.0 - 5.0, randf() * 10.0 - 5.0) + Vector2(0, 8)
-	blood.rotation = PI / 4 * (randi() % 4)
-	container.add_child(blood)
+	blood.position = position + Vector2(randf() * 10.0 - 5.0, randf() * 10.0 - 5.0)# + Vector2(0, 8)
+	#blood.position = position
+	#blood.rotation = PI / 4 * (randi() % 4)
+	blood.flip_h = (randi() % 2) == 1
+	blood.flip_v = (randi() % 2) == 1
+	blood.frame = randi() % 3
+	State.decal_container.add_child(blood)
 
 func show_blood_drop_effect(container : Node2D) -> void:
 	var blood_drop_particles = blood_drop_particles_scene.instance()
@@ -660,7 +664,7 @@ func show_blood_drop_effect(container : Node2D) -> void:
 
 func die():
 	assert(!dead)
-	print_debug("Minion %s died on %s. Faction: %s" % [get_instance_id(), coord, faction])
+	#print_debug("Minion %s died on %s. Faction: %s" % [get_instance_id(), coord, faction])
 
 	Sounds.play(AudioType.DIE)
 
