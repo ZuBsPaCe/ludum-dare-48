@@ -96,6 +96,7 @@ func world_reset() -> void:
 
 	level_monster_count = 10
 	bomb_count = 10
+	bomb_count = 100
 
 	# Part of minion_count
 	archer_count = 2

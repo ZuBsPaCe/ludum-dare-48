@@ -554,6 +554,7 @@ func can_start_rally() -> bool:
 	return true
 
 func can_start_attack() -> bool:
+	return false
 	if prisoner:
 		return false
 

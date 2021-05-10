@@ -46,8 +46,8 @@
 [ext_resource path="res://scenes/Button.tscn" type="PackedScene" id=44]
 [ext_resource path="res://scripts/WorldMap.gd" type="Script" id=45]
 [ext_resource path="res://scenes/Explosion.tscn" type="PackedScene" id=46]
-[ext_resource path="res://sprites/IndicatorPart.png" type="Texture" id=47]
-[ext_resource path="res://sprites/IndicatorFull.png" type="Texture" id=48]
+[ext_resource path="res://sprites/BombViewIndicator.png" type="Texture" id=47]
+[ext_resource path="res://sprites/BombBlastIndicator.png" type="Texture" id=48]
 [ext_resource path="res://art/worldmap/WorldLine.png" type="Texture" id=49]
 [ext_resource path="res://sprites/FlagIcon.png" type="Texture" id=50]
 [ext_resource path="res://sprites/KingIcon.png" type="Texture" id=51]
@@ -629,13 +629,12 @@ visible = false
 position = Vector2( 16, 16 )
 texture = ExtResource( 5 )
 
-[node name="BombIndicator" type="Node2D" parent="."]
+[node name="BombBlastIndicator" type="Sprite" parent="."]
 visible = false
-
-[node name="BombIndicatorFullSprite" type="Sprite" parent="BombIndicator"]
 texture = ExtResource( 48 )
 
-[node name="BombIndicatorPartSprite" type="Sprite" parent="BombIndicator"]
+[node name="BombViewIndicator" type="Sprite" parent="."]
+modulate = Color( 1, 1, 0, 1 )
 texture = ExtResource( 47 )
 
 [node name="GameCamera" type="Camera2D" parent="."]

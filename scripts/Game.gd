@@ -7,10 +7,16 @@ const NodeType = preload("res://scripts/NodeType.gd").NodeType
 const RoomType = preload("res://scripts/RoomType.gd").RoomType
 const RegionType = preload("res://scripts/RegionType.gd").RegionType
 
-const bomb_distance := 160.0
-const bomb_distance_sq := bomb_distance * bomb_distance
-const bomb_distance_half := bomb_distance * 0.5
-const bomb_distance_double_sq := bomb_distance_sq * 2.0
+const bomb_tile_radius := 2
+const bomb_radius := bomb_tile_radius * 32.0
+const bomb_radius_sq := bomb_radius * bomb_radius
+
+const bomb_view_tile_radius := 4
+const bomb_view_radius := bomb_view_tile_radius * 32.0
+const bomb_view_radius_sq := bomb_view_radius * bomb_view_radius
+
+const yellow_modulate := Color(1, 1, 0, 0.25)
+const dark_modulate := Color(0.1, 0.1, 0.1, 0.25)
 
 var cursor_dig = preload("res://sprites/CursorDig.png")
 var cursor_rally = preload("res://sprites/CursorRally.png")
@@ -29,8 +35,8 @@ onready var _explosion_container := $ExplosionContainer
 onready var _highlight_container := $HighlightContainer
 onready var _camera := $GameCamera
 onready var _cursor_highlight := $CursorHighlight
-onready var _bomb_indicator := $BombIndicator
-onready var _bomb_indicator_part := $BombIndicator/BombIndicatorPartSprite
+onready var _bomb_view_indicator := $BombViewIndicator
+onready var _bomb_blast_indicator := $BombBlastIndicator
 onready var _dig_button := $HUD/MarginContainer/HBoxContainer/DigButton
 onready var _rally_button := $HUD/MarginContainer/HBoxContainer/RallyButton
 onready var _bomb_button := $HUD/MarginContainer/HBoxContainer/BombButton
@@ -480,8 +486,8 @@ func _process(delta: float) -> void:
 				if has_bombs:
 					for minion in State.minions:
 						var minion_pos : Vector2 = minion.position + Vector2(0, -8.0)
-						var distance_sq = minion_pos.distance_to(mouse_pos)
-						if distance_sq <= bomb_distance_double_sq:
+						var distance_sq = minion_pos.distance_squared_to(mouse_pos)
+						if distance_sq <= bomb_view_radius_sq * 2.0:
 							var minion_visible : bool = Helper.raycast_minion_to_pos(minion, mouse_pos)
 
 							if nearest_minion == null || distance_sq < nearest_minion_distance_sq || !nearest_minion_visible && minion_visible:
@@ -489,46 +495,57 @@ func _process(delta: float) -> void:
 								nearest_minion_distance_sq = distance_sq
 								nearest_minion_visible = minion_visible
 
+				var indicator_alpha = 0.0
+				if nearest_minion != null:
+					indicator_alpha = 1.0 - (nearest_minion_distance_sq - bomb_view_radius_sq) / bomb_view_radius_sq
+
 				var can_bomb : bool = (
 					has_bombs &&
 					mouse_tile == TileType.OPEN &&
 					nearest_minion != null &&
 					nearest_minion_visible &&
-					nearest_minion_distance_sq <= bomb_distance_sq)
+					nearest_minion_distance_sq <= bomb_view_radius_sq)
+
+				if has_bombs:
+					_bomb_blast_indicator.position = mouse_pos
+					_bomb_view_indicator.visible = true
+				else:
+					_bomb_view_indicator.visible = false
 
 				if has_bombs && nearest_minion != null:
-					_bomb_indicator.position = nearest_minion.position + Vector2(0, -8.0)
-					_bomb_indicator.rotation = Vector2.DOWN.angle_to(nearest_minion.position - mouse_pos)
-					_bomb_indicator_part.visible = nearest_minion_visible
-					_bomb_indicator.visible = true
+					_bomb_view_indicator.position = nearest_minion.position + Vector2(0, -8.0)
+					_bomb_view_indicator.rotation = Vector2.DOWN.angle_to(nearest_minion.position - mouse_pos)
+					if can_bomb:
+						_bomb_view_indicator.modulate = yellow_modulate
+					else:
+						_bomb_view_indicator.modulate = dark_modulate
+						_bomb_view_indicator.modulate.a = indicator_alpha * 0.25
+
+					_bomb_blast_indicator.visible = true
 				else:
-					_bomb_indicator.visible = false
+					_bomb_view_indicator.visible = false
 
 				if can_bomb:
 					if Input.is_action_just_pressed("command") && !_mouse_on_button:
 						State.bomb_count -= 1
 						_bomb_count_label.text = str(State.bomb_count)
 
-						var bomb_tile_radius := 8
-						var bomb_vec_radius_sq := pow(bomb_tile_radius * 32.0, 2)
-
 						var entities := []
-						Helper.get_tile_circle(_tiles, mouse_coord.x, mouse_coord.y, bomb_tile_radius)
+						Helper.get_tile_circle(_tiles, mouse_coord.x, mouse_coord.y, bomb_tile_radius + 1)
 						for tile in _tiles:
 							for monster in tile.monsters:
-								if monster.position.distance_to(mouse_pos) > bomb_distance_half:
+								if monster.position.distance_squared_to(mouse_pos) > bomb_radius_sq:
 									continue
 								monster.show_blood_effect()
 								entities.append(monster)
 							for minion in tile.minions:
-								if minion.position.distance_to(mouse_pos) > bomb_distance_half:
+								if minion.position.distance_squared_to(mouse_pos) > bomb_radius_sq:
 									continue
 								minion.show_blood_effect()
 								entities.append(minion)
 
 						for arrow in State.arrows:
-							print(mouse_pos.distance_to(arrow.position) / 32.0)
-							if mouse_pos.distance_squared_to(arrow.position) <= bomb_vec_radius_sq:
+							if mouse_pos.distance_squared_to(arrow.position) <= bomb_radius_sq:
 								arrow.die()
 
 						var explosion : Node2D = explosion_scene.instance()
@@ -762,7 +779,9 @@ func world_start() -> void:
 
 func game_reset() -> void:
 	_cursor_highlight.visible = false
-	_bomb_indicator.visible = false
+	_bomb_view_indicator.visible = false
+	_bomb_blast_indicator.visible = false
+	_bomb_blast_indicator.modulate = dark_modulate
 
 	_dig_button.pressed = true
 	_rally_button.pressed = false
@@ -1840,7 +1859,8 @@ func set_tool(tool_type) -> void:
 			_rally_button.pressed = false
 			_bomb_button.pressed = false
 
-			_bomb_indicator.visible = false
+			_bomb_view_indicator.visible = false
+			_bomb_blast_indicator.visible = false
 
 		ToolType.RALLY:
 			Input.set_custom_mouse_cursor(cursor_rally, 0, Vector2(16, 16))
@@ -1849,7 +1869,8 @@ func set_tool(tool_type) -> void:
 			_bomb_button.pressed = false
 
 			_cursor_highlight.visible = false
-			_bomb_indicator.visible = false
+			_bomb_view_indicator.visible = false
+			_bomb_blast_indicator.visible = false
 
 
 		ToolType.BOMB:
