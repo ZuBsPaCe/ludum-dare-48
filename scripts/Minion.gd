@@ -47,6 +47,7 @@ var task_cooldown := Cooldown.new()
 var next_task = null
 
 var striking := false
+var was_striking := false
 var strike_hit := false
 var strike_cooldown := Cooldown.new(1.0)
 var strike_hit_cooldown := Cooldown.new(0.25)
@@ -55,6 +56,8 @@ var victim_lost_cooldown := Cooldown.new(8.0)
 
 var target_pos := Vector2()
 var target_vec := Vector2()
+
+var view_distance : float
 
 var path : PoolIntArray
 var path_index := 0
@@ -114,6 +117,8 @@ func setup_minion(archer = false, prisoner = false, king = false) -> void:
 	self.prisoner = prisoner
 	self.king = king
 
+	view_distance = State.minion_view_distance
+
 	if !prisoner:
 		State.minions.append(self)
 
@@ -131,10 +136,12 @@ func setup_monster(archer = false, digger = false, king = false, swarm = false) 
 
 	self.faction = 1
 
-	self.archer = archer
+	self.archer = true
 	self.digger = digger
 	self.king = king
 	self.swarm = swarm
+
+	view_distance = State.monster_view_distance
 
 	State.monsters.append(self)
 
@@ -203,6 +210,8 @@ func _physics_process(delta: float) -> void:
 		rally_immune -= delta
 		if rally_immune < 0.0:
 			rally_immune = 0.0
+
+	was_striking = false
 
 	if striking:
 		if !strike_hit:
@@ -288,6 +297,7 @@ func _physics_process(delta: float) -> void:
 		if strike_cooldown.running:
 			return
 		striking = false
+		was_striking = true
 
 	if rally_immune > 0.0:
 		rally_immune = max(rally_immune - delta, 0.0)
@@ -615,7 +625,16 @@ func _attack(delta : float):
 				victim_lost_cooldown.restart()
 				_set_target(_last_victim_pos)
 			else:
+				# Victim fleeing
 				_victim_visible = false
+		else:
+			if _victim_visible:
+				# Saw the victim die
+				_victim = null
+				_set_next_task(MinionTask.IDLE)
+				return
+
+			# Victim died, but we did not see it
 
 		attack_cooldown.restart()
 
@@ -627,6 +646,10 @@ func _attack(delta : float):
 		_victim = null
 		_set_next_task(MinionTask.IDLE)
 	elif task_cooldown.running:
+		if was_striking:
+			# Continue walk animation
+			_set_target(_last_victim_pos)
+
 		_move(delta)
 	else:
 		# At last known pos. Victim gone...

@@ -1609,7 +1609,7 @@ func game_start_battles():
 			State.monster_check_index = 0
 
 		var monster : Minion = State.monsters[State.monster_check_index]
-		game_start_battle(monster, State.minions, State.monster_view_distance)
+		game_start_battle(monster, State.minions)
 
 	if State.minions.size() > 0:
 		State.minion_check_index += 1
@@ -1617,11 +1617,11 @@ func game_start_battles():
 			State.minion_check_index = 0
 
 		var minion : Minion = State.minions[State.minion_check_index]
-		game_start_battle(minion, State.monsters, State.minion_view_distance)
+		game_start_battle(minion, State.monsters)
 
-func game_start_battle(attacker : Minion, target_list : Array, view_distance : int):
+func game_start_battle(attacker : Minion, target_list : Array):
 	if attacker.can_start_attack():
-		var target_distance := view_distance
+		var target_distance := attacker.view_distance
 		var target = null
 
 		for check_target in target_list:

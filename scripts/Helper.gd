@@ -138,7 +138,7 @@ func get_walkable_pos(coord : Coord, include_current = true) -> Vector2:
 	return coord.to_random_pos()
 
 func raycast_minion(from_minion : Minion, to_minion : Minion) -> bool:
-	var diff_vec := to_minion.position - from_minion.position
+	var diff_vec := (to_minion.position - from_minion.position).clamped(from_minion.view_distance * 32.0)
 #	raycast.clear_exceptions()
 #	raycast.add_exception(from_minion)
 	raycast.position = from_minion.position
