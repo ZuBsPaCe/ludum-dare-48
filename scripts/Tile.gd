@@ -49,7 +49,13 @@ func hurt(amount : int = 1) -> void:
 
 	health -= amount
 
-	if health <= 0:
+	if health > 0:
+		if tile_type == TileType.DIRT:
+			if health <= State.dirt_health_cracks_large:
+				State.tilemap32.set_cell(x, y, 6)
+			elif health <= State.dirt_health_cracks_small:
+				State.tilemap32.set_cell(x, y, 5)
+	else:
 		if dig_highlight != null:
 			dig_highlight.queue_free()
 			dig_highlight = null

@@ -39,3 +39,17 @@ repeat: none
   orig: 32, 32
   offset: 0, 0
   index: -1
+06 DirtSmallCracks1
+  rotate: false
+  xy: 160, 0
+  size: 32, 32
+  orig: 32, 32
+  offset: 0, 0
+  index: -1
+07 DirtLargeCracks1
+  rotate: false
+  xy: 192, 0
+  size: 32, 32
+  orig: 32, 32
+  offset: 0, 0
+  index: -1

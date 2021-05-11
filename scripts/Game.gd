@@ -544,7 +544,13 @@ func _process(delta: float) -> void:
 								minion.show_blood_effect()
 								entities.append(minion)
 
-							tile.hurt(3)
+							var tile_distance : float = tile.coord.distance_squared_to(mouse_coord)
+							if tile_distance <= 2:
+								tile.hurt(3)
+							elif tile_distance <= 4:
+								tile.hurt(1 + randi() % 3)
+							else:
+								tile.hurt(randi() % 3)
 
 						for arrow in State.arrows:
 							if mouse_pos.distance_squared_to(arrow.position) <= bomb_radius_sq:
@@ -1566,11 +1572,11 @@ func game_traverse_dig_tiles():
 
 			for minion in from_tile.minions:
 				if minion.can_start_digging():
-					#var distance : float = minion.coord.distance_to_squared(dig_tile.coord)
-					var distance := abs(minion.coord.x - dig_tile.coord.x) + abs(minion.coord.y - dig_tile.coord.y)
+					#var distance : float = minion.coord.distance_squared_to(dig_tile.coord)
+					var distance : float = minion.coord.manhattan_distance_to(dig_tile.coord)
 
 					if minion_to_distance.has(minion):
-						var best_distance : float= minion_to_distance[minion]
+						var best_distance : float = minion_to_distance[minion]
 						if randf() >= 0.5:
 							if distance > best_distance:
 								continue

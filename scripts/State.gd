@@ -33,6 +33,9 @@ var monster_view_distance : int
 var monster_archer_fraction := 0.25
 
 var dirt_health : int
+var dirt_health_cracks_small : int
+var dirt_health_cracks_large : int
+
 var minion_health : int
 var monster_health : int
 var king_health : int
@@ -117,7 +120,12 @@ func world_reset() -> void:
 
 	minion_view_distance = 8
 	monster_view_distance = 8
+
 	dirt_health = 3
+	dirt_health_cracks_small = 2
+	dirt_health_cracks_large = 1
+
+
 	minion_health = 5
 	monster_health = 5
 	king_health = 20
