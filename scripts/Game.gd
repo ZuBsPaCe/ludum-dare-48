@@ -544,6 +544,8 @@ func _process(delta: float) -> void:
 								minion.show_blood_effect()
 								entities.append(minion)
 
+							tile.hurt(3)
+
 						for arrow in State.arrows:
 							if mouse_pos.distance_squared_to(arrow.position) <= bomb_radius_sq:
 								arrow.die()
@@ -877,7 +879,7 @@ func map_generate(width : int, height : int) -> void:
 		fix_closed_areas()
 	elif true || State.world_node_type == NodeType.PORTAL:
 		if true || State.level <= 3:
-			if true:
+			if false:
 				_map.setup(width, height, TileType.OPEN)
 				add_rect_area(RoomType.START, SizeType.SMALL, SizeType.SMALL, RegionType.SINGLE_CENTER, true, areas, [])
 				add_rect_area(RoomType.PORTAL, SizeType.SMALL, SizeType.SMALL, RegionType.SINGLE_BOTTOM, true, areas, [])
@@ -1400,6 +1402,9 @@ func map_fill() -> void:
 			var tile = _map.get_tile(x, y)
 			var coord := Coord.new(x, y)
 
+			if x == 0 || x == _map.width - 1 || y == 0 || y == _map.height - 1:
+				tile.immune = true
+
 			match tile_type:
 				TileType.DIRT:
 					_tilemap32.set_cell(x, y, 1)
@@ -1419,7 +1424,7 @@ func map_fill() -> void:
 
 				TileType.START_PORTAL:
 					_tilemap32.set_cell(x, y, 4)
-					_map.set_tile_type(x, y, TileType.ROCK)
+					tile.immune = true
 
 					var start_portal = portal_scene.instance()
 					start_portal.tile = tile
@@ -1429,6 +1434,7 @@ func map_fill() -> void:
 
 				TileType.END_PORTAL:
 					_tilemap32.set_cell(x, y, 4)
+					tile.immune = true
 
 					var end_portal = portal_scene.instance()
 					end_portal.tile = tile

@@ -92,31 +92,20 @@ func set_tile_type(x : int, y : int, value) -> void:
 
 	if auto_fix_waypoints:
 
-		assert(tile.tile_type == TileType.DIRT || tile.tile_type == TileType.PRISON)
+		assert(tile.tile_type == TileType.DIRT || tile.tile_type == TileType.PRISON || tile.tile_type == TileType.ROCK)
 		assert(value == TileType.OPEN)
+
+		var was_rock : bool = tile.tile_type == TileType.ROCK
 
 		tile.tile_type = value
 
 		# Hint: Don't need to check astar_dirty. It's already connected.
 
 		astar.set_point_disabled(id, false)
-		_check_diagonal_connections(astar, tile, TileType.OPEN)
+		_check_diagonal_connections_including_neighbours(astar, tile, TileType.OPEN)
 
-		# Diagonal connections for top tile
-		if y > 0 && tiles_types[id - width] == TileType.OPEN:
-			_check_diagonal_connections(astar, tiles[id - width], TileType.OPEN)
-
-		# Diagonal connections for left tile
-		if x > 0 && tiles_types[id - 1] == TileType.OPEN:
-			_check_diagonal_connections(astar, tiles[id - 1], TileType.OPEN)
-
-		# Diagonal connections for bottom tile
-		if y < height - 1 && tiles_types[id + width] == TileType.OPEN:
-			_check_diagonal_connections(astar, tiles[id + width], TileType.OPEN)
-
-		# Diagonal connections for right tile
-		if x < width - 1 && tiles_types[id + 1] == TileType.OPEN:
-			_check_diagonal_connections(astar, tiles[id + 1], TileType.OPEN)
+		if was_rock:
+			_check_diagonal_connections_including_neighbours(astar_dirty, tile, TileType.DIRT)
 
 	else:
 		tile.tile_type = value
@@ -145,8 +134,29 @@ func finalize_waypoints() -> void:
 				tile.tile_type == TileType.DIRT ||
 				tile.tile_type == TileType.ROCK ||
 				tile.tile_type == TileType.PRISON ||
+				tile.tile_type == TileType.START_PORTAL ||
 				tile.tile_type == TileType.END_PORTAL)
 
+func _check_diagonal_connections_including_neighbours(astar : AStar2D, tile : Tile, tile_type) -> void:
+	_check_diagonal_connections(astar, tile, TileType.OPEN)
+
+	var id := tile.id
+
+	# Diagonal connections for top tile
+	if tile.y > 0 && tiles_types[id - width] == TileType.OPEN:
+		_check_diagonal_connections(astar, tiles[id - width], TileType.OPEN)
+
+	# Diagonal connections for left tile
+	if tile.x > 0 && tiles_types[id - 1] == TileType.OPEN:
+		_check_diagonal_connections(astar, tiles[id - 1], TileType.OPEN)
+
+	# Diagonal connections for bottom tile
+	if tile.y < height - 1 && tiles_types[id + width] == TileType.OPEN:
+		_check_diagonal_connections(astar, tiles[id + width], TileType.OPEN)
+
+	# Diagonal connections for right tile
+	if tile.x < width - 1 && tiles_types[id + 1] == TileType.OPEN:
+		_check_diagonal_connections(astar, tiles[id + 1], TileType.OPEN)
 
 
 func _check_diagonal_connections(astar : AStar2D, tile : Tile, tile_type) -> void:
