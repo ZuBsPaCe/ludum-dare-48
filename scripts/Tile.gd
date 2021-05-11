@@ -4,6 +4,7 @@ class_name Tile
 
 const AudioType = preload("res://scripts/AudioType.gd").AudioType
 const TileType = preload("res://scripts/TileType.gd").TileType
+const dig_debris_scene = preload("res://scenes/DigDebris.tscn")
 
 var minions := []
 var monsters := []
@@ -59,9 +60,15 @@ func hurt(amount : int = 1) -> void:
 		if dig_highlight != null:
 			dig_highlight.queue_free()
 			dig_highlight = null
+
 		State.map.set_tile_type(x, y, TileType.OPEN)
 		State.tilemap32.set_cell(x, y, 0)
 		State.map.dig_tiles.erase(self)
+
+		for i in 10 + randi() % 11:
+			var dig_debris : RigidBody2D = dig_debris_scene.instance()
+			dig_debris.position = coord.to_random_pos()
+			State.debris_container.add_child(dig_debris)
 
 		var prisoner_tiles := []
 		var check_tiles = [self]

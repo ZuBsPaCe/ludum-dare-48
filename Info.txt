@@ -2,3 +2,4 @@ Map on Collision Layer 1
 Minions on Collision Layer 2
 Monsters on Collision Layer 3
 Arrows on Collision Layer 4
+DigDebris on Collision Layer 5

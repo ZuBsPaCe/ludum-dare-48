@@ -30,6 +30,7 @@ export(PackedScene) var explosion_scene
 
 onready var _tilemap32 := $TileMap32
 onready var _decal_container := $DecalContainer
+onready var _debris_container := $DebrisContainer
 onready var _entity_container := $EntityContainer
 onready var _explosion_container := $ExplosionContainer
 onready var _highlight_container := $HighlightContainer
@@ -248,6 +249,7 @@ func _ready() -> void:
 	$Screens/Title/SoundSlider.value = State.config.get_value("Audio", "Sound")
 
 	State.decal_container = _decal_container
+	State.debris_container = _debris_container
 	State.entity_container = _entity_container
 
 	State.map = _map
@@ -799,6 +801,9 @@ func game_reset() -> void:
 	_mouse_on_button = false
 
 	for child in _decal_container.get_children():
+		child.queue_free()
+
+	for child in _debris_container.get_children():
 		child.queue_free()
 
 	for child in _entity_container.get_children():
