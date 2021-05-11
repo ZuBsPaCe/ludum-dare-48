@@ -617,10 +617,10 @@ format = 1
 [node name="EntityContainer" type="YSort" parent="."]
 pause_mode = 1
 
-[node name="ExplosionContainer" type="YSort" parent="."]
+[node name="HighlightContainer" type="Node2D" parent="."]
 pause_mode = 1
 
-[node name="HighlightContainer" type="Node2D" parent="."]
+[node name="ExplosionContainer" type="YSort" parent="."]
 pause_mode = 1
 
 [node name="CursorHighlight" type="Node2D" parent="."]
@@ -636,6 +636,7 @@ visible = false
 texture = ExtResource( 48 )
 
 [node name="BombViewIndicator" type="Sprite" parent="."]
+visible = false
 modulate = Color( 1, 1, 0, 1 )
 texture = ExtResource( 47 )
 
