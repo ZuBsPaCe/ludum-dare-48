@@ -2,8 +2,9 @@ extends Node
 
 const GameState = preload("res://scripts/GameState.gd").GameState
 const NodeType = preload("res://scripts/NodeType.gd").NodeType
+const TutorialStep = preload("res://scripts/TutorialStep.gd").TutorialStep
 
-const random_seed := 945005147
+const random_seed := 0
 
 var game_state = GameState.TITLE_SCREEN
 
@@ -12,12 +13,17 @@ var world_layer_index : int
 
 var world_node_type
 
+var tutorial_step
+
 var minion_count : int
 var archer_count : int
 var minion_king_count : int
 var bomb_count : int
 var map : Map
 var tilemap32 : TileMap
+
+var prisoners_per_prison_min_count : int
+var prisoners_per_prison_max_count : int
 
 var increase_minion_count : int
 var increase_archer_count : int
@@ -62,7 +68,7 @@ var minion_check_index : int
 var level : int
 var end_level_info := ""
 
-var spawn_cooldown := 20
+var spawns_per_minute : float
 
 var swarm_cooldown_init := 30
 var swarm_cooldown_min := 15
@@ -95,6 +101,7 @@ func world_reset() -> void:
 	world_layer_index = 0
 
 	world_node_type = NodeType.PORTAL
+	tutorial_step = TutorialStep.START
 
 	minion_count = 7
 
@@ -106,6 +113,8 @@ func world_reset() -> void:
 	archer_count = 2
 	minion_king_count = 0
 
+	prisoners_per_prison_min_count = 1
+	prisoners_per_prison_max_count = 3
 
 	increase_minion_count = 0
 	increase_archer_count = 0
@@ -134,7 +143,7 @@ func world_reset() -> void:
 	level = 0
 	end_level_info = ""
 
-	spawn_cooldown = 20
+	spawns_per_minute = 1.5
 
 	minions_fled = 0
 	archers_fled = 0
@@ -175,7 +184,22 @@ func increase_level():
 		increase_bomb_count = 0
 
 
-	spawn_cooldown = max(10, 45 - State.level * 6)
+		prisoners_per_prison_min_count += 1
+		prisoners_per_prison_max_count += 2
+
+
+	if world_node_type == NodeType.TUTORIAL || world_node_type == NodeType.DEFEND:
+		spawns_per_minute = 0
+	else:
+		spawns_per_minute = min(6, 1.5 + (State.level - 1) * 0.75)
+
+
+	if world_node_type == NodeType.TUTORIAL:
+		minion_count = 1
+		level_monster_count = 3
+		prisoners_per_prison_min_count = 6
+		prisoners_per_prison_max_count = 6
+
 
 func game_reset():
 	start_portals.clear()

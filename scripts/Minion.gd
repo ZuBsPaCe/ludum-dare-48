@@ -105,6 +105,8 @@ func _ready() -> void:
 	_path_variation_x += randf() * 28.0 - 14.0
 	_path_variation_y += randf() * 28.0 - 14.0
 
+	strike_cooldown.set_done()
+
 	init_tile_coord()
 
 
@@ -535,6 +537,11 @@ func can_start_digging() -> bool:
 		task != MinionTask.ATTACK &&
 		task != MinionTask.FIGHT &&
 		!prisoner)
+
+func is_digging() -> bool:
+	return (
+		task == MinionTask.GO_DIG ||
+		task == MinionTask.DIG)
 
 func dig(path : PoolIntArray, dig_tile : Tile):
 	self.path = path

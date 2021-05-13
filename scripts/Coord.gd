@@ -9,6 +9,10 @@ func _init(x = 0, y = 0) -> void:
 	self.x = x
 	self.y = y
 
+func set_coord(other : Coord):
+	x = other.x
+	y = other.y
+
 func set_vector(pos : Vector2) -> void:
 	x = int(pos.x / 32.0)
 	y = int(pos.y / 32.0)

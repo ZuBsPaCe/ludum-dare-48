@@ -6,6 +6,7 @@ const AudioType = preload("res://scripts/AudioType.gd").AudioType
 const NodeType = preload("res://scripts/NodeType.gd").NodeType
 const RoomType = preload("res://scripts/RoomType.gd").RoomType
 const RegionType = preload("res://scripts/RegionType.gd").RegionType
+const TutorialStep = preload("res://scripts/TutorialStep.gd").TutorialStep
 
 const bomb_tile_radius := 2
 const bomb_radius := bomb_tile_radius * 32.0
@@ -38,11 +39,12 @@ onready var _camera := $GameCamera
 onready var _cursor_highlight := $CursorHighlight
 onready var _bomb_view_indicator := $BombViewIndicator
 onready var _bomb_blast_indicator := $BombBlastIndicator
-onready var _dig_button := $HUD/MarginContainer/HBoxContainer/DigButton
-onready var _rally_button := $HUD/MarginContainer/HBoxContainer/RallyButton
-onready var _bomb_button := $HUD/MarginContainer/HBoxContainer/BombButton
+onready var _dig_button := $HUD/MarginContainer/VBoxContainer/GridContainer/HBoxContainerCenter/DigButton
+onready var _rally_button :=  $HUD/MarginContainer/VBoxContainer/GridContainer/HBoxContainerCenter/RallyButton
+onready var _bomb_button :=  $HUD/MarginContainer/VBoxContainer/GridContainer/HBoxContainerCenter/BombButton
+onready var _menu_button := $HUD/MarginContainer/VBoxContainer/GridContainer/HBoxContainerRight/MenuButton
 onready var _raycast := $RayCast2D
-onready var _bomb_count_label := $HUD/MarginContainer/HBoxContainer/BombButton/BombCount
+onready var _bomb_count_label := $HUD/MarginContainer/VBoxContainer/GridContainer/HBoxContainerCenter/BombButton/BombCount
 
 
 var title_music_target := -80.0
@@ -54,8 +56,9 @@ var _dig_traverse_cooldown := Cooldown.new(1.0)
 var _start_battle_cooldown := Cooldown.new()
 var _level_done_cooldown := Cooldown.new(2.0)
 var _check_level_done_cooldown := Cooldown.new(2.0)
-var _spawn_cooldown := Cooldown.new(5.0)
+var _spawn_cooldown := Cooldown.new()
 var _swarm_cooldown := Cooldown.new()
+var _tutorial_cooldown := Cooldown.new()
 
 
 var _map := Map.new()
@@ -79,6 +82,7 @@ var _offsets8 := [
 	Coord.new(1, 1)]
 
 enum ToolType {
+	NONE,
 	DIG,
 	RALLY,
 	BOMB
@@ -120,6 +124,13 @@ var _level_done := false
 var _loading := true
 
 var _tiles := []
+
+var _story_queue := []
+var _story_queue_keep_open := []
+var _story_queue_kept_open := false
+var _story_done := true
+
+var _tutorial_dig_last_tile : Tile
 
 var _world_layer_templates := [
 	WorldLayerTemplate.new(
@@ -245,6 +256,9 @@ func _ready() -> void:
 	if !State.config.has_section_key("Audio", "Sound"):
 		State.config.set_value("Audio", "Sound", 0.8)
 
+	if !State.config.has_section_key("Game", "Tutorial"):
+		State.config.set_value("Game", "Tutorial", true)
+
 	$Screens/Title/MusicSlider.value = State.config.get_value("Audio", "Music")
 	$Screens/Title/SoundSlider.value = State.config.get_value("Audio", "Sound")
 
@@ -318,7 +332,7 @@ func _process(delta: float) -> void:
 
 	var mouse_pos := get_global_mouse_position()
 
-	if State.game_state == GameState.GAME || State.game_state == GameState.WORLD_MAP:
+	if State.game_state == GameState.GAME || State.game_state == GameState.WORLD_MAP || State.game_state == GameState.TUTORIAL:
 		if Input.is_action_just_pressed("alternate"):
 			_drag_start_mouse_pos = get_viewport().get_mouse_position()
 			_drag_start_camera_pos = _camera.position
@@ -371,7 +385,7 @@ func _process(delta: float) -> void:
 			_camera.position = new_camera_position
 
 
-	if State.game_state == GameState.GAME:
+	if State.game_state == GameState.GAME || State.game_state == GameState.TUTORIAL:
 		_dig_traverse_cooldown.step(delta)
 		_start_battle_cooldown.step(delta)
 		_level_done_cooldown.step(delta)
@@ -436,7 +450,7 @@ func _process(delta: float) -> void:
 					if Input.is_action_pressed("command"):
 						var move_dir : Vector2
 
-						if _rally_last_mouse_pos.distance_to(mouse_pos) > 64:
+						if _rally_last_mouse_pos.distance_to(mouse_pos) >= 32:
 							set_rally = true
 							_rally_last_mouse_pos = mouse_pos
 
@@ -567,10 +581,8 @@ func _process(delta: float) -> void:
 							entity.show_blood_drop_effect(_explosion_container)
 							entity.die()
 
-		if _dig_traverse_cooldown.done:
-			_dig_traverse_cooldown.restart()
-			game_traverse_dig_tiles()
 
+		game_traverse_dig_tiles()
 		game_traverse_rally_tiles(delta)
 		game_start_battles()
 		game_check_level_done()
@@ -583,6 +595,127 @@ func _process(delta: float) -> void:
 			set_tool(ToolType.RALLY)
 		elif Input.is_action_just_pressed("tool3"):
 			set_tool(ToolType.BOMB)
+
+		if State.world_node_type == NodeType.TUTORIAL:
+			_tutorial_cooldown.step(delta)
+
+			if State.tutorial_step == TutorialStep.START:
+				_tutorial_cooldown.restart(3)
+				State.tutorial_step = TutorialStep.INTRO
+
+			elif State.tutorial_step == TutorialStep.INTRO && _tutorial_cooldown.done:
+				show_story("Finally! You reached the dungeon!", true)
+				State.tutorial_step = TutorialStep.START_DIGGING
+
+			elif State.tutorial_step == TutorialStep.START_DIGGING && _story_done:
+				_dig_button.visible = true
+				show_story("Select the pickaxe and click on the dirt near you.", true)
+				State.tutorial_step = TutorialStep.HIDE_START_DIGGING
+
+			elif State.tutorial_step == TutorialStep.HIDE_START_DIGGING:
+				if _map.dig_tiles.size() > 0:
+					hide_story()
+					State.tutorial_step = TutorialStep.CAMERA
+
+			elif State.tutorial_step == TutorialStep.CAMERA && _story_done:
+				show_story("Move your view with arrow keys, WASD or right mouse button.", true)
+				_tutorial_cooldown.restart(30)
+				State.tutorial_step = TutorialStep.GOTO_PRISON
+
+			elif State.tutorial_step == TutorialStep.GOTO_PRISON:
+				if State.minions[0].tile == _tutorial_dig_last_tile || _tutorial_cooldown.done:
+					show_story("You hear desperate cries for help...")
+					show_story("Keep digging! You can select multiple tiles by dragging.", true)
+					State.tutorial_step = TutorialStep.HIDE_GOTO_PRISON
+
+			elif State.tutorial_step == TutorialStep.HIDE_GOTO_PRISON:
+				if State.minions[0].is_digging():
+					hide_story()
+					State.tutorial_step = TutorialStep.FREE_PRISONERS
+					_tutorial_cooldown.restart(5)
+
+			elif State.tutorial_step == TutorialStep.FREE_PRISONERS && _tutorial_cooldown.done:
+				show_story("Poor prisoners. Free them!", true)
+				State.tutorial_step = TutorialStep.PRISONERS_FREED
+
+			elif State.tutorial_step == TutorialStep.PRISONERS_FREED && _story_done:
+				var has_prisoners := false
+				for prison in State.prisons:
+					for tile in prison.inner_tiles:
+						if tile.prisoners.size() > 0:
+							has_prisoners = true
+							break
+
+				if !has_prisoners:
+					show_story("Well done! They are grateful to you!")
+					show_story("One of them tells you about a secret chest near the entrance.", true)
+					State.tutorial_step = TutorialStep.START_RALLY
+
+			elif State.tutorial_step == TutorialStep.START_RALLY && _story_done:
+				_rally_button.visible = true
+				show_story("Select the rally tool and paint the way to the portal you came in.", true)
+				State.tutorial_step = TutorialStep.GO_BACK_TO_START_PORTAL
+
+			elif State.tutorial_step == TutorialStep.GO_BACK_TO_START_PORTAL:
+				var near_start_portal_count := 0
+				for minion in State.minions:
+					if minion.coord.distance_to(State.start_portals[0].tile.coord) <= 4:
+						near_start_portal_count += 1
+						if near_start_portal_count == 2:
+							break
+
+				if near_start_portal_count == 2:
+					show_story("Your companion reveals a chest full of bombs!")
+					show_story("He tells you about a secret portal down to the south.", true)
+					State.tutorial_step = TutorialStep.START_BOMBING
+
+			elif State.tutorial_step == TutorialStep.START_BOMBING && _story_done:
+				_bomb_button.visible = true
+				show_story("Select the bomb tool and make way to the southern portal.", true)
+				State.tutorial_step = TutorialStep.BOMBING
+
+			elif State.tutorial_step == TutorialStep.BOMBING && $ExplosionContainer.get_child_count() > 0:
+				show_story("Watch out! Bombs are dangerous!")
+				State.tutorial_step = TutorialStep.REACH_PORTAL
+				_tutorial_cooldown.restart(10)
+
+			elif State.tutorial_step == TutorialStep.REACH_PORTAL:
+				show_story("Enter the southern portal.", true)
+				_tutorial_cooldown.restart(10)
+				State.tutorial_step = TutorialStep.ALL_REACH_PORTAL
+
+			elif State.tutorial_step == TutorialStep.ALL_REACH_PORTAL && _tutorial_cooldown.done:
+				if State.minions_fled > 0:
+					if State.minions.size() > 0:
+						show_story("Good job! Take all your friends with you.", true)
+					State.tutorial_step = TutorialStep.PERFECT
+
+			elif State.tutorial_step == TutorialStep.PERFECT:
+				if State.minions_fled > 0 && State.minions.size() == 0:
+					show_story("Perfect!", true)
+					State.tutorial_step = TutorialStep.DONE
+
+
+
+		if _story_queue.size() > 0:
+			if !$HUD/AnimationPlayer.is_playing():
+				if _story_queue_kept_open:
+					$HUD/AnimationPlayer.play("HideStoryLabel")
+					_story_queue_kept_open = false
+				else:
+					var text : String = _story_queue.pop_front()
+					var keep_open : bool = _story_queue_keep_open.pop_front()
+					if text != "":
+						$HUD/MarginContainer/VBoxContainer/StoryLabel.text = text
+						if keep_open:
+							$HUD/AnimationPlayer.play("ShowStoryLabel")
+							_story_queue_kept_open = true
+						else:
+							$HUD/AnimationPlayer.play("ShowAndHideStoryLabel")
+							_story_queue_kept_open = false
+
+		_story_done = _story_queue.size() == 0 && !$HUD/AnimationPlayer.is_playing()
+
 
 
 func world_reset() -> void:
@@ -793,13 +926,6 @@ func game_reset() -> void:
 	_bomb_blast_indicator.visible = false
 	_bomb_blast_indicator.modulate = dark_modulate
 
-	_dig_button.pressed = true
-	_rally_button.pressed = false
-
-	_tool_type = ToolType.DIG
-	_command_type = CommandType.NONE
-	_mouse_on_button = false
-
 	for child in _decal_container.get_children():
 		child.queue_free()
 
@@ -822,24 +948,84 @@ func game_start() -> void:
 	seed(layer_seed)
 
 	State.increase_level()
-	_spawn_cooldown.restart(State.spawn_cooldown)
+
+	if State.spawns_per_minute > 0:
+		_spawn_cooldown.restart(60.0 / State.spawns_per_minute)
+	else:
+		_spawn_cooldown.reset()
+
 	_swarm_cooldown.restart(State.swarm_cooldown_init)
+	_dig_traverse_cooldown.restart()
 
 	_level_done = false
 
-	map_generate(32, 32)
+	map_generate()
 	map_fill()
 
-
-func map_generate(width : int, height : int) -> void:
-	_camera.limit_right = width * 32
-	_camera.limit_bottom = height * 32
+	_camera.limit_right = _map.width * 32
+	_camera.limit_bottom = _map.height * 32
 	_bomb_count_label.text = str(State.bomb_count)
 
+
+	_dig_button.focus_mode = Control.FOCUS_CLICK
+	_rally_button.focus_mode = Control.FOCUS_CLICK
+	_bomb_button.focus_mode = Control.FOCUS_CLICK
+	_menu_button.focus_mode = Control.FOCUS_CLICK
+
+	if State.world_node_type == NodeType.TUTORIAL:
+		_dig_button.visible = false
+		_rally_button.visible = false
+		_bomb_button.visible = false
+
+		set_tool(ToolType.NONE)
+	else:
+		_dig_button.visible = true
+		_rally_button.visible = true
+		_bomb_button.visible = true
+
+		set_tool(ToolType.DIG)
+
+	_mouse_on_button = false
+
+	reset_story()
+
+
+func map_generate() -> void:
 	var areas := []
 
-	if State.world_node_type == NodeType.DEFEND:
-		_map.setup(width, height, TileType.DIRT)
+	if State.world_node_type == NodeType.TUTORIAL:
+		_map.setup(20, 20, TileType.ROCK)
+
+		var start_cave = add_circle_area(RoomType.START, SizeType.MEDIUM, RegionType.SINGLE_TOP_LEFT, true, areas, [])
+		var center_cave = add_circle_area(RoomType.CAVE, SizeType.SMALL, RegionType.SINGLE_CENTER, true, areas, [])
+
+		var prison_cave = add_circle_area(RoomType.CAVE, SizeType.MEDIUM, RegionType.SINGLE_TOP_RIGHT, true, areas, [])
+		add_rect_area(RoomType.PRISON, SizeType.SMALL, SizeType.SMALL, RegionType.SINGLE_TOP_RIGHT, true, areas, [RoomType.CAVE])
+
+		var portal_cave = add_circle_area(RoomType.PORTAL, SizeType.MEDIUM, RegionType.SINGLE_BOTTOM, true, areas, [])
+
+		fill_areas(areas)
+		add_rock_borders()
+
+		var start_cave_tiles := get_area_tiles(start_cave)
+		var center_cave_tiles := get_area_tiles(center_cave)
+		var prison_cave_tiles := get_area_tiles(prison_cave)
+
+		var first_passage_tiles = connect_tiles(Helper.rand_item(start_cave_tiles), Helper.rand_item(center_cave_tiles), 1)
+		connect_tiles(Helper.rand_item(center_cave_tiles), Helper.rand_item(prison_cave_tiles), 1)
+
+		_tutorial_dig_last_tile = null
+
+		for tile in first_passage_tiles:
+			if tile.tile_type == TileType.DIRT:
+				_tutorial_dig_last_tile = tile
+			if tile.tile_type == TileType.OPEN:
+				if _tutorial_dig_last_tile != null:
+					break
+
+
+	elif State.world_node_type == NodeType.DEFEND:
+		_map.setup(32, 32, TileType.DIRT)
 
 		apply_cave_randomization_2(null, TileType.DIRT, TileType.ROCK, true, 0.3, 1)
 
@@ -891,15 +1077,15 @@ func map_generate(width : int, height : int) -> void:
 	elif true || State.world_node_type == NodeType.PORTAL:
 		if true || State.level <= 3:
 			if false:
-				_map.setup(width, height, TileType.OPEN)
+				_map.setup(32, 32, TileType.OPEN)
 				add_rect_area(RoomType.START, SizeType.SMALL, SizeType.SMALL, RegionType.SINGLE_CENTER, true, areas, [])
 				add_rect_area(RoomType.PORTAL, SizeType.SMALL, SizeType.SMALL, RegionType.SINGLE_BOTTOM, true, areas, [])
 				fill_areas(areas)
 				add_rock_borders()
 
-			elif false:
-				_map.setup(width, height, TileType.OPEN)
-				if false:
+			elif true:
+				_map.setup(32, 32, TileType.OPEN)
+				if true:
 					add_rect_area(RoomType.START, SizeType.SMALL, SizeType.SMALL, RegionType.HOR_TOP, true, areas, [])
 					add_rect_area(RoomType.PORTAL, SizeType.SMALL, SizeType.SMALL, RegionType.HOR_BOTTOM, true, areas, [])
 
@@ -908,12 +1094,12 @@ func map_generate(width : int, height : int) -> void:
 						if cave != null:
 							add_rect_area(RoomType.PRISON, SizeType.MEDIUM, SizeType.SMALL, RegionType.SPECIFIC_AREAS, false, areas, [RoomType.CAVE], [cave])
 
-	#			for i in 50:
-	#				add_rect_area(RoomType.PRISON, SizeType.SMALL, SizeType.SMALL, RegionType.ALL, false, areas, [RoomType.PRISON])
+				for i in 50:
+					add_rect_area(RoomType.PRISON, SizeType.SMALL, SizeType.SMALL, RegionType.ALL, false, areas, [RoomType.PRISON])
 
-	#			for i in 5:
-	#				add_circle_area(RoomType.CAVE, SizeType.TINY, RegionType.ALL, false, areas, [RoomType.CAVE])
-	#				add_circle_area(RoomType.CAVE, SizeType.SMALL, RegionType.ALL, false, areas, [RoomType.CAVE])
+				for i in 5:
+					add_circle_area(RoomType.CAVE, SizeType.TINY, RegionType.ALL, false, areas, [RoomType.CAVE])
+					add_circle_area(RoomType.CAVE, SizeType.SMALL, RegionType.ALL, false, areas, [RoomType.CAVE])
 
 
 				fill_areas(areas)
@@ -923,8 +1109,10 @@ func map_generate(width : int, height : int) -> void:
 				#apply_cave_randomization(0.3, 3, 3, 2)
 				apply_cave_randomization_2(null, TileType.OPEN, TileType.DIRT, true, 0.3, 3, 3, 2)
 				apply_cave_randomization_2(TileType.DIRT, TileType.DIRT, TileType.ROCK, true, 0.2, 3, 3, 2)
+
+				fix_closed_areas()
 			else:
-				_map.setup(width, height, TileType.DIRT)
+				_map.setup(32, 32, TileType.DIRT)
 				apply_cave_randomization_2(null, TileType.DIRT, TileType.ROCK, true, 0.3, 3, 3, 2)
 
 				add_rect_area(RoomType.START, SizeType.SMALL, SizeType.SMALL, RegionType.HOR_TOP, true, areas, [])
@@ -942,6 +1130,7 @@ func map_generate(width : int, height : int) -> void:
 
 			#_camera.zoom = Vector2(2, 2)
 
+	create_prisons()
 
 func fix_closed_areas() -> void:
 	var tiles := []
@@ -1031,7 +1220,134 @@ func fix_closed_areas() -> void:
 			if tile.tile_type == TileType.ROCK:
 				_map.set_tile_type(tile.x, tile.y, TileType.DIRT)
 
+func create_prisons() -> void:
+	var tiles := []
 
+	# TODO: Nearly same code like in fix_closed_areas...
+
+	for tile in _map.tiles:
+		if tile.tile_type == TileType.PRISON:
+			tile.checked = false
+			tiles.append(tile)
+		else:
+			tile.checked = true
+
+	var regions := []
+
+	while true:
+		var queue := []
+		var tile : Tile = null
+
+		while tiles.size() > 0:
+			tile = tiles.pop_back()
+			if !tile.checked:
+				break
+
+		if tiles.size() == 0:
+			break
+
+		tile.checked = true
+		queue.append(tile)
+
+		var region := []
+		regions.append(region)
+
+		while queue.size() > 0:
+			tile = queue.pop_back()
+			region.append(tile)
+
+			Helper.get_tile_neighbours_4(State.tile_circle, tile.x, tile.y)
+			for neighbour in State.tile_circle:
+				if neighbour.checked:
+					continue
+				neighbour.checked = true
+				queue.append(neighbour)
+
+	for region in regions:
+		var inner_tiles := []
+		for prison_tile in region:
+			if (prison_tile.x <= 1 ||
+				prison_tile.y <= 1 ||
+				prison_tile.x >= _map.width - 2 ||
+				prison_tile.y >= _map.height - 2):
+				continue
+
+			Helper.get_tile_neighbours_4(State.tile_circle, prison_tile.x, prison_tile.y)
+			var is_prison_start := true
+			for tile in State.tile_circle:
+				if tile.tile_type != TileType.PRISON && tile.tile_type != TileType.ROCK:
+					is_prison_start = false
+					break
+			if is_prison_start:
+				inner_tiles.append(prison_tile)
+
+		if inner_tiles.size() == 0:
+			continue
+
+		for prison_tile in inner_tiles:
+			_map.set_tile_type(prison_tile.x, prison_tile.y, TileType.PRISON_START)
+			prison_tile.inner_prison = true
+
+		var prison := Prison.new()
+		prison.inner_tiles = inner_tiles
+		State.prisons.append(prison)
+
+
+func connect_tiles(from_tile : Tile, to_tile: Tile, passage_size : int = 1) -> Array:
+	var astar := AStar2D.new()
+	astar.reserve_space(_map.size)
+	var id := 0
+	for y in _map.height:
+		for x in _map.width:
+			var tile : Tile = _map.get_tile(x, y)
+			astar.add_point(id, Vector2(x, y), 1)
+
+			if y > 0:
+				astar.connect_points(id, id - _map.width)
+
+			if x > 0:
+				astar.connect_points(id, id - 1)
+
+			id += 1
+
+	var offset := 0
+	var from_coord := Coord.new()
+	var to_coord := Coord.new()
+	var tiles := []
+
+	for i in passage_size:
+		from_coord.set_coord(from_tile.coord)
+		to_coord.set_coord(to_tile.coord)
+
+		if offset > 0:
+			if abs(to_coord.x - from_coord.x) >= abs(to_coord.y - from_coord.y):
+				from_coord.y += offset
+				to_coord.y += offset
+			else:
+				from_coord.x += offset
+				to_coord.x += offset
+
+		var final_from_tile := _map.get_tile(from_coord.x, from_coord.y)
+		var final_to_tile := _map.get_tile(to_coord.x, to_coord.y)
+
+		var id_path := astar.get_id_path(
+			final_from_tile.id,
+			final_to_tile.id)
+
+		assert(id_path.size() > 0)
+
+		for path_id in id_path:
+			var tile : Tile = _map.tiles[path_id]
+			if tile.tile_type == TileType.ROCK:
+				_map.set_tile_type(tile.x, tile.y, TileType.DIRT)
+			tiles.append(tile)
+
+		if offset <= 0:
+			offset = abs(offset) + 1
+		else:
+			offset = -offset
+
+	return tiles
 
 
 
@@ -1105,47 +1421,53 @@ func fill_areas(areas : Array) -> void:
 				fill_area(TileType.ROCK, area)
 
 			RoomType.PRISON:
-				var prison_tiles = fill_area(TileType.PRISON, area)
-				var prison_start_tiles := []
-				for prison_tile in prison_tiles:
-					if (prison_tile.x <= 1 ||
-						prison_tile.y <= 1 ||
-						prison_tile.x >= _map.width - 2 ||
-						prison_tile.y >= _map.height - 2):
-						continue
-
-					Helper.get_tile_neighbours_4(State.tile_circle, prison_tile.x, prison_tile.y)
-					var is_prison_start := true
-					for tile in State.tile_circle:
-						if tile.tile_type != TileType.PRISON:
-							is_prison_start = false
-							break
-					if is_prison_start:
-						prison_start_tiles.append(prison_tile)
-				assert(prison_start_tiles.size() > 0)
-				for prison_tile in prison_start_tiles:
-					_map.set_tile_type(prison_tile.x, prison_tile.y, TileType.PRISON_START)
-					prison_tile.inner_prison = true
-
-				var prison := Prison.new()
-				prison.inner_tiles = prison_start_tiles
-				State.prisons.append(prison)
+				fill_area(TileType.PRISON, area)
+#				var prison_tiles = fill_area(TileType.PRISON, area)
+#				var prison_start_tiles := []
+#				for prison_tile in prison_tiles:
+#					if (prison_tile.x <= 1 ||
+#						prison_tile.y <= 1 ||
+#						prison_tile.x >= _map.width - 2 ||
+#						prison_tile.y >= _map.height - 2):
+#						continue
+#
+#					Helper.get_tile_neighbours_4(State.tile_circle, prison_tile.x, prison_tile.y)
+#					var is_prison_start := true
+#					for tile in State.tile_circle:
+#						if tile.tile_type != TileType.PRISON:
+#							is_prison_start = false
+#							break
+#					if is_prison_start:
+#						prison_start_tiles.append(prison_tile)
+#				assert(prison_start_tiles.size() > 0)
+#				for prison_tile in prison_start_tiles:
+#					_map.set_tile_type(prison_tile.x, prison_tile.y, TileType.PRISON_START)
+#					prison_tile.inner_prison = true
+#
+#				var prison := Prison.new()
+#				prison.inner_tiles = prison_start_tiles
+#				State.prisons.append(prison)
 
 
 func fill_area(tile_type, area) -> Array:
+	var tiles := get_area_tiles(area)
+	for tile in tiles:
+		_map.set_tile_type(tile.x, tile.y, tile_type)
+	return tiles
+
+func get_area_tiles(area) -> Array:
 	var tiles := []
 	if area.get_class() == "WorldCircle":
 		Helper.get_tile_circle(State.tile_circle, area.center_x, area.center_y, area.radius - 1)
 		for tile in State.tile_circle:
-			_map.set_tile_type(tile.x, tile.y, tile_type)
 			tiles.append(tile)
 	else:
 		for y in range(area.y, area.y + area.height):
 			for x in range(area.x, area.x + area.width):
 				if _map.is_valid(x, y):
-					_map.set_tile_type(x, y, tile_type)
 					tiles.append(_map.get_tile(x, y))
 	return tiles
+
 
 func apply_cave_randomization(set_dirt_factor : float, iterations : int, dirt_birth_limit : int = 3, dirt_death_limit : int = 2) -> void:
 	var make_open_tiles := []
@@ -1323,56 +1645,71 @@ func get_random_rect_size(size_type) -> int:
 	return 0
 
 func add_circle_area(room_type, size_type, region_type, important : bool, areas : Array, allowed_room_type_overlaps, specific_areas = []) -> WorldCircle:
-	_region_sampler.setup(region_type, specific_areas)
+	while true:
+		_region_sampler.setup(region_type, specific_areas)
 
-	var circle := WorldCircle.new(get_random_circle_radius(size_type), room_type)
+		var circle := WorldCircle.new(get_random_circle_radius(size_type), room_type)
 
-	for i in 1000:
-		_region_sampler.set_random_position(circle)
+		for i in 1000:
+			_region_sampler.set_random_position(circle)
 
-		var valid := true
-		for other_area in areas:
-			if allowed_room_type_overlaps.has(other_area.room_type):
-				continue
-			if areas_overlap(circle, other_area):
-				valid = false
-				break
+			var valid := true
+			for other_area in areas:
+				if allowed_room_type_overlaps.has(other_area.room_type):
+					continue
+				if areas_overlap(circle, other_area):
+					valid = false
+					break
 
-		if valid:
-			areas.append(circle)
-			return circle
+			if valid:
+				areas.append(circle)
+				return circle
+
+		if important && size_type > 1:
+			size_type -= 1
+		else:
+			break
 
 	assert(!important)
 	return null
 
 func add_rect_area(room_type, size_type1, size_type2, region_type, important : bool, areas : Array, allowed_room_type_overlaps, specific_areas = []) -> WorldRect:
-	_region_sampler.setup(region_type, specific_areas)
+	while true:
+		_region_sampler.setup(region_type, specific_areas)
 
-	var width : int
-	var height : int
-	if size_type1 == size_type2 || randi() % 2 == 0:
-		width = get_random_rect_size(size_type1)
-		height = get_random_rect_size(size_type2)
-	else:
-		width = get_random_rect_size(size_type2)
-		height = get_random_rect_size(size_type1)
+		var width : int
+		var height : int
+		if size_type1 == size_type2 || randi() % 2 == 0:
+			width = get_random_rect_size(size_type1)
+			height = get_random_rect_size(size_type2)
+		else:
+			width = get_random_rect_size(size_type2)
+			height = get_random_rect_size(size_type1)
 
-	var rect := WorldRect.new(width, height, room_type)
+		var rect := WorldRect.new(width, height, room_type)
 
-	for i in 1000:
-		_region_sampler.set_random_position(rect)
+		for i in 1000:
+			_region_sampler.set_random_position(rect)
 
-		var valid := true
-		for other_area in areas:
-			if allowed_room_type_overlaps.has(other_area.room_type):
-				continue
-			if areas_overlap(rect, other_area):
-				valid = false
-				break
+			var valid := true
+			for other_area in areas:
+				if allowed_room_type_overlaps.has(other_area.room_type):
+					continue
+				if areas_overlap(rect, other_area):
+					valid = false
+					break
 
-		if valid:
-			areas.append(rect)
-			return rect
+			if valid:
+				areas.append(rect)
+				return rect
+
+		if important && (size_type1 > 1 || size_type2 > 1):
+			if size_type1 > 1:
+				size_type1 -= 1
+			if size_type2 > 1:
+				size_type2 -= 1
+		else:
+			break
 
 	assert(!important)
 	return null
@@ -1524,9 +1861,11 @@ func map_fill() -> void:
 	for prison_index in State.prisons.size():
 		var prison : Prison = State.prisons[prison_index]
 
-		var amount = max(1.0, randi() % (State.level + 2))
+		var amount = int(rand_range(State.prisoners_per_prison_min_count, State.prisoners_per_prison_max_count))
 		for i in range(0, amount):
 			var tile : Tile = prison.inner_tiles[randi() %  prison.inner_tiles.size()]
+			assert(tile.tile_type == TileType.OPEN)
+
 			var minion : Minion = minion_scene.instance()
 			if prison_index == king_prison_index:
 				minion.setup_minion(randf() < 0.5, true, true)
@@ -1548,6 +1887,11 @@ func sort_prisons_far_to_near(prison1 : Prison, prison2 : Prison) -> bool:
 	return hash(prison1) < hash(prison2)
 
 func game_traverse_dig_tiles():
+	if _dig_traverse_cooldown.running:
+		return
+
+	_dig_traverse_cooldown.restart()
+
 	if _map.dig_tiles.size() == 0:
 		return
 
@@ -1591,6 +1935,7 @@ func game_traverse_dig_tiles():
 
 
 					if !astar_enabled:
+						astar_enabled = true
 						_map.astar.set_point_disabled(dig_tile.id, false)
 
 					var path = _map.astar.get_id_path(minion.tile.id, dig_tile.id)
@@ -1673,8 +2018,9 @@ func game_start_battle(attacker : Minion, target_list : Array):
 			attacker.attack(target)
 
 func game_check_level_done():
-	if _check_level_done_cooldown.running:
+	if _check_level_done_cooldown.running && _story_done:
 		return
+
 	_check_level_done_cooldown.restart()
 
 	var fled_minions := []
@@ -1757,10 +2103,7 @@ func game_check_level_done():
 				switch_state(GameState.LEVEL_END)
 
 func game_spawn_monsters() -> void:
-	if State.world_node_type == NodeType.DEFEND:
-		return
-
-	if _spawn_cooldown.running || _level_done || State.monsters.size() <= 6 || State.monsters.size() > 100:
+	if !_spawn_cooldown.started || _spawn_cooldown.running || _level_done || State.monsters.size() <= 6 || State.monsters.size() > 100:
 		return
 
 	_spawn_cooldown.restart()
@@ -1870,6 +2213,9 @@ func set_tool(tool_type) -> void:
 	_bomb_button.disabled = false
 
 	match tool_type:
+		ToolType.NONE:
+			Input.set_custom_mouse_cursor(null)
+
 		ToolType.DIG:
 			Input.set_custom_mouse_cursor(cursor_dig, 0, Vector2(16, 16))
 			_dig_button.disabled = true
@@ -1910,6 +2256,7 @@ func switch_state(new_game_state):
 			title_music_target = 0.0
 			track1_target = -80.0
 			_camera.zoom = Vector2(0.6, 0.6)
+			_camera.position = Vector2.ZERO
 
 		GameState.INTRO:
 			$Screens/Title.visible = false
@@ -1921,7 +2268,10 @@ func switch_state(new_game_state):
 			$SpecialIntro.start()
 			title_music_target = -80
 			track1_target = -80.0
+			_camera.limit_right = 999999
+			_camera.limit_bottom = 999999
 			_camera.position = Vector2.ZERO
+
 
 		GameState.MERCHANT:
 			$Screens/Title.visible = false
@@ -1952,6 +2302,21 @@ func switch_state(new_game_state):
 			switch_state(GameState.INTRO)
 			title_music_target = -80
 			track1_target = -80
+
+		GameState.TUTORIAL:
+			get_tree().paused = false
+			world_reset()
+			game_reset()
+			world_start()
+
+			State.world_node_type = NodeType.TUTORIAL
+
+			_camera.zoom = Vector2(0.6, 0.6)
+			Input.set_mouse_mode(Input.MOUSE_MODE_VISIBLE)
+			$Screens/Title.visible = false
+			game_start()
+			$HUD/MarginContainer.visible = true
+			title_music_target = -80
 
 		GameState.WORLD_MAP:
 			_camera.zoom = Vector2(1.0, 1.0)
@@ -2020,11 +2385,24 @@ func switch_state(new_game_state):
 			track1_target = -80
 
 
+func show_story(message : String, keep_open = false) -> void:
+	_story_queue.append(message)
+	_story_queue_keep_open.append(keep_open)
+
+func hide_story() -> void:
+	_story_queue.append("")
+	_story_queue_keep_open.append(false)
+
+func reset_story() -> void:
+	$HUD/MarginContainer/VBoxContainer/StoryLabel.text = ""
+	$HUD/AnimationPlayer.stop(true)
 
 
 func _on_StartButton_pressed() -> void:
 	if $Screens/Title/StartButton.text == "CONTINUE":
 		switch_state(GameState.GAME_CONTINUED)
+	elif State.config.get_value("Game", "Tutorial"):
+		switch_state(GameState.TUTORIAL)
 	else:
 		switch_state(GameState.NEW_GAME)
 
@@ -2046,7 +2424,12 @@ func _on_LevelInterlude_stop_level_start() -> void:
 
 
 func _on_LevelInterlude_stop_level_end() -> void:
-	switch_state(GameState.MERCHANT)
+	if State.world_node_type == NodeType.TUTORIAL:
+		State.config.set_value("Game", "TUTORIAL", false)
+		State.config.save(State.config_path)
+		switch_state(GameState.NEW_GAME)
+	else:
+		switch_state(GameState.MERCHANT)
 
 
 func _on_GameOver_stop_game_over() -> void:

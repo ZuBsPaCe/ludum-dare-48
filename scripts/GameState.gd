@@ -13,6 +13,8 @@ enum GameState {
 	GAME,
 
 	NEW_GAME,
+	TUTORIAL,
+
 	GAME_PAUSED
 	GAME_CONTINUED
 
