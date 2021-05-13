@@ -117,12 +117,15 @@ func setup(region_type, specific_areas : Array) -> void:
 	# min_x = 2, max_x = 30
 	# value = min_x + randi() % (max_x - min_x) = 2 + randi() % 28
 	# In this case, the maximum value is: 2 + 27 = 29
+	#
+	# HINT: Using 3, because start portal should not touch the border!
+	# Otherwise minions could get stuck between portal and border!
 
-	min_x = clamp(min_x, 2, _map.width - 2)
-	max_x = clamp(max_x, 2, _map.width - 2)
+	min_x = clamp(min_x, 3, _map.width - 3)
+	max_x = clamp(max_x, 3, _map.width - 3)
 
-	min_y = clamp(min_y, 2, _map.height - 2)
-	max_y = clamp(max_y, 2,_map.height - 2)
+	min_y = clamp(min_y, 3, _map.height - 3)
+	max_y = clamp(max_y, 3,_map.height - 3)
 
 
 func set_random_position(area) -> void:

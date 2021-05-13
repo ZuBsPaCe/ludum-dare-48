@@ -60,6 +60,8 @@ var _spawn_cooldown := Cooldown.new()
 var _swarm_cooldown := Cooldown.new()
 var _tutorial_cooldown := Cooldown.new()
 
+var _restart_cooldown := Cooldown.new(0.2)
+var _restarted := false
 
 var _map := Map.new()
 
@@ -122,6 +124,7 @@ var _rally_last_tiles := []
 var _level_done := false
 
 var _loading := true
+var _regenerate_map := false
 
 var _tiles := []
 
@@ -728,6 +731,20 @@ func _process(delta: float) -> void:
 
 		_story_done = _story_queue.size() == 0 && !$HUD/AnimationPlayer.is_playing()
 
+		if _restart_cooldown.running:
+			_restart_cooldown.step(delta)
+		elif Input.is_action_just_pressed("restart"):
+			_restart_cooldown.restart()
+
+			_restarted = true
+
+			if State.game_state == GameState.TUTORIAL:
+				switch_state(GameState.TUTORIAL)
+			else:
+				game_reset()
+				switch_state(GameState.GAME)
+
+
 
 
 func world_reset() -> void:
@@ -955,11 +972,24 @@ func game_reset() -> void:
 	State.game_reset()
 
 func game_start() -> void:
-	var layer_seed : int = State.world_layers[State.world_layer_index].layer_seed
-	print("Current layer seed: %d" % layer_seed)
-	seed(layer_seed)
+	if !_restarted:
+		var layer_seed : int = State.world_layers[State.world_layer_index].layer_seed
+		print("Current layer seed: %d" % layer_seed)
+		seed(layer_seed)
 
-	State.increase_level()
+		State.increase_level()
+	else:
+		var layer_seed : int
+		if State.random_seed != 0:
+			layer_seed = State.world_layers[State.world_layer_index].layer_seed
+		else:
+			randomize()
+			layer_seed = randi()
+
+		print("Current layer seed: %d" % layer_seed)
+		seed(layer_seed)
+
+		_restarted = false
 
 	if State.spawns_per_minute > 0:
 		_spawn_cooldown.restart(60.0 / State.spawns_per_minute)
@@ -971,7 +1001,14 @@ func game_start() -> void:
 
 	_level_done = false
 
-	map_generate()
+	while true:
+		_regenerate_map = false
+		map_generate()
+		if !_regenerate_map:
+			break
+		else:
+			print("Regenerating...")
+
 	map_fill()
 
 	_dig_button.focus_mode = Control.FOCUS_CLICK
@@ -1017,17 +1054,19 @@ func map_generate() -> void:
 		var prison_cave = add_circle_area(RoomType.CAVE, SizeType.MEDIUM, RegionType.SINGLE_TOP_RIGHT, true, areas, [])
 		add_rect_area(RoomType.PRISON, SizeType.SMALL, SizeType.SMALL, RegionType.SINGLE_TOP_RIGHT, true, areas, [RoomType.CAVE], [prison_cave])
 
-		var portal_cave = add_circle_area(RoomType.PORTAL, SizeType.MEDIUM, RegionType.SINGLE_BOTTOM, true, areas, [])
+		var portal_cave = add_circle_area(RoomType.PORTAL, SizeType.MEDIUM, RegionType.SINGLE_BOTTOM, false, areas, [])
+		if portal_cave == null:
+			add_circle_area(RoomType.PORTAL, SizeType.MEDIUM, RegionType.HOR_BOTTOM, true, areas, [])
 
 		fill_areas(areas)
-		add_rock_borders()
+
 
 		var start_cave_tiles := get_area_tiles(start_cave)
 		var center_cave_tiles := get_area_tiles(center_cave)
 		var prison_cave_tiles := get_area_tiles(prison_cave)
 
-		var first_passage_tiles = connect_tiles(Helper.rand_item(start_cave_tiles), Helper.rand_item(center_cave_tiles), 1)
-		connect_tiles(Helper.rand_item(center_cave_tiles), Helper.rand_item(prison_cave_tiles), 1)
+		var first_passage_tiles = connect_rand_tiles(start_cave_tiles, center_cave_tiles, 1)
+		connect_rand_tiles(center_cave_tiles, prison_cave_tiles, 1)
 
 		_tutorial_dig_last_tile = null
 
@@ -1037,6 +1076,8 @@ func map_generate() -> void:
 			if tile.tile_type == TileType.OPEN:
 				if _tutorial_dig_last_tile != null:
 					break
+
+		add_rock_borders()
 
 
 	elif State.world_node_type == NodeType.DEFEND:
@@ -1145,8 +1186,6 @@ func map_generate() -> void:
 
 			#_camera.zoom = Vector2(2, 2)
 
-	create_prisons()
-
 func fix_closed_areas() -> void:
 	var tiles := []
 
@@ -1235,7 +1274,7 @@ func fix_closed_areas() -> void:
 			if tile.tile_type == TileType.ROCK:
 				_map.set_tile_type(tile.x, tile.y, TileType.DIRT)
 
-func create_prisons() -> void:
+func register_prisons() -> void:
 	var tiles := []
 
 	# TODO: Nearly same code like in fix_closed_areas...
@@ -1306,6 +1345,12 @@ func create_prisons() -> void:
 		var prison := Prison.new()
 		prison.inner_tiles = inner_tiles
 		State.prisons.append(prison)
+
+func connect_rand_tiles(from_tiles : Array, to_tiles : Array, passage_size : int = 1) -> Array:
+	if from_tiles.size() == 0 || to_tiles.size() == 0:
+		return []
+
+	return connect_tiles(Helper.rand_item(from_tiles), Helper.rand_item(to_tiles), passage_size)
 
 
 func connect_tiles(from_tile : Tile, to_tile: Tile, passage_size : int = 1) -> Array:
@@ -1465,12 +1510,18 @@ func fill_areas(areas : Array) -> void:
 
 
 func fill_area(tile_type, area) -> Array:
+	if area == null:
+		return []
+
 	var tiles := get_area_tiles(area)
 	for tile in tiles:
 		_map.set_tile_type(tile.x, tile.y, tile_type)
 	return tiles
 
 func get_area_tiles(area) -> Array:
+	if area == null:
+		return []
+
 	var tiles := []
 	if area.get_class() == "WorldCircle":
 		Helper.get_tile_circle(State.tile_circle, area.center_x, area.center_y, area.radius - 1)
@@ -1685,6 +1736,9 @@ func add_circle_area(room_type, size_type, region_type, important : bool, areas 
 		else:
 			break
 
+	if important:
+		_regenerate_map = true
+
 	assert(!important)
 	return null
 
@@ -1729,6 +1783,9 @@ func add_rect_area(room_type, size_type1, size_type2, region_type, important : b
 		else:
 			break
 
+	if important:
+		_regenerate_map = true
+
 	assert(!important)
 	return null
 
@@ -1757,6 +1814,9 @@ func areas_overlap(area1, area2) -> bool:
 	return circle.center.distance_to(closest_point_in_rect) <= circle.radius
 
 func map_fill() -> void:
+
+	register_prisons()
+
 	var minion_tiles := []
 	var monster_tiles := []
 	var prison_tiles := []
@@ -2411,7 +2471,6 @@ func switch_state(new_game_state):
 			_camera.zoom = Vector2(1.0, 1.0)
 			Input.set_mouse_mode(Input.MOUSE_MODE_HIDDEN)
 			$LevelInterlude.show_level_end()
-			game_reset()
 			title_music_target = -80
 			track1_target = -80
 
