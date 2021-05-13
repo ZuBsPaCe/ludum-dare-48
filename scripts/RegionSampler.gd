@@ -4,6 +4,9 @@ class_name RegionSampler
 
 const RegionType = preload("res://scripts/RegionType.gd").RegionType
 
+const break1 := 0.33
+const break2 := 0.66
+
 var region_type
 var specific_areas : Array
 
@@ -28,76 +31,76 @@ func setup(region_type, specific_areas : Array) -> void:
 			min_x = 0
 			min_y = 0
 			max_x = _map.width
-			max_y = _map.height * 0.25
+			max_y = _map.height * break1
 		RegionType.HOR_BOTTOM:
 			min_x = 0
-			min_y = _map.height * 0.75
+			min_y = _map.height * break2
 			max_x = _map.width
 			max_y = _map.height
 		RegionType.VER_LEFT:
 			min_x = 0
 			min_y = 0
-			max_x = _map.width * 0.25
+			max_x = _map.width * break1
 			max_y = _map.height
 		RegionType.VER_RIGHT:
-			min_x = _map.width * 0.75
+			min_x = _map.width * break2
 			min_y = 0
 			max_x = _map.width
 			max_y = _map.height
 		RegionType.HOR_CENTER:
 			min_x = 0
-			min_y = _map.height * 0.25
+			min_y = _map.height * break1
 			max_x = _map.width
-			max_y = _map.height * 0.75
+			max_y = _map.height * break2
 		RegionType.VER_CENTER:
-			min_x = _map.width * 0.25
+			min_x = _map.width * break1
 			min_y = 0
-			max_x = _map.width * 0.75
+			max_x = _map.width * break2
 			max_y = _map.height
 
 		RegionType.SINGLE_TOP:
-			min_x = _map.width * 0.25
+			min_x = _map.width * break1
 			min_y = 0
-			max_x = _map.width * 0.75
-			max_y = _map.height * 0.25
+			max_x = _map.width * break2
+			max_y = _map.height * break1
 		RegionType.SINGLE_BOTTOM:
-			min_x = _map.width * 0.25
-			min_y = _map.height * 0.75
-			max_x = _map.width * 0.75
+			min_x = _map.width * break1
+			min_y = _map.height * break2
+			max_x = _map.width * break2
 			max_y = _map.height
 		RegionType.SINGLE_LEFT:
 			min_x = 0
-			min_y = _map.height * 0.25
-			max_x = _map.width * 0.25
-			max_y = _map.height * 0.75
+			min_y = _map.height * break1
+			max_x = _map.width * break1
+			max_y = _map.height * break2
 		RegionType.SINGLE_RIGHT:
-			min_x = _map.width * 0.75
-			min_y = _map.height * 0.25
+			min_x = _map.width * break2
+			min_y = _map.height * break1
 			max_x = _map.width
-			max_y = _map.height * 0.75
+			max_y = _map.height * break2
 		RegionType.SINGLE_CENTER:
-			min_x = _map.width * 0.25
-			min_y = _map.height * 0.25
-			max_x = _map.width * 0.75
-			max_y = _map.height * 0.75
+			min_x = _map.width * break1
+			min_y = _map.height * break1
+			max_x = _map.width * break2
+			max_y = _map.height * break2
 		RegionType.SINGLE_TOP_LEFT:
 			min_x = 0
 			min_y = 0
-			max_x = _map.width * 0.25
-			max_y = _map.height * 0.25
+			max_x = _map.width * break1
+			max_y = _map.height * break1
 		RegionType.SINGLE_TOP_RIGHT:
-			min_x = _map.width * 0.75
+			min_x = _map.width * break2
 			min_y = 0
 			max_x = _map.width
-			max_y = _map.height * 0.25
+			max_y = _map.height * break1
 		RegionType.SINGLE_BOTTOM_LEFT:
 			min_x = 0
-			min_y = _map.height * 0.75
-			max_x = _map.width * 0.25
+			min_y = _map.height * break2
+			max_x = _map.width * break1
 			max_y = _map.height
 		RegionType.SINGLE_BOTTOM_RIGHT:
-			min_x = _map.width * 0.75
-			min_y = _map.height * 0.75
+			min_x = _map.width * break2
+			min_y = _map.height * break2
 			max_x = _map.width
 			max_y = _map.height
 

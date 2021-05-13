@@ -282,7 +282,12 @@ func _ready() -> void:
 	$Screens/PostProcess.visible = true
 
 	$Screens/Title/StartButton.text = "START"
-	$Screens/Title/NewGameButton.visible = false
+
+	if State.config.get_value("Game", "Tutorial") == false:
+		$Screens/Title/NewGameButton.text = "Tutorial"
+		$Screens/Title/NewGameButton.visible = true
+	else:
+		$Screens/Title/NewGameButton.visible = false
 
 	_loading = false
 
@@ -635,8 +640,15 @@ func _process(delta: float) -> void:
 					_tutorial_cooldown.restart(5)
 
 			elif State.tutorial_step == TutorialStep.FREE_PRISONERS && _tutorial_cooldown.done:
-				show_story("Poor prisoners. Free them!", true)
-				State.tutorial_step = TutorialStep.PRISONERS_FREED
+				var min_distance := 10.0
+				for tile in State.prisons[0].inner_tiles:
+					var distance : float = tile.coord.distance_to(State.minions[0].coord)
+					if distance < min_distance:
+						min_distance = distance
+
+				if min_distance < 4.0:
+					show_story("Poor prisoners. Free them!", true)
+					State.tutorial_step = TutorialStep.PRISONERS_FREED
 
 			elif State.tutorial_step == TutorialStep.PRISONERS_FREED && _story_done:
 				var has_prisoners := false
@@ -962,11 +974,6 @@ func game_start() -> void:
 	map_generate()
 	map_fill()
 
-	_camera.limit_right = _map.width * 32
-	_camera.limit_bottom = _map.height * 32
-	_bomb_count_label.text = str(State.bomb_count)
-
-
 	_dig_button.focus_mode = Control.FOCUS_CLICK
 	_rally_button.focus_mode = Control.FOCUS_CLICK
 	_bomb_button.focus_mode = Control.FOCUS_CLICK
@@ -978,6 +985,9 @@ func game_start() -> void:
 		_bomb_button.visible = false
 
 		set_tool(ToolType.NONE)
+
+		State.bomb_count = 100
+
 	else:
 		_dig_button.visible = true
 		_rally_button.visible = true
@@ -990,6 +1000,11 @@ func game_start() -> void:
 	reset_story()
 
 
+	_camera.limit_right = _map.width * 32
+	_camera.limit_bottom = _map.height * 32
+	_bomb_count_label.text = str(State.bomb_count)
+
+
 func map_generate() -> void:
 	var areas := []
 
@@ -1000,7 +1015,7 @@ func map_generate() -> void:
 		var center_cave = add_circle_area(RoomType.CAVE, SizeType.SMALL, RegionType.SINGLE_CENTER, true, areas, [])
 
 		var prison_cave = add_circle_area(RoomType.CAVE, SizeType.MEDIUM, RegionType.SINGLE_TOP_RIGHT, true, areas, [])
-		add_rect_area(RoomType.PRISON, SizeType.SMALL, SizeType.SMALL, RegionType.SINGLE_TOP_RIGHT, true, areas, [RoomType.CAVE])
+		add_rect_area(RoomType.PRISON, SizeType.SMALL, SizeType.SMALL, RegionType.SINGLE_TOP_RIGHT, true, areas, [RoomType.CAVE], [prison_cave])
 
 		var portal_cave = add_circle_area(RoomType.PORTAL, SizeType.MEDIUM, RegionType.SINGLE_BOTTOM, true, areas, [])
 
@@ -1674,6 +1689,9 @@ func add_circle_area(room_type, size_type, region_type, important : bool, areas 
 	return null
 
 func add_rect_area(room_type, size_type1, size_type2, region_type, important : bool, areas : Array, allowed_room_type_overlaps, specific_areas = []) -> WorldRect:
+	if specific_areas == null:
+		specific_areas = []
+
 	while true:
 		_region_sampler.setup(region_type, specific_areas)
 
@@ -2338,7 +2356,14 @@ func switch_state(new_game_state):
 			$Screens/Title.visible = true
 			$HUD/MarginContainer.visible = false
 			$Screens/Title/StartButton.text = "CONTINUE"
+
+			if State.world_node_type == NodeType.TUTORIAL:
+				$Screens/Title/NewGameButton.text = "SKIP TUTORIAL"
+			else:
+				$Screens/Title/NewGameButton.text = "NEW GAME"
+
 			$Screens/Title/NewGameButton.visible = true
+
 			title_music_target = -80
 			track1_target = -80
 
@@ -2354,7 +2379,13 @@ func switch_state(new_game_state):
 			$Screens/Title.visible = false
 			$HUD/MarginContainer.visible = false
 			$Screens/Title/StartButton.text = "START"
-			$Screens/Title/NewGameButton.visible = false
+
+			if State.config.get_value("Game", "Tutorial") == false:
+				$Screens/Title/NewGameButton.text = "Tutorial"
+				$Screens/Title/NewGameButton.visible = true
+			else:
+				$Screens/Title/NewGameButton.visible = false
+
 			_camera.zoom = Vector2(1.0, 1.0)
 			Input.set_mouse_mode(Input.MOUSE_MODE_HIDDEN)
 			$GameOver.start()
@@ -2408,7 +2439,14 @@ func _on_StartButton_pressed() -> void:
 
 
 func _on_NewGameButton_pressed() -> void:
-	switch_state(GameState.NEW_GAME)
+	if $Screens/Title/NewGameButton.text == "Tutorial":
+		switch_state(GameState.TUTORIAL)
+	else:
+		if State.world_node_type == NodeType.TUTORIAL:
+			State.config.set_value("Game", "Tutorial", false)
+			State.config.save(State.config_path)
+
+		switch_state(GameState.NEW_GAME)
 
 
 func _on_ExitButton_pressed() -> void:
@@ -2425,7 +2463,7 @@ func _on_LevelInterlude_stop_level_start() -> void:
 
 func _on_LevelInterlude_stop_level_end() -> void:
 	if State.world_node_type == NodeType.TUTORIAL:
-		State.config.set_value("Game", "TUTORIAL", false)
+		State.config.set_value("Game", "Tutorial", false)
 		State.config.save(State.config_path)
 		switch_state(GameState.NEW_GAME)
 	else:
