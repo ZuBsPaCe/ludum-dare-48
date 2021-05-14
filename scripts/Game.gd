@@ -972,23 +972,19 @@ func game_reset() -> void:
 	State.game_reset()
 
 func game_start() -> void:
-	if !_restarted:
-		var layer_seed : int = State.world_layers[State.world_layer_index].layer_seed
-		print("Current layer seed: %d" % layer_seed)
-		seed(layer_seed)
+	var layer_seed : int
+	if State.random_seed != 0:
+		layer_seed = State.world_layers[State.world_layer_index].layer_seed
+	else:
+		randomize()
+		layer_seed = randi()
 
+	print("Current layer seed: %d" % layer_seed)
+	seed(layer_seed)
+
+	if !_restarted:
 		State.increase_level()
 	else:
-		var layer_seed : int
-		if State.random_seed != 0:
-			layer_seed = State.world_layers[State.world_layer_index].layer_seed
-		else:
-			randomize()
-			layer_seed = randi()
-
-		print("Current layer seed: %d" % layer_seed)
-		seed(layer_seed)
-
 		_restarted = false
 
 	if State.spawns_per_minute > 0:
@@ -1131,7 +1127,273 @@ func map_generate() -> void:
 		add_rock_borders()
 		fix_closed_areas()
 	elif true || State.world_node_type == NodeType.PORTAL:
+
+		#State.level = 10
+		var layout := (State.level - 1) % 10
+
 		if true:
+
+			if State.level == 1:
+				_map.setup(20, 20, TileType.DIRT)
+
+				add_circle_area(RoomType.START, SizeType.SMALL, RegionType.HOR_TOP, true, areas, [])
+				add_circle_area(RoomType.PORTAL, SizeType.SMALL, RegionType.HOR_BOTTOM, true, areas, [])
+
+				for i in 2:
+					var cave := add_circle_area(RoomType.MONSTER_CAVE, SizeType.MEDIUM, RegionType.ALL, false, areas, [])
+					if cave != null && i < 2:
+						add_rect_area(RoomType.PRISON, SizeType.MEDIUM, SizeType.SMALL, RegionType.SPECIFIC_AREAS, false, areas, [RoomType.MONSTER_CAVE, RoomType.CAVE], [cave])
+
+				fill_areas(areas)
+
+				apply_cave_randomization_2(TileType.DIRT, TileType.DIRT, TileType.ROCK, true, 0.1, 0)
+
+				add_rock_borders()
+				fix_closed_areas()
+
+			elif State.level == 2:
+				_map.setup(20, 20, TileType.DIRT)
+
+				add_circle_area(RoomType.START, SizeType.SMALL, RegionType.HOR_TOP, true, areas, [])
+				add_circle_area(RoomType.PORTAL, SizeType.SMALL, RegionType.HOR_BOTTOM, true, areas, [])
+
+				for i in 4:
+					var cave := add_circle_area(RoomType.MONSTER_CAVE, SizeType.SMALL, RegionType.ALL, false, areas, [])
+					if cave != null && i < 2:
+						add_rect_area(RoomType.PRISON, SizeType.MEDIUM, SizeType.SMALL, RegionType.SPECIFIC_AREAS, false, areas, [RoomType.MONSTER_CAVE, RoomType.CAVE], [cave])
+
+				fill_areas(areas)
+
+				apply_cave_randomization_2(TileType.DIRT, TileType.DIRT, TileType.ROCK, true, 0.1, 2)
+
+				add_rock_borders()
+				fix_closed_areas()
+			elif State.level == 3:
+				_map.setup(24, 24, TileType.ROCK)
+
+				add_circle_area(RoomType.START, SizeType.SMALL, RegionType.HOR_TOP, true, areas, [])
+				add_circle_area(RoomType.PORTAL, SizeType.SMALL, RegionType.HOR_BOTTOM, true, areas, [])
+
+				for i in 4:
+					var cave := add_circle_area(RoomType.MONSTER_CAVE, SizeType.MEDIUM, RegionType.ALL, false, areas, [])
+					if cave != null && i < 3:
+						add_rect_area(RoomType.PRISON, SizeType.MEDIUM, SizeType.SMALL, RegionType.SPECIFIC_AREAS, false, areas, [RoomType.MONSTER_CAVE, RoomType.CAVE], [cave])
+
+				fill_areas(areas)
+
+				apply_cave_randomization_2(null, TileType.ROCK, TileType.DIRT, true, 0.3, 2)
+
+				add_rock_borders()
+				fix_closed_areas()
+
+#			elif State.level == 3:
+#				_map.setup(24, 24, TileType.ROCK)
+#
+#				add_circle_area(RoomType.START, SizeType.SMALL, RegionType.HOR_TOP, true, areas, [])
+#				add_circle_area(RoomType.PORTAL, SizeType.SMALL, RegionType.HOR_BOTTOM, true, areas, [])
+#
+#				for i in 4:
+#					var cave := add_circle_area(RoomType.MONSTER_CAVE, SizeType.MEDIUM, RegionType.ALL, false, areas, [])
+#					if cave != null && i < 3:
+#						add_rect_area(RoomType.PRISON, SizeType.MEDIUM, SizeType.SMALL, RegionType.SPECIFIC_AREAS, false, areas, [RoomType.MONSTER_CAVE, RoomType.CAVE], [cave])
+#
+#				fill_areas(areas)
+#
+#				apply_cave_randomization_2(TileType.DIRT, TileType.DIRT, TileType.ROCK, true, 0.1, 0)
+#
+#				add_rock_borders()
+#				fix_closed_areas()
+
+			elif State.level == 4:
+				_map.setup(26, 26, TileType.DIRT)
+
+				add_circle_area(RoomType.START, SizeType.SMALL, RegionType.HOR_TOP, true, areas, [])
+				add_circle_area(RoomType.PORTAL, SizeType.SMALL, RegionType.HOR_BOTTOM, true, areas, [])
+
+				for i in 3:
+					var cave := add_circle_area(RoomType.MONSTER_CAVE, SizeType.MEDIUM, RegionType.ALL, false, areas, [])
+					if cave != null && i < 3:
+						add_rect_area(RoomType.PRISON, SizeType.MEDIUM, SizeType.SMALL, RegionType.SPECIFIC_AREAS, false, areas, [RoomType.MONSTER_CAVE, RoomType.CAVE], [cave])
+
+				for i in 2:
+					var cave := add_circle_area(RoomType.MONSTER_CAVE, SizeType.SMALL, RegionType.ALL, false, areas, [RoomType.MONSTER_CAVE, RoomType.CAVE])
+
+				apply_cave_randomization_2(TileType.DIRT, TileType.DIRT, TileType.ROCK, true, 0.2, 1)
+
+				fill_areas(areas)
+
+				apply_cave_randomization_2(null, TileType.DIRT, TileType.OPEN, true, 0.1, 2)
+
+				add_rock_borders()
+				fix_closed_areas()
+
+
+			elif State.level == 5:
+				_map.setup(32, 32, TileType.DIRT)
+
+				add_circle_area(RoomType.START, SizeType.SMALL, RegionType.HOR_TOP, true, areas, [])
+				add_rect_area(RoomType.PORTAL, SizeType.MEDIUM, SizeType.MEDIUM, RegionType.HOR_BOTTOM, true, areas, [])
+
+				for i in 3:
+					var cave := add_rect_area(RoomType.MONSTER_CAVE, SizeType.MEDIUM, SizeType.SMALL, RegionType.ALL, false, areas, [])
+					if cave != null && i < 3:
+						add_rect_area(RoomType.PRISON, SizeType.MEDIUM, SizeType.SMALL, RegionType.SPECIFIC_AREAS, false, areas, [RoomType.MONSTER_CAVE, RoomType.CAVE], [cave])
+
+				for i in 4:
+					var cave := add_rect_area(RoomType.MONSTER_CAVE, SizeType.SMALL, SizeType.SMALL, RegionType.ALL, false, areas, [RoomType.CAVE])
+
+				apply_cave_randomization_2(TileType.DIRT, TileType.DIRT, TileType.ROCK, true, 0.25, 3)
+
+				fill_areas(areas)
+
+				#apply_cave_randomization_2(null, TileType.DIRT, TileType.OPEN, true, 0.1, 2)
+
+				add_rock_borders()
+				fix_closed_areas()
+
+			elif State.level == 6:
+				_map.setup(32, 32, TileType.DIRT)
+
+				add_circle_area(RoomType.START, SizeType.MEDIUM, RegionType.HOR_TOP, true, areas, [])
+				add_rect_area(RoomType.PORTAL, SizeType.MEDIUM, SizeType.MEDIUM, RegionType.HOR_BOTTOM, true, areas, [])
+
+				for i in 5:
+					var cave := add_rect_area(RoomType.MONSTER_CAVE, SizeType.LARGE, SizeType.MEDIUM, RegionType.ALL, false, areas, [])
+					if cave != null && i < 4:
+						add_rect_area(RoomType.PRISON, SizeType.MEDIUM, SizeType.SMALL, RegionType.SPECIFIC_AREAS, false, areas, [RoomType.MONSTER_CAVE, RoomType.CAVE], [cave])
+
+				for i in 7:
+					var cave := add_circle_area(RoomType.MONSTER_CAVE, SizeType.LARGE, RegionType.ALL, false, areas, [RoomType.CAVE, RoomType.MONSTER_CAVE])
+
+
+				fill_areas(areas)
+
+				#apply_cave_randomization_2(TileType.OPEN, TileType.OPEN, TileType.ROCK, true, 0.1, 0)
+				apply_cave_randomization_2(TileType.MONSTER_START, TileType.MONSTER_START, TileType.ROCK, true, 0.2, 0)
+				apply_cave_randomization_2(TileType.DIRT, TileType.DIRT, TileType.ROCK, true, 0.2, 0)
+
+				#apply_cave_randomization_2(null, TileType.DIRT, TileType.OPEN, true, 0.1, 2)
+
+				add_rock_borders()
+				fix_closed_areas()
+
+			elif State.level == 7:
+				_map.setup(32, 32, TileType.DIRT)
+
+				add_circle_area(RoomType.START, SizeType.MEDIUM, RegionType.HOR_TOP, true, areas, [])
+				add_rect_area(RoomType.PORTAL, SizeType.LARGE, SizeType.MEDIUM, RegionType.HOR_BOTTOM, true, areas, [])
+
+				for i in 20:
+					var cave := add_rect_area(RoomType.MONSTER_CAVE, SizeType.MEDIUM, SizeType.MEDIUM, RegionType.ALL, false, areas, [])
+					if cave != null && i < 5:
+						add_rect_area(RoomType.PRISON, SizeType.MEDIUM, SizeType.MEDIUM, RegionType.SPECIFIC_AREAS, false, areas, [RoomType.MONSTER_CAVE, RoomType.CAVE], [cave])
+
+				apply_cave_randomization_2(null, TileType.DIRT, TileType.ROCK, true, 0.4, 4)
+
+				fill_areas(areas)
+
+				#apply_cave_randomization_2(TileType.OPEN, TileType.OPEN, TileType.ROCK, true, 0.1, 0)
+
+#				apply_cave_randomization_2(TileType.DIRT, TileType.DIRT, TileType.ROCK, true, 0.2, 0)
+
+				#apply_cave_randomization_2(null, TileType.DIRT, TileType.OPEN, true, 0.1, 2)
+
+				add_rock_borders()
+				fix_closed_areas()
+
+
+			elif State.level == 8:
+				_map.setup(32, 32, TileType.DIRT)
+
+				add_circle_area(RoomType.START, SizeType.MEDIUM, RegionType.HOR_TOP, true, areas, [])
+				add_rect_area(RoomType.PORTAL, SizeType.LARGE, SizeType.MEDIUM, RegionType.HOR_BOTTOM, true, areas, [])
+
+				for i in 20:
+					var cave := add_rect_area(RoomType.CAVE, SizeType.LARGE, SizeType.TINY, RegionType.ALL, false, areas, [])
+
+				for i in 8:
+					var cave := add_rect_area(RoomType.MONSTER_CAVE, SizeType.MEDIUM, SizeType.SMALL, RegionType.ALL, false, areas, [])
+					if cave != null && i < 5:
+						add_rect_area(RoomType.PRISON, SizeType.SMALL, SizeType.SMALL, RegionType.SPECIFIC_AREAS, false, areas, [RoomType.MONSTER_CAVE, RoomType.CAVE], [cave])
+
+				apply_cave_randomization_2(null, TileType.DIRT, TileType.ROCK, true, 0.3, 4)
+
+				fill_areas(areas)
+
+				#apply_cave_randomization_2(TileType.OPEN, TileType.OPEN, TileType.ROCK, true, 0.1, 0)
+
+#				apply_cave_randomization_2(TileType.DIRT, TileType.DIRT, TileType.ROCK, true, 0.2, 0)
+
+				#apply_cave_randomization_2(null, TileType.DIRT, TileType.OPEN, true, 0.1, 2)
+
+				add_rock_borders()
+				fix_closed_areas()
+
+			elif State.level == 9:
+				_map.setup(32, 32, TileType.DIRT)
+
+				add_circle_area(RoomType.START, SizeType.MEDIUM, RegionType.SINGLE_TOP, true, areas, [])
+				add_rect_area(RoomType.PORTAL, SizeType.LARGE, SizeType.MEDIUM, RegionType.SINGLE_BOTTOM, true, areas, [])
+
+				for i in 20:
+					add_circle_area(RoomType.ROCK, SizeType.SMALL, RegionType.SINGLE_CENTER, true, areas, [RoomType.ROCK])
+
+				for i in 20:
+					add_rect_area(RoomType.MONSTER_CAVE, SizeType.SMALL, SizeType.MEDIUM, RegionType.VER_LEFT, false, areas, [RoomType.MONSTER_CAVE])
+					add_rect_area(RoomType.MONSTER_CAVE, SizeType.SMALL, SizeType.MEDIUM, RegionType.VER_RIGHT, false, areas, [RoomType.MONSTER_CAVE])
+
+				add_rect_area(RoomType.PRISON, SizeType.SMALL, SizeType.SMALL, RegionType.SINGLE_BOTTOM_LEFT, true, areas, [RoomType.MONSTER_CAVE])
+				add_rect_area(RoomType.PRISON, SizeType.SMALL, SizeType.SMALL, RegionType.SINGLE_BOTTOM_RIGHT, true, areas, [RoomType.MONSTER_CAVE])
+
+				apply_cave_randomization_2(null, TileType.MONSTER_START, TileType.OPEN, true, 0.3, 2)
+
+				fill_areas(areas)
+
+				#apply_cave_randomization_2(TileType.OPEN, TileType.OPEN, TileType.ROCK, true, 0.1, 0)
+
+#				apply_cave_randomization_2(TileType.DIRT, TileType.DIRT, TileType.ROCK, true, 0.2, 0)
+
+				#apply_cave_randomization_2(null, TileType.DIRT, TileType.OPEN, true, 0.1, 2)
+
+				add_rock_borders()
+				fix_closed_areas()
+
+			elif State.level == 10:
+				_map.setup(32, 32, TileType.DIRT)
+
+				add_circle_area(RoomType.START, SizeType.MEDIUM, RegionType.SINGLE_TOP, true, areas, [])
+				add_rect_area(RoomType.PORTAL, SizeType.MEDIUM, SizeType.MEDIUM, RegionType.SINGLE_BOTTOM_LEFT, true, areas, [])
+				add_rect_area(RoomType.PORTAL, SizeType.MEDIUM, SizeType.MEDIUM, RegionType.SINGLE_BOTTOM_RIGHT, true, areas, [])
+				add_rect_area(RoomType.PORTAL, SizeType.MEDIUM, SizeType.MEDIUM, RegionType.SINGLE_BOTTOM, true, areas, [])
+
+				for i in 10:
+					add_circle_area(RoomType.ROCK, SizeType.SMALL, RegionType.HOR_CENTER, false, areas, [])
+
+				for i in 20:
+					add_rect_area(RoomType.MONSTER_CAVE, SizeType.LARGE, SizeType.LARGE, RegionType.HOR_BOTTOM, false, areas, [RoomType.MONSTER_CAVE])
+					add_rect_area(RoomType.MONSTER_CAVE, SizeType.SMALL, SizeType.LARGE, RegionType.HOR_BOTTOM, false, areas, [RoomType.MONSTER_CAVE])
+
+					add_rect_area(RoomType.CAVE, SizeType.LARGE, SizeType.LARGE, RegionType.HOR_TOP, false, areas, [RoomType.CAVE])
+					add_rect_area(RoomType.CAVE, SizeType.SMALL, SizeType.SMALL, RegionType.HOR_TOP, false, areas, [RoomType.CAVE])
+
+				add_rect_area(RoomType.PRISON, SizeType.SMALL, SizeType.SMALL, RegionType.HOR_BOTTOM, false, areas, [RoomType.MONSTER_CAVE])
+
+				apply_cave_randomization_2(TileType.DIRT, TileType.DIRT, TileType.OPEN, true, 0.3, 2)
+				apply_cave_randomization_2(null, TileType.MONSTER_START, TileType.OPEN, true, 0.3, 2)
+				apply_cave_randomization_2(null, TileType.OPEN, TileType.OPEN, true, 0.3, 2)
+
+				fill_areas(areas)
+
+				#apply_cave_randomization_2(TileType.OPEN, TileType.OPEN, TileType.ROCK, true, 0.1, 0)
+
+#				apply_cave_randomization_2(TileType.DIRT, TileType.DIRT, TileType.ROCK, true, 0.2, 0)
+
+				#apply_cave_randomization_2(null, TileType.DIRT, TileType.OPEN, true, 0.1, 2)
+
+				add_rock_borders()
+				fix_closed_areas()
+
+		if false:
 			if State.level < 3:
 				_map.setup(32, 32, TileType.DIRT)
 				add_circle_area(RoomType.START, SizeType.SMALL, RegionType.HOR_TOP, true, areas, [])
@@ -2238,7 +2500,10 @@ func game_check_level_done():
 			State.end_level_info = "BASE DEFENDED"
 			done = true
 	elif all_minions_fled:
-		State.end_level_info = "PORTAL REACHED"
+		if State.level == 10:
+			State.end_level_info = "BOTTOM REACHED!\nTHANKS FOR PLAYING!"
+		else:
+			State.end_level_info = "PORTAL REACHED"
 		done = true
 
 
@@ -2433,6 +2698,8 @@ func switch_state(new_game_state):
 			$Merchant.start()
 			title_music_target = -80
 			track1_target = -80.0
+			_camera.limit_right = 999999
+			_camera.limit_bottom = 999999
 			_camera.position = Vector2.ZERO
 
 		GameState.GAME:
@@ -2597,6 +2864,8 @@ func _on_LevelInterlude_stop_level_end() -> void:
 		State.config.set_value("Game", "Tutorial", false)
 		State.config.save(State.config_path)
 		switch_state(GameState.NEW_GAME)
+	elif State.level == 10:
+		switch_state(GameState.TITLE_SCREEN)
 	else:
 		switch_state(GameState.MERCHANT)
 

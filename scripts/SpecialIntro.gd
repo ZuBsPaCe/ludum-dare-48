@@ -116,24 +116,24 @@ func initialize_offer():
 	button3.connect("pressed", self, "button3_pressed")
 
 	button1.set_icon(minion_icon)
-	button1.set_count(10)
+	button1.set_count(5)
 
 	button2.set_icon(archer_icon)
-	button2.set_count(8)
+	button2.set_count(3)
 
 	button3.set_icon(bomb_icon)
-	button3.set_count(4)
+	button3.set_count(2)
 
 func button1_pressed():
-	State.increase_minion_count += 10
+	State.increase_minion_count += 5
 	switch_scene()
 
 func button2_pressed():
-	State.increase_archer_count += 8
+	State.increase_archer_count += 3
 	switch_scene()
 
 func button3_pressed():
-	State.increase_bomb_count += 4
+	State.increase_bomb_count += 2
 	switch_scene()
 
 func reset_mouths():

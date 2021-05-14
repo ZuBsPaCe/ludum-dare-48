@@ -106,14 +106,14 @@ func world_reset() -> void:
 	minion_count = 7
 
 	level_monster_count = 10
-	bomb_count = 5
+	bomb_count = 3
 
 	# Part of minion_count
 	archer_count = 2
 	minion_king_count = 0
 
 	prisoners_per_prison_min_count = 1
-	prisoners_per_prison_max_count = 3
+	prisoners_per_prison_max_count = 4
 
 	increase_minion_count = 0
 	increase_archer_count = 0
@@ -173,7 +173,7 @@ func increase_level():
 			if minion.archer:
 				archer_count += 1
 
-		level_monster_count *= 1.5
+		level_monster_count += 4
 
 
 		bomb_count += increase_bomb_count
@@ -183,15 +183,14 @@ func increase_level():
 		increase_bomb_count = 0
 
 
-		prisoners_per_prison_min_count += 1
-		prisoners_per_prison_max_count += 2
+#		prisoners_per_prison_min_count += 1
+#		prisoners_per_prison_max_count += 2
 
 
 	if world_node_type == NodeType.TUTORIAL || world_node_type == NodeType.DEFEND:
 		spawns_per_minute = 0
 	else:
 		spawns_per_minute = min(6, 1.5 + (State.level - 1) * 0.75)
-
 
 	if world_node_type == NodeType.TUTORIAL:
 		minion_count = 1

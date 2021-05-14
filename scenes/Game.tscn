@@ -893,6 +893,7 @@ collision_mask = 0
 [node name="Screens" type="CanvasLayer" parent="."]
 
 [node name="Title" type="TextureRect" parent="Screens"]
+visible = false
 margin_right = 40.0
 margin_bottom = 40.0
 texture = ExtResource( 14 )
@@ -1387,7 +1388,6 @@ __meta__ = {
 
 [node name="GameOverLabel" type="Label" parent="GameOver/CanvasLayer"]
 visible = false
-modulate = Color( 1, 1, 1, 0 )
 anchor_left = 0.5
 anchor_top = 0.5
 anchor_right = 0.5
@@ -1397,8 +1397,7 @@ margin_top = 128.0
 margin_right = 288.0
 margin_bottom = 168.0
 custom_fonts/font = ExtResource( 15 )
-text = "GAME OVER
-"
+text = "GAME OVER"
 align = 1
 __meta__ = {
 "_edit_use_anchors_": false
