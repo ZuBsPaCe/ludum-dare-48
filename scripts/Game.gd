@@ -1186,6 +1186,8 @@ func map_generate() -> void:
 				add_rock_borders()
 				fix_closed_areas()
 
+				add_swarm_waypoints(areas)
+
 #			elif State.level == 3:
 #				_map.setup(24, 24, TileType.ROCK)
 #
@@ -1227,6 +1229,8 @@ func map_generate() -> void:
 				add_rock_borders()
 				fix_closed_areas()
 
+				add_swarm_waypoints(areas)
+
 
 			elif State.level == 5:
 				_map.setup(32, 32, TileType.DIRT)
@@ -1250,6 +1254,8 @@ func map_generate() -> void:
 
 				add_rock_borders()
 				fix_closed_areas()
+
+				add_swarm_waypoints(areas)
 
 			elif State.level == 6:
 				_map.setup(32, 32, TileType.DIRT)
@@ -1277,6 +1283,8 @@ func map_generate() -> void:
 				add_rock_borders()
 				fix_closed_areas()
 
+				add_swarm_waypoints(areas)
+
 			elif State.level == 7:
 				_map.setup(32, 32, TileType.DIRT)
 
@@ -1300,6 +1308,8 @@ func map_generate() -> void:
 
 				add_rock_borders()
 				fix_closed_areas()
+
+				add_swarm_waypoints(areas)
 
 
 			elif State.level == 8:
@@ -1329,6 +1339,8 @@ func map_generate() -> void:
 				add_rock_borders()
 				fix_closed_areas()
 
+				add_swarm_waypoints(areas)
+
 			elif State.level == 9:
 				_map.setup(32, 32, TileType.DIRT)
 
@@ -1357,6 +1369,8 @@ func map_generate() -> void:
 
 				add_rock_borders()
 				fix_closed_areas()
+
+				add_swarm_waypoints(areas)
 
 			elif State.level == 10:
 				_map.setup(32, 32, TileType.DIRT)
@@ -1392,6 +1406,16 @@ func map_generate() -> void:
 
 				add_rock_borders()
 				fix_closed_areas()
+
+				#add_swarm_waypoints(areas)
+
+				State.swarm_waypoints.append(Coord.new(8, 8))
+				State.swarm_waypoints.append(Coord.new(16, 8))
+				State.swarm_waypoints.append(Coord.new(24, 8))
+
+				State.swarm_waypoints.append(Coord.new(8, 24))
+				State.swarm_waypoints.append(Coord.new(16, 24))
+				State.swarm_waypoints.append(Coord.new(24, 24))
 
 		if false:
 			if State.level < 3:
@@ -1516,6 +1540,12 @@ func map_generate() -> void:
 				fix_closed_areas()
 
 			#_camera.zoom = Vector2(2, 2)
+
+func add_swarm_waypoints(areas : Array) -> void:
+	for area in areas:
+		if area.room_type == RoomType.MONSTER_CAVE || area.room_type == RoomType.PORTAL:
+			State.swarm_waypoints.append(Coord.new(area.center_x, area.center_y))
+
 
 func fix_closed_areas() -> void:
 	var tiles := []
@@ -2239,13 +2269,14 @@ func map_fill() -> void:
 			if i == 0:
 				_camera.position = tile.coord.to_center_pos()
 
-	if monster_tiles.size() > 0:
-		if State.world_node_type != NodeType.DEFEND:
+	if monster_tiles.size() > 0 || false:
+		if State.world_node_type != NodeType.DEFEND && false:
 			var monster_count := State.level_monster_count
 
 			for i in range(State.level_monster_count):
 				var tile : Tile = monster_tiles[randi() % monster_tiles.size()]
 				var monster : Minion = minion_scene.instance()
+
 				monster.setup_monster(randf() < State.monster_archer_fraction, randf() < 0.33)
 
 				monster.position = tile.coord.to_random_pos()
@@ -2525,7 +2556,11 @@ func game_spawn_monsters() -> void:
 
 	for portal in State.end_portals:
 		for monster in spawn_monsters_from_portal(portal, 1):
-			monster.setup_monster(randf() < State.monster_archer_fraction, randf() < 0.33)
+			if State.swarm_waypoints.size() == 0:
+				monster.setup_monster(randf() < State.monster_archer_fraction, randf() < 0.33)
+			else:
+				monster.setup_monster(randf() < State.monster_archer_fraction, false)
+				portal.waiting_monsters.append(monster)
 			_entity_container.add_child(monster)
 
 # WARNING: Caller must call setup_monster and add monster to _entity_container!
@@ -2555,7 +2590,69 @@ func game_command_swarms() -> void:
 
 	_swarm_cooldown.restart(State.swarm_cooldown_min + randi() % (State.swarm_cooldown_max - State.swarm_cooldown_min))
 
-	if State.world_node_type == NodeType.DEFEND:
+	if State.world_node_type == NodeType.PORTAL:
+		if State.swarm_waypoints.size() > 0:
+			for i in State.end_portals.size():
+				for portal in State.end_portals:
+					for j in range(portal.waiting_monsters.size() - 1, -1, -1):
+						var monster = portal.waiting_monsters[j]
+						if !is_instance_valid(monster) || monster.dead:
+							portal.waiting_monsters.remove(j)
+
+					if portal.waiting_monsters.size() == 0:
+						continue
+
+					var possible_monsters := []
+					for monster in portal.waiting_monsters:
+						if monster.can_start_swarm():
+							possible_monsters.append(monster)
+
+					if possible_monsters.size() == 0:
+						continue
+
+					while true:
+						var swarm_size := 3 + randi() % 4
+						if possible_monsters.size() < swarm_size:
+							break
+
+						var swarm := []
+						for swarm_index in swarm_size:
+							var swarm_monster = possible_monsters.pop_back()
+							swarm.append(swarm_monster)
+							portal.waiting_monsters.erase(swarm_monster)
+
+						State.monster_swarms.append(swarm)
+
+			for swarm in State.monster_swarms:
+				for i in range(swarm.size() - 1, -1, -1):
+					var monster = swarm[i]
+					if !is_instance_valid(monster) || monster.dead:
+						swarm.remove(i)
+
+				if swarm.size() == 0:
+					continue
+
+				var can_start := true
+
+				for monster in swarm:
+					if !monster.can_start_swarm():
+						can_start = false
+
+				if !can_start:
+					continue
+
+				var target : Coord = Helper.rand_item(State.swarm_waypoints)
+				Helper.get_tile_circle(State.tile_circle, target.x, target.y, 4)
+				var possible_tiles := []
+				for tile in State.tile_circle:
+					if tile.tile_type == TileType.OPEN:
+						possible_tiles.append(tile)
+
+				if possible_tiles.size() > 0:
+					for monster in swarm:
+						monster.swarm(Helper.rand_item(possible_tiles))
+
+	elif State.world_node_type == NodeType.DEFEND:
 		var portal_index := randi() % State.end_portals.size()
 
 		for i in State.end_portals.size():

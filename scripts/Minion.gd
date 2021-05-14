@@ -558,14 +558,14 @@ func dig(path : PoolIntArray, dig_tile : Tile):
 
 func can_start_swarm() -> bool:
 	return (
-		task != MinionTask.ATTACK &&
-		task != MinionTask.FIGHT)
+		task == MinionTask.IDLE ||
+		task == MinionTask.ROAM)
 
 func swarm(swarm_tile : Tile):
 	self.swarm_tile = swarm_tile
 
 	self.path = State.map.astar_dirty.get_id_path(tile.id, swarm_tile.id)
-	if path.size() == 0:
+	if path.size() < 2:
 		return
 
 	assert(path[0] == tile.id)

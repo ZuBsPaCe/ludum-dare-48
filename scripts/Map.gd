@@ -105,7 +105,10 @@ func set_tile_type(x : int, y : int, value) -> void:
 		_check_diagonal_connections_including_neighbours(astar, tile, TileType.OPEN)
 
 		if was_rock:
-			_check_diagonal_connections_including_neighbours(astar_dirty, tile, TileType.DIRT)
+			astar_dirty.set_point_disabled(id, false)
+
+			# Only check for open tiles. Can't dig diagonally!
+			_check_diagonal_connections_including_neighbours(astar_dirty, tile, TileType.OPEN)
 
 	else:
 		tile.tile_type = value
@@ -125,7 +128,10 @@ func finalize_waypoints() -> void:
 
 			if tile.tile_type <= TileType.DIRT:
 				astar_dirty.set_point_disabled(tile.id, false)
-				_check_diagonal_connections(astar_dirty, tile, TileType.DIRT)
+
+				# Can only check diagonal connections when open. Can't dig diagonally!
+				if tile.tile_type == TileType.OPEN:
+					_check_diagonal_connections(astar_dirty, tile, TileType.OPEN)
 			else:
 				astar_dirty.set_point_disabled(tile.id, true)
 

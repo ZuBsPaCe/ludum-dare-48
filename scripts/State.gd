@@ -70,7 +70,7 @@ var end_level_info := ""
 
 var spawns_per_minute : float
 
-var swarm_cooldown_init := 30
+var swarm_cooldown_init := 20
 var swarm_cooldown_min := 15
 var swarm_cooldown_max := 45
 
@@ -81,6 +81,7 @@ var game_camera : Camera2D
 
 var prisons := []
 var monster_swarms := []
+var swarm_waypoints := []
 
 var arrows := []
 
@@ -187,6 +188,9 @@ func increase_level():
 #		prisoners_per_prison_max_count += 2
 
 
+	State.level = 10
+
+
 	if world_node_type == NodeType.TUTORIAL || world_node_type == NodeType.DEFEND:
 		spawns_per_minute = 0
 	else:
@@ -208,6 +212,7 @@ func game_reset():
 	minion_kings.clear()
 
 	monster_swarms.clear()
+	swarm_waypoints.clear()
 
 	arrows.clear()
 
