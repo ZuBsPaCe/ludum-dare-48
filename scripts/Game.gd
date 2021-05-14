@@ -1131,15 +1131,84 @@ func map_generate() -> void:
 		add_rock_borders()
 		fix_closed_areas()
 	elif true || State.world_node_type == NodeType.PORTAL:
-		if true || State.level <= 3:
-			if false:
+		if true:
+			if State.level < 3:
+				_map.setup(32, 32, TileType.DIRT)
+				add_circle_area(RoomType.START, SizeType.SMALL, RegionType.HOR_TOP, true, areas, [])
+				add_circle_area(RoomType.PORTAL, SizeType.SMALL, RegionType.HOR_BOTTOM, true, areas, [])
+
+				for i in 3:
+					var cave := add_circle_area(RoomType.CAVE, SizeType.MEDIUM, RegionType.ALL, false, areas, [])
+
+				for i in 3:
+					var cave := add_circle_area(RoomType.CAVE, SizeType.MEDIUM, RegionType.ALL, false, areas, [RoomType.CAVE])
+
+				for i in 5:
+					var cave := add_circle_area(RoomType.MONSTER_CAVE, SizeType.MEDIUM, RegionType.ALL, false, areas, [])
+					if cave != null && i < State.level * 2:
+						add_rect_area(RoomType.PRISON, SizeType.MEDIUM, SizeType.SMALL, RegionType.SPECIFIC_AREAS, false, areas, [RoomType.MONSTER_CAVE, RoomType.CAVE], [cave])
+
+				fill_areas(areas)
+
+				apply_cave_randomization_2(null, TileType.OPEN, TileType.DIRT, true, 0.3, 2, 3, 2)
+				apply_cave_randomization_2(TileType.DIRT, TileType.DIRT, TileType.ROCK, true, 0.2, 1, 3, 2)
+
+				add_rock_borders()
+				fix_closed_areas()
+
+			elif State.level < 5:
+				_map.setup(32, 32, TileType.DIRT)
+				add_circle_area(RoomType.START, SizeType.SMALL, RegionType.HOR_TOP, true, areas, [])
+				add_circle_area(RoomType.PORTAL, SizeType.SMALL, RegionType.HOR_BOTTOM, true, areas, [])
+
+				for i in 10:
+					var cave := add_circle_area(RoomType.CAVE, SizeType.SMALL, RegionType.ALL, false, areas, [RoomType.CAVE])
+
+				for i in 3:
+					var cave := add_circle_area(RoomType.CAVE, SizeType.MEDIUM, RegionType.ALL, false, areas, [RoomType.CAVE])
+
+				for i in 5:
+					var cave := add_circle_area(RoomType.MONSTER_CAVE, SizeType.MEDIUM, RegionType.ALL, false, areas, [])
+					if cave != null && i < State.level * 2:
+						add_rect_area(RoomType.PRISON, SizeType.MEDIUM, SizeType.SMALL, RegionType.SPECIFIC_AREAS, false, areas, [RoomType.MONSTER_CAVE, RoomType.CAVE], [cave])
+
+				fill_areas(areas)
+
+				apply_cave_randomization_2(null, TileType.DIRT, TileType.OPEN, true, 0.1, 2, 3, 2)
+				apply_cave_randomization_2(TileType.DIRT, TileType.DIRT, TileType.ROCK, true, 0.2, 3, 3, 2)
+
+				add_rock_borders()
+				fix_closed_areas()
+
+			elif true:
+				_map.setup(32, 32, TileType.DIRT)
+				add_rect_area(RoomType.START, SizeType.SMALL, SizeType.SMALL, RegionType.HOR_TOP, true, areas, [])
+				add_rect_area(RoomType.PORTAL, SizeType.SMALL, SizeType.SMALL, RegionType.HOR_BOTTOM, true, areas, [])
+
+				for i in 5:
+					var cave := add_rect_area(RoomType.CAVE, SizeType.MEDIUM, SizeType.MEDIUM, RegionType.ALL, false, areas, [])
+
+				for i in 5:
+					var cave := add_rect_area(RoomType.MONSTER_CAVE, SizeType.MEDIUM, SizeType.MEDIUM, RegionType.ALL, false, areas, [])
+					if cave != null && i < State.level:
+						add_rect_area(RoomType.PRISON, SizeType.MEDIUM, SizeType.SMALL, RegionType.SPECIFIC_AREAS, false, areas, [RoomType.CAVE, RoomType.MONSTER_CAVE], [cave])
+
+				fill_areas(areas)
+
+				apply_cave_randomization_2(null, TileType.OPEN, TileType.DIRT, true, 0.3, 3, 3, 2)
+				apply_cave_randomization_2(TileType.DIRT, TileType.DIRT, TileType.ROCK, true, 0.2, 3, 3, 2)
+
+				add_rock_borders()
+				fix_closed_areas()
+
+			elif false:
 				_map.setup(32, 32, TileType.OPEN)
 				add_rect_area(RoomType.START, SizeType.SMALL, SizeType.SMALL, RegionType.SINGLE_CENTER, true, areas, [])
 				add_rect_area(RoomType.PORTAL, SizeType.SMALL, SizeType.SMALL, RegionType.SINGLE_BOTTOM, true, areas, [])
 				fill_areas(areas)
 				add_rock_borders()
 
-			elif true:
+			elif false:
 				_map.setup(32, 32, TileType.OPEN)
 				if true:
 					add_rect_area(RoomType.START, SizeType.SMALL, SizeType.SMALL, RegionType.HOR_TOP, true, areas, [])
@@ -1476,6 +1545,9 @@ func fill_areas(areas : Array) -> void:
 
 			RoomType.CAVE:
 				fill_area(TileType.OPEN, area)
+
+			RoomType.MONSTER_CAVE:
+				fill_area(TileType.MONSTER_START, area)
 
 			RoomType.ROCK:
 				fill_area(TileType.ROCK, area)

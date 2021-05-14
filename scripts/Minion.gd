@@ -267,14 +267,22 @@ func _physics_process(delta: float) -> void:
 				#rally_immune = State.rally_immune
 				pass
 			else:
-				var rally_end_tile : Tile = tile.rally_end_tiles[randi() % tile.rally_end_tiles.size()]
+				var index := randi() % tile.rally_end_tiles.size()
+				var rally_end_tile : Tile
+				for i in tile.rally_end_tiles.size():
+					index = posmod(index + 1, tile.rally_end_tiles.size())
+					var current_rally_end_tile = tile.rally_end_tiles[index]
+					if current_rally_end_tile.tile_type == TileType.OPEN:
+						rally_end_tile = current_rally_end_tile
+						break
 
-				var path = State.map.astar.get_id_path(tile.id, rally_end_tile.id)
+				if rally_end_tile != null:
+					var path = State.map.astar.get_id_path(tile.id, rally_end_tile.id)
 
-				if path.size() == 0 || path.size() > 25:
-					rally_immune = State.rally_immune
-				else:
-					_rally(path)
+					if path.size() == 0 || path.size() > 25:
+						rally_immune = State.rally_immune
+					else:
+						_rally(path)
 
 	if prisoner && next_task != null:
 		if next_task != MinionTask.IDLE && next_task != MinionTask.ROAM && next_task != MinionTask.MOVE:
