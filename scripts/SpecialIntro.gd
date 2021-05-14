@@ -57,7 +57,7 @@ func _process(delta: float) -> void:
 
 	if talking && talk_cooldown.done:
 		talk_cooldown.restart()
-		Sounds.play(AudioType.TALK)
+		State.sounds.play(AudioType.TALK, null)
 
 	if talking && eyes_cooldown.done:
 		eyes_cooldown.restart()

@@ -21,6 +21,7 @@ var minion_king_count : int
 var bomb_count : int
 var map : Map
 var tilemap32 : TileMap
+var sounds : Sounds
 
 var prisoners_per_prison_min_count : int
 var prisoners_per_prison_max_count : int
@@ -159,8 +160,12 @@ func world_reset() -> void:
 	minion_kings_created_count = 0
 	minion_kings_died_count = 0
 
-	level = 9
-	minions_fled = 20
+	stat_freed = 0
+	stat_killed = 0
+
+
+#	level = 9
+#	minions_fled = 20
 
 func increase_level():
 	State.level += 1

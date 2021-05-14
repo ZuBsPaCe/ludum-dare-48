@@ -275,6 +275,7 @@ func _ready() -> void:
 
 	State.tilemap32 = _tilemap32
 	State.game_camera = $GameCamera
+	State.sounds = $GameCamera/Sounds
 
 
 	if OS.get_name() == "HTML5":
@@ -2998,7 +2999,7 @@ func _on_SoundSlider_value_changed(value: float) -> void:
 	AudioServer.set_bus_volume_db(AudioServer.get_bus_index("Sounds"), linear2db(value))
 
 	if !_loading:
-		Sounds.play(AudioType.FIGHT)
+		State.sounds.play(AudioType.FIGHT, null)
 
 	State.config.set_value("Audio", "Sound", value)
 	State.config.save(State.config_path)

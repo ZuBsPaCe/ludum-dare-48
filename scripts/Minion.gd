@@ -224,7 +224,7 @@ func _physics_process(delta: float) -> void:
 			strike_hit = true
 			if task == MinionTask.DIG:
 				if dig_tile.health > 0:
-					Sounds.play(AudioType.DIG)
+					State.sounds.play(AudioType.DIG, position)
 					dig_tile.hurt()
 
 				if dig_tile.health <= 0:
@@ -634,7 +634,7 @@ func hurt():
 	if health >= 0:
 		anger += 1
 
-		Sounds.play(AudioType.FIGHT)
+		State.sounds.play(AudioType.FIGHT, position)
 
 		show_blood_effect()
 		show_blood_drop_effect(State.entity_container)
@@ -661,7 +661,7 @@ func die():
 	assert(!dead)
 	#print_debug("Minion %s died on %s. Faction: %s" % [get_instance_id(), coord, faction])
 
-	Sounds.play(AudioType.DIE)
+	State.sounds.play(AudioType.DIE, position)
 
 	if faction == 0:
 		assert(tile.minions.has(self))
@@ -687,7 +687,7 @@ func die():
 	queue_free()
 
 func flee():
-	Sounds.play(AudioType.FLED)
+	State.sounds.play(AudioType.FLED, position)
 	var beam : Node2D = beam_scene.instance()
 	beam.position = position
 	State.entity_container.add_child(beam)

@@ -1,4 +1,4 @@
-[gd_scene load_steps=67 format=2]
+[gd_scene load_steps=68 format=2]
 
 [ext_resource path="res://scenes/Minion.tscn" type="PackedScene" id=1]
 [ext_resource path="res://scripts/Game.gd" type="Script" id=2]
@@ -55,6 +55,7 @@
 [ext_resource path="res://sprites/PrisonIcon.png" type="Texture" id=53]
 [ext_resource path="res://sprites/DollarIcon.png" type="Texture" id=54]
 [ext_resource path="res://sprites/ShieldIcon.png" type="Texture" id=55]
+[ext_resource path="res://scenes/Sounds.tscn" type="PackedScene" id=56]
 
 [sub_resource type="Animation" id=1]
 resource_name = "HideStoryLabel"
@@ -922,6 +923,8 @@ limit_top = 0
 smoothing_enabled = true
 smoothing_speed = 20.0
 editor_draw_limits = true
+
+[node name="Sounds" parent="GameCamera" instance=ExtResource( 56 )]
 
 [node name="RallyDebug" type="Node2D" parent="."]
 visible = false

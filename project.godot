@@ -39,6 +39,11 @@ _global_script_classes=[ {
 "language": "GDScript",
 "path": "res://scripts/RegionSampler.gd"
 }, {
+"base": "Node2D",
+"class": "Sounds",
+"language": "GDScript",
+"path": "res://Sounds.gd"
+}, {
 "base": "Reference",
 "class": "Tile",
 "language": "GDScript",
@@ -81,6 +86,7 @@ _global_script_class_icons={
 "Minion": "",
 "Prison": "",
 "RegionSampler": "",
+"Sounds": "",
 "Tile": "",
 "WorldCircle": "",
 "WorldConnection": "",
@@ -104,7 +110,6 @@ config/icon="res://icon.png"
 
 State="*res://scripts/State.gd"
 Helper="*res://scripts/Helper.gd"
-Sounds="*res://scenes/Sounds.tscn"
 
 [debug]
 
