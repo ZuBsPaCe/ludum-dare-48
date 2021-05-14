@@ -678,6 +678,8 @@ func die():
 		State.monsters.erase(self)
 		tile.monsters.erase(self)
 
+		State.stat_killed += 1
+
 	set_process(false)
 	set_physics_process(false)
 

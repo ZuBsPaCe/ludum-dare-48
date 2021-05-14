@@ -23,7 +23,11 @@ func show_level_end() -> void:
 
 	$CanvasLayer/LevelLabel.text = State.end_level_info
 
-	$AnimationPlayer.play("Default")
+	if State.level == 10:
+		$CanvasLayer/StatsRight.text = "%d\n%d\n%d" % [State.minions_fled, State.stat_freed, State.stat_killed]
+		$AnimationPlayer.play("GameEnd")
+	else:
+		$AnimationPlayer.play("Default")
 
 func show_level_start():
 	_is_start = true
@@ -31,8 +35,9 @@ func show_level_start():
 	visible = true
 	set_process(true)
 
-	$CanvasLayer/LevelLabel.text = "Down to level %d" % State.level
+	$CanvasLayer/LevelLabel.text = "Down to level %d" % (State.level + 1)
 	$AnimationPlayer.play("Default")
+
 
 func switch_scene() -> void:
 	set_process(false)

@@ -89,10 +89,12 @@ func hurt(amount : int = 1) -> void:
 			if prisoner_tile.prisoners.size() > 0:
 				for freed_prisoner in prisoner_tile.prisoners:
 					if !is_instance_valid(freed_prisoner):
-						# Could have died due to a bomg :(
+						# Could have died due to a bomb :(
 						continue
 					freed_prisoner.prisoner = false
 					freed_prisoner.pickaxe.visible = true
+
+					State.stat_freed += 1
 
 					if freed_prisoner.king:
 						State.minion_king_count += 1

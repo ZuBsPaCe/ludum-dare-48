@@ -70,9 +70,9 @@ var end_level_info := ""
 
 var spawns_per_minute : float
 
-var swarm_cooldown_init := 20
-var swarm_cooldown_min := 15
-var swarm_cooldown_max := 45
+var swarm_cooldown_init := 15
+var swarm_cooldown_min := 10
+var swarm_cooldown_max := 20
 
 const config_path = "res://settings.ini"
 var config : ConfigFile
@@ -84,6 +84,12 @@ var monster_swarms := []
 var swarm_waypoints := []
 
 var arrows := []
+
+
+var stat_freed := 0
+var stat_killed := 0
+
+
 
 var entity_container : Node2D
 var decal_container : Node2D
@@ -153,6 +159,9 @@ func world_reset() -> void:
 	minion_kings_created_count = 0
 	minion_kings_died_count = 0
 
+	level = 9
+	minions_fled = 20
+
 func increase_level():
 	State.level += 1
 	State.world_layer_index += 1
@@ -187,8 +196,6 @@ func increase_level():
 #		prisoners_per_prison_min_count += 1
 #		prisoners_per_prison_max_count += 2
 
-
-	State.level = 10
 
 
 	if world_node_type == NodeType.TUTORIAL || world_node_type == NodeType.DEFEND:

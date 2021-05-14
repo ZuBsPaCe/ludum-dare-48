@@ -2269,8 +2269,8 @@ func map_fill() -> void:
 			if i == 0:
 				_camera.position = tile.coord.to_center_pos()
 
-	if monster_tiles.size() > 0 || false:
-		if State.world_node_type != NodeType.DEFEND && false:
+	if monster_tiles.size() > 0:
+		if State.world_node_type != NodeType.DEFEND:
 			var monster_count := State.level_monster_count
 
 			for i in range(State.level_monster_count):
@@ -2531,10 +2531,7 @@ func game_check_level_done():
 			State.end_level_info = "BASE DEFENDED"
 			done = true
 	elif all_minions_fled:
-		if State.level == 10:
-			State.end_level_info = "BOTTOM REACHED!\nTHANKS FOR PLAYING!"
-		else:
-			State.end_level_info = "PORTAL REACHED"
+		State.end_level_info = "PORTAL REACHED"
 		done = true
 
 
@@ -2949,7 +2946,7 @@ func _on_ExitButton_pressed() -> void:
 
 
 func _on_SpecialIntro_stop_intro() -> void:
-	switch_state(GameState.GAME)
+	switch_state(GameState.LEVEL_START)
 
 
 func _on_LevelInterlude_stop_level_start() -> void:
