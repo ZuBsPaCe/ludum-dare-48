@@ -251,7 +251,7 @@ func _ready() -> void:
 	State.config.load(State.config_path)
 
 	if !State.config.has_section_key("Display", "Fullscreen"):
-		State.config.set_value("Display", "Fullscreen", false)
+		State.config.set_value("Display", "Fullscreen", true)
 
 	if !State.config.has_section_key("Audio", "Music"):
 		State.config.set_value("Audio", "Music", 0.8)
@@ -281,7 +281,8 @@ func _ready() -> void:
 	if OS.get_name() == "HTML5":
 		$Screens/Title/ExitButton.visible = false
 	else:
-		OS.window_fullscreen = State.config.get_value("Display", "Fullscreen")
+		if OS.window_fullscreen != State.config.get_value("Display", "Fullscreen"):
+			OS.window_fullscreen = State.config.get_value("Display", "Fullscreen")
 
 	$Screens/PostProcess.visible = true
 
@@ -2929,6 +2930,10 @@ func hide_story() -> void:
 func reset_story() -> void:
 	$HUD/MarginContainer/VBoxContainer/StoryLabel.text = ""
 	$HUD/AnimationPlayer.stop(true)
+	_story_queue.clear()
+	_story_queue_keep_open.clear()
+	_story_queue_kept_open = false
+	_story_done = true
 
 
 func _on_StartButton_pressed() -> void:
