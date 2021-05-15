@@ -1,7 +1,10 @@
 enum AudioType {
+	TEST,
 	DIG,
 	DIE,
 	TALK,
 	FIGHT,
-	FLED
+	FLED,
+	BOMB,
+	FREED
 }

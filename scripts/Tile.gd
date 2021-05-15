@@ -96,9 +96,10 @@ func hurt(amount : int = 1) -> void:
 
 					State.stat_freed += 1
 
+					State.sounds.play_delayed(AudioType.FREED, freed_prisoner.position, randf())
+
 					if freed_prisoner.king:
 						State.minion_king_count += 1
 
 					State.minions.append(freed_prisoner)
 				prisoner_tile.prisoners.clear()
-

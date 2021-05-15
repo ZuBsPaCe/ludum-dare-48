@@ -49,17 +49,17 @@ func _process(delta: float) -> void:
 	eyes_cooldown.step(delta)
 	talk_cooldown.step(delta)
 
-	if talking && mouth_cooldown.done:
+	if talking && !mouth_cooldown.running:
 		mouth_cooldown.restart()
 		reset_mouths()
 		mouths[0].visible = false
 		mouths[randi() % (mouths.size() - 1) + 1].visible = true
 
-	if talking && talk_cooldown.done:
+	if talking && !talk_cooldown.running:
 		talk_cooldown.restart()
 		State.sounds.play(AudioType.TALK, null)
 
-	if talking && eyes_cooldown.done:
+	if talking && !eyes_cooldown.running:
 		eyes_cooldown.restart()
 		reset_eyes()
 		eyes[0].visible = false

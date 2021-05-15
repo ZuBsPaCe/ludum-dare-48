@@ -320,7 +320,7 @@ func _process(delta: float) -> void:
 		if !$TitleMusic.playing && $TitleMusic.volume_db == -80.0:
 			$TitleMusic.play()
 		if $TitleMusic.volume_db < 0.0:
-			$TitleMusic.volume_db = min(0.0, $TitleMusic.volume_db + delta * 20.0)
+			$TitleMusic.volume_db = min(0.0, $TitleMusic.volume_db + delta * 60.0)
 	else:
 		if $TitleMusic.volume_db > -80.0:
 			$TitleMusic.volume_db = max(-80.0, $TitleMusic.volume_db - delta * 20.0)
@@ -585,6 +585,8 @@ func _process(delta: float) -> void:
 						explosion.position = mouse_pos
 						explosion.rotation = randf() * 2 * PI
 						_explosion_container.add_child(explosion)
+
+						State.sounds.play(AudioType.BOMB, mouse_pos)
 
 						for entity in entities:
 							entity.show_blood_drop_effect(_explosion_container)
@@ -2460,6 +2462,8 @@ func game_start_battle(attacker : Minion, target_list : Array):
 
 		if target != null:
 			attacker.attack(target)
+			if attacker.task != Minion.MinionTask.ATTACK:
+				State.sounds.play(AudioType.TALK, attacker.position)
 
 func game_check_level_done():
 	if _check_level_done_cooldown.running && _story_done:
@@ -2758,6 +2762,8 @@ func switch_state(new_game_state):
 	var old_game_state = State.game_state
 	State.game_state  = new_game_state
 
+	Input.set_custom_mouse_cursor(null)
+
 	match State.game_state:
 		GameState.TITLE_SCREEN:
 			$Screens/Title.visible = true
@@ -2766,7 +2772,7 @@ func switch_state(new_game_state):
 			title_music_target = 0.0
 			track1_target = -80.0
 			_camera.zoom = Vector2(0.6, 0.6)
-			_camera.position = Vector2.ZERO
+			_camera.position = get_viewport_rect().size / 2
 
 		GameState.INTRO:
 			$Screens/Title.visible = false
@@ -2867,6 +2873,7 @@ func switch_state(new_game_state):
 			get_tree().paused = false
 			State.game_state = GameState.GAME
 			title_music_target = -80
+			track1_target = 0
 			_mouse_on_button = false
 
 		GameState.GAME_OVER:
@@ -2895,6 +2902,7 @@ func switch_state(new_game_state):
 			_camera.zoom = Vector2(1.0, 1.0)
 			Input.set_mouse_mode(Input.MOUSE_MODE_HIDDEN)
 			$LevelInterlude.show_level_start()
+			title_music_target = 0
 
 		GameState.LEVEL_END:
 			game_reset()
@@ -2907,6 +2915,7 @@ func switch_state(new_game_state):
 			$LevelInterlude.show_level_end()
 			title_music_target = -80
 			track1_target = -80
+			$Success.play()
 
 
 func show_story(message : String, keep_open = false) -> void:
@@ -2999,7 +3008,7 @@ func _on_SoundSlider_value_changed(value: float) -> void:
 	AudioServer.set_bus_volume_db(AudioServer.get_bus_index("Sounds"), linear2db(value))
 
 	if !_loading:
-		State.sounds.play(AudioType.FIGHT, null)
+		State.sounds.play(AudioType.TEST, null)
 
 	State.config.set_value("Audio", "Sound", value)
 	State.config.save(State.config_path)
