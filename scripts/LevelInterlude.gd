@@ -41,8 +41,13 @@ func show_level_start():
 
 func switch_scene() -> void:
 	set_process(false)
+
 	$CanvasLayer/LevelLabel.visible = false
 	$CanvasLayer/TextureRect.visible = false
+	$CanvasLayer/EndGameLabel.visible = false
+	$CanvasLayer/StatsLeft.visible = false
+	$CanvasLayer/StatsRight.visible = false
+
 	$AnimationPlayer.stop()
 
 	if _is_start:
