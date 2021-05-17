@@ -690,7 +690,8 @@ func _process(delta: float) -> void:
 
 			elif State.tutorial_step == TutorialStep.START_BOMBING && _story_done:
 				_bomb_button.visible = true
-				show_story("Select the bomb tool and make way to the southern portal.", true)
+				show_story("You can use 1, 2 and 3 to switch the active tool.")
+				show_story("Select the bomb tool (3) and make way to the southern portal.", true)
 				State.tutorial_step = TutorialStep.BOMBING
 
 			elif State.tutorial_step == TutorialStep.BOMBING && $ExplosionContainer.get_child_count() > 0:
