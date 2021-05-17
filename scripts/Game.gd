@@ -1323,13 +1323,13 @@ func map_generate() -> void:
 				add_circle_area(RoomType.START, SizeType.MEDIUM, RegionType.HOR_TOP, true, areas, [])
 				add_rect_area(RoomType.PORTAL, SizeType.LARGE, SizeType.MEDIUM, RegionType.HOR_BOTTOM, true, areas, [])
 
-				for i in 20:
-					var cave := add_rect_area(RoomType.CAVE, SizeType.LARGE, SizeType.TINY, RegionType.ALL, false, areas, [])
-
 				for i in 8:
 					var cave := add_rect_area(RoomType.MONSTER_CAVE, SizeType.MEDIUM, SizeType.SMALL, RegionType.ALL, false, areas, [])
 					if cave != null && i < 5:
 						add_rect_area(RoomType.PRISON, SizeType.SMALL, SizeType.SMALL, RegionType.SPECIFIC_AREAS, false, areas, [RoomType.MONSTER_CAVE, RoomType.CAVE], [cave])
+
+				for i in 4:
+					var cave := add_rect_area(RoomType.CAVE, SizeType.LARGE, SizeType.TINY, RegionType.ALL, false, areas, [RoomType.MONSTER_CAVE, RoomType.CAVE])
 
 				apply_cave_randomization_2(null, TileType.DIRT, TileType.ROCK, true, 0.3, 4)
 
@@ -1359,8 +1359,8 @@ func map_generate() -> void:
 					add_rect_area(RoomType.MONSTER_CAVE, SizeType.SMALL, SizeType.MEDIUM, RegionType.VER_LEFT, false, areas, [RoomType.MONSTER_CAVE])
 					add_rect_area(RoomType.MONSTER_CAVE, SizeType.SMALL, SizeType.MEDIUM, RegionType.VER_RIGHT, false, areas, [RoomType.MONSTER_CAVE])
 
-				add_rect_area(RoomType.PRISON, SizeType.SMALL, SizeType.SMALL, RegionType.SINGLE_BOTTOM_LEFT, true, areas, [RoomType.MONSTER_CAVE])
-				add_rect_area(RoomType.PRISON, SizeType.SMALL, SizeType.SMALL, RegionType.SINGLE_BOTTOM_RIGHT, true, areas, [RoomType.MONSTER_CAVE])
+				add_rect_area(RoomType.PRISON, SizeType.SMALL, SizeType.SMALL, RegionType.SINGLE_LEFT, true, areas, [RoomType.MONSTER_CAVE])
+				add_rect_area(RoomType.PRISON, SizeType.SMALL, SizeType.SMALL, RegionType.SINGLE_RIGHT, true, areas, [RoomType.MONSTER_CAVE])
 
 				apply_cave_randomization_2(null, TileType.MONSTER_START, TileType.OPEN, true, 0.3, 2)
 
@@ -1381,9 +1381,9 @@ func map_generate() -> void:
 				_map.setup(32, 32, TileType.DIRT)
 
 				add_circle_area(RoomType.START, SizeType.MEDIUM, RegionType.SINGLE_TOP, true, areas, [])
-				add_rect_area(RoomType.PORTAL, SizeType.MEDIUM, SizeType.MEDIUM, RegionType.SINGLE_BOTTOM_LEFT, true, areas, [])
+				#add_rect_area(RoomType.PORTAL, SizeType.MEDIUM, SizeType.MEDIUM, RegionType.SINGLE_BOTTOM_LEFT, true, areas, [])
 				add_rect_area(RoomType.PORTAL, SizeType.MEDIUM, SizeType.MEDIUM, RegionType.SINGLE_BOTTOM_RIGHT, true, areas, [])
-				add_rect_area(RoomType.PORTAL, SizeType.MEDIUM, SizeType.MEDIUM, RegionType.SINGLE_BOTTOM, true, areas, [])
+				#add_rect_area(RoomType.PORTAL, SizeType.MEDIUM, SizeType.MEDIUM, RegionType.SINGLE_BOTTOM, true, areas, [])
 
 				for i in 10:
 					add_circle_area(RoomType.ROCK, SizeType.SMALL, RegionType.HOR_CENTER, false, areas, [])
@@ -1395,7 +1395,7 @@ func map_generate() -> void:
 					add_rect_area(RoomType.CAVE, SizeType.LARGE, SizeType.LARGE, RegionType.HOR_TOP, false, areas, [RoomType.CAVE])
 					add_rect_area(RoomType.CAVE, SizeType.SMALL, SizeType.SMALL, RegionType.HOR_TOP, false, areas, [RoomType.CAVE])
 
-				add_rect_area(RoomType.PRISON, SizeType.SMALL, SizeType.SMALL, RegionType.HOR_BOTTOM, false, areas, [RoomType.MONSTER_CAVE])
+				add_rect_area(RoomType.PRISON, SizeType.LARGE, SizeType.LARGE, RegionType.HOR_BOTTOM, false, areas, [RoomType.MONSTER_CAVE])
 
 				apply_cave_randomization_2(TileType.DIRT, TileType.DIRT, TileType.OPEN, true, 0.3, 2)
 				apply_cave_randomization_2(null, TileType.MONSTER_START, TileType.OPEN, true, 0.3, 2)

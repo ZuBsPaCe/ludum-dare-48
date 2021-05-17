@@ -71,9 +71,9 @@ var end_level_info := ""
 
 var spawns_per_minute : float
 
-var swarm_cooldown_init := 15
-var swarm_cooldown_min := 10
-var swarm_cooldown_max := 20
+var swarm_cooldown_init := 5
+var swarm_cooldown_min := 5
+var swarm_cooldown_max := 10
 
 const config_path = "res://settings.ini"
 var config : ConfigFile
@@ -163,9 +163,13 @@ func world_reset() -> void:
 	stat_freed = 0
 	stat_killed = 0
 
+	# For debugging levels (level will be increased by 1!)
+	if true:
+		var skip_to_level := 10
+		for i in range(skip_to_level - 1):
+			increase_level()
 
-#	level = 9
-#	minions_fled = 20
+		minions_fled = 20
 
 func increase_level():
 	State.level += 1
@@ -197,9 +201,9 @@ func increase_level():
 		increase_archer_count = 0
 		increase_bomb_count = 0
 
-
-#		prisoners_per_prison_min_count += 1
-#		prisoners_per_prison_max_count += 2
+	if State.level >= 8:
+		prisoners_per_prison_min_count += 2
+		prisoners_per_prison_max_count += 3
 
 
 
