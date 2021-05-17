@@ -164,7 +164,7 @@ func world_reset() -> void:
 	stat_killed = 0
 
 	# For debugging levels (level will be increased by 1!)
-	if true:
+	if false:
 		var skip_to_level := 8
 		for i in range(skip_to_level - 1):
 			increase_level()

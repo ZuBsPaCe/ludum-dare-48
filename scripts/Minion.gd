@@ -29,6 +29,7 @@ enum MinionTask {
 onready var animation_minion := $Sprites/AnimationMinion
 onready var animation_pickaxe := $Sprites/AnimationPickaxe
 onready var pickaxe := $Sprites/Pickaxe
+onready var exclamation := $Sprites/Exclamation
 
 export var in_animation := false
 export(PackedScene) var arrow_scene
@@ -53,6 +54,7 @@ var strike_cooldown := Cooldown.new(1.0)
 var strike_hit_cooldown := Cooldown.new(0.25)
 var attack_cooldown := Cooldown.new(0.2)
 var victim_lost_cooldown := Cooldown.new(8.0)
+var freeze_cooldown := Cooldown.new(1.0)
 
 var target_pos := Vector2()
 var target_vec := Vector2()
@@ -92,8 +94,9 @@ var _victim_visible := false
 
 func _ready() -> void:
 	$Sprites/Feather.visible = archer
-	$Sprites/Pickaxe.visible = !prisoner
+	pickaxe.visible = !prisoner
 	$Sprites/Crown.visible = king
+	exclamation.visible = false
 
 
 	if in_animation:
@@ -212,6 +215,21 @@ func _physics_process(delta: float) -> void:
 	strike_hit_cooldown.step(delta)
 	attack_cooldown.step(delta)
 	victim_lost_cooldown.step(delta)
+	freeze_cooldown.step(delta)
+
+	if freeze_cooldown.running:
+		return
+
+	if exclamation.visible:
+		if exclamation.frame == 2:
+			exclamation.frame = randi() % 2
+
+		var alpha : float = exclamation.modulate.a
+		alpha = max(0.0, alpha - delta)
+		exclamation.modulate.a = alpha
+		if alpha == 0.0:
+			exclamation.visible = false
+
 
 	if under_attack_cooldown > 0.0:
 		under_attack_cooldown -= delta * 0.25
@@ -595,8 +613,15 @@ func attack(victim : Minion):
 		if _victim.under_attack_cooldown >= 1.0:
 			_victim.under_attack_cooldown -= 1.0
 
+	if faction > 0:
+		freeze_once(true)
+
 	_victim = victim
 	_victim.under_attack_cooldown += 1.0
+
+	if _victim.faction > 0:
+		_victim.freeze_once(false)
+
 	_last_victim_pos = victim.position
 	_victim_visible = true
 	_set_next_task(MinionTask.ATTACK)
@@ -722,6 +747,20 @@ func flee():
 
 #	dead = true
 	queue_free()
+
+
+func freeze_once(attack : bool) -> void:
+	if !freeze_cooldown.started && (task == MinionTask.IDLE || task == MinionTask.ROAM || task == MinionTask.GO_DIG || task == MinionTask.DIG):
+		freeze_cooldown.restart(0.75 + randf() * 1.0)
+
+		if randi() % 3 == 0:
+			if attack:
+				exclamation.frame = randi() % 2
+			else:
+				exclamation.frame = 2
+			exclamation.visible = true
+
+		animation_minion.play("Idle")
 
 func _move_near(near_tile : Tile):
 	path = PoolIntArray()

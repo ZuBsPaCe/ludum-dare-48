@@ -1,4 +1,4 @@
-[gd_scene load_steps=24 format=2]
+[gd_scene load_steps=25 format=2]
 
 [ext_resource path="res://sprites/Minion.png" type="Texture" id=1]
 [ext_resource path="res://scripts/Minion.gd" type="Script" id=2]
@@ -9,6 +9,7 @@
 [ext_resource path="res://scenes/Beam.tscn" type="PackedScene" id=7]
 [ext_resource path="res://scenes/BloodDropParticles.tscn" type="PackedScene" id=8]
 [ext_resource path="res://sprites/Crown.png" type="Texture" id=9]
+[ext_resource path="res://sprites/Exclamation.png" type="Texture" id=10]
 
 [sub_resource type="CircleShape2D" id=1]
 radius = 4.12614
@@ -657,8 +658,16 @@ vframes = 7
 frame = 14
 
 [node name="Crown" type="Sprite" parent="Sprites"]
+visible = false
 position = Vector2( -1, -6 )
 texture = ExtResource( 9 )
+
+[node name="Exclamation" type="Sprite" parent="Sprites"]
+visible = false
+position = Vector2( 4, -15 )
+scale = Vector2( 0.8, 0.8 )
+texture = ExtResource( 10 )
+hframes = 4
 
 [node name="AnimationMinion" type="AnimationPlayer" parent="Sprites"]
 autoplay = "Idle"
