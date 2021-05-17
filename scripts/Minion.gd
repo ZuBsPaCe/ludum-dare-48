@@ -58,6 +58,7 @@ var target_pos := Vector2()
 var target_vec := Vector2()
 
 var view_distance : float
+var view_distance_sq : float
 
 var path : PoolIntArray
 var path_index := 0
@@ -76,6 +77,8 @@ var swarm := false
 var health := 1
 var anger := 0
 var dead := false
+
+var under_attack_cooldown := 0.0
 
 var _path_variation_x := 0.0
 var _path_variation_y := 0.0
@@ -120,6 +123,7 @@ func setup_minion(archer = false, prisoner = false, king = false) -> void:
 	self.king = king
 
 	view_distance = State.minion_view_distance
+	view_distance_sq = view_distance * view_distance
 
 	if !prisoner:
 		State.minions.append(self)
@@ -144,6 +148,7 @@ func setup_monster(archer = false, digger = false, king = false, swarm = false) 
 	self.swarm = swarm
 
 	view_distance = State.monster_view_distance
+	view_distance_sq = view_distance * view_distance
 
 	State.monsters.append(self)
 
@@ -207,6 +212,9 @@ func _physics_process(delta: float) -> void:
 	strike_hit_cooldown.step(delta)
 	attack_cooldown.step(delta)
 	victim_lost_cooldown.step(delta)
+
+	if under_attack_cooldown > 0.0:
+		under_attack_cooldown -= delta * 0.25
 
 	if rally_immune > 0.0:
 		rally_immune -= delta
@@ -524,7 +532,7 @@ func can_start_attack() -> bool:
 	if prisoner:
 		return false
 
-	if task == MinionTask.FIGHT:
+	if task == MinionTask.ATTACK || task == MinionTask.FIGHT:
 		return false
 
 	if task == MinionTask.DIG || task == MinionTask.RALLY:
@@ -583,7 +591,12 @@ func attack(victim : Minion):
 	if task == MinionTask.ATTACK && _victim == victim:
 		return
 
+	if _victim != null && is_instance_valid(_victim) && !_victim.dead:
+		if _victim.under_attack_cooldown >= 1.0:
+			_victim.under_attack_cooldown -= 1.0
+
 	_victim = victim
+	_victim.under_attack_cooldown += 1.0
 	_last_victim_pos = victim.position
 	_victim_visible = true
 	_set_next_task(MinionTask.ATTACK)

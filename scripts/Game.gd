@@ -2424,7 +2424,7 @@ func game_start_battles():
 	if _start_battle_cooldown.running:
 		return
 
-	var entity_count := State.monsters.size() + State.monsters.size()
+	var entity_count := State.minions.size() + State.monsters.size()
 
 	if entity_count == 0:
 		_start_battle_cooldown.restart(1.0)
@@ -2450,16 +2450,22 @@ func game_start_battles():
 
 func game_start_battle(attacker : Minion, target_list : Array):
 	if attacker.can_start_attack():
-		var target_distance := attacker.view_distance
+		var target_distance_sq : float = attacker.view_distance_sq
+		var target_under_attack := -1.0
 		var target = null
 
 		for check_target in target_list:
-			var current_distance = attacker.coord.distance_to(check_target.coord)
-			if current_distance > target_distance:
+			if check_target.under_attack_cooldown > 1.0 && target_under_attack >= 0.0:
+				if check_target.under_attack_cooldown > target_under_attack:
+					continue
+
+			var current_distance_sq = attacker.coord.distance_squared_to(check_target.coord)
+			if current_distance_sq > target_distance_sq:
 				continue
 
 			if Helper.raycast_minion(attacker, check_target):
-				target_distance = current_distance
+				target_distance_sq = current_distance_sq
+				target_under_attack = check_target.under_attack_cooldown
 				target = check_target
 
 		if target != null:

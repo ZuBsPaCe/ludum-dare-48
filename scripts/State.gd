@@ -164,12 +164,12 @@ func world_reset() -> void:
 	stat_killed = 0
 
 	# For debugging levels (level will be increased by 1!)
-	if false:
-		var skip_to_level := 10
+	if true:
+		var skip_to_level := 8
 		for i in range(skip_to_level - 1):
 			increase_level()
 
-		minions_fled = 20
+		minions_fled = 50
 
 func increase_level():
 	State.level += 1
