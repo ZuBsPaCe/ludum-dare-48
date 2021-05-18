@@ -89,7 +89,11 @@ var _path_variation_y := 0.0
 
 var rally_immune := 0.0
 
-var _victim : Minion
+# WeakRef to other minion
+# queue_free() and is_instance_valid() does not work properly (only in release builds...)
+# https://github.com/godotengine/godot/issues/32383
+# https://github.com/godotengine/godot/issues/43422
+var _victimref := weakref(null)
 var _last_victim_pos := Vector2.ZERO
 var _victim_visible := false
 
@@ -266,11 +270,12 @@ func _physics_process(delta: float) -> void:
 					anger -= 1
 
 				if !archer:
-					if (is_instance_valid(_victim) && !_victim.dead):
-						if position.distance_squared_to(_victim.position) < attack_hit_distance_sq:
-							_victim.hurt()
+					var victim = _victimref.get_ref()
+					if victim != null && !victim.dead:
+						if position.distance_squared_to(victim.position) < attack_hit_distance_sq:
+							victim.hurt()
 
-							if _victim.health == 0:
+							if victim.health == 0:
 								_set_next_task(MinionTask.ROAM)
 							else:
 								_set_next_task(MinionTask.FIGHT)
@@ -675,21 +680,23 @@ func swarm(swarm_tile : Tile):
 
 
 func attack(victim : Minion):
-	if task == MinionTask.ATTACK && _victim == victim:
+	var last_victim = _victimref.get_ref()
+
+	if task == MinionTask.ATTACK && last_victim == victim:
 		return
 
-	if _victim != null && is_instance_valid(_victim) && !_victim.dead:
-		if _victim.under_attack_cooldown >= 1.0:
-			_victim.under_attack_cooldown -= 1.0
+	if last_victim != null && !last_victim.dead:
+		if last_victim.under_attack_cooldown >= 1.0:
+			last_victim.under_attack_cooldown -= 1.0
 
 	if faction > 0:
 		freeze_once(true)
 
-	_victim = victim
-	_victim.under_attack_cooldown += 1.0
+	_victimref = weakref(victim)
+	victim.under_attack_cooldown += 1.0
 
-	if _victim.faction > 0:
-		_victim.freeze_once(false)
+	if victim.faction > 0:
+		victim.freeze_once(false)
 
 	_last_victim_pos = victim.position
 	_victim_visible = true
@@ -697,10 +704,11 @@ func attack(victim : Minion):
 
 func _attack(delta : float):
 	if attack_cooldown.done:
-		if (is_instance_valid(_victim) && !_victim.dead):
-			if Helper.raycast_minion(self, _victim):
+		var victim = _victimref.get_ref()
+		if victim != null && !victim.dead:
+			if Helper.raycast_minion(self, victim):
 				_victim_visible = true
-				_last_victim_pos = _victim.position
+				_last_victim_pos = victim.position
 				victim_lost_cooldown.restart()
 				_set_target(_last_victim_pos)
 			else:
@@ -709,7 +717,7 @@ func _attack(delta : float):
 		else:
 			if _victim_visible:
 				# Saw the victim die
-				_victim = null
+				_victimref = weakref(null)
 				_set_next_task(MinionTask.IDLE)
 				return
 
@@ -717,12 +725,14 @@ func _attack(delta : float):
 
 		attack_cooldown.restart()
 
-	if (strike_cooldown.done && (is_instance_valid(_victim) && !_victim.dead) &&
-		(!archer && position.distance_squared_to(_victim.position) < attack_start_distance_sq ||
+	var victim = _victimref.get_ref()
+
+	if (strike_cooldown.done && victim != null && !victim.dead &&
+		(!archer && position.distance_squared_to(victim.position) < attack_start_distance_sq ||
 		 archer && _victim_visible)):
 		_strike()
 	elif victim_lost_cooldown.done:
-		_victim = null
+		_victimref = weakref(null)
 		_set_next_task(MinionTask.IDLE)
 		if randi() % 2 == 0:
 			show_exclamation(false)
@@ -734,7 +744,7 @@ func _attack(delta : float):
 		_move(delta)
 	else:
 		# At last known pos. Victim gone...
-		_victim = null
+		_victimref = weakref(null)
 		_set_next_task(MinionTask.IDLE)
 		if randi() % 2 == 0:
 			show_exclamation(false)

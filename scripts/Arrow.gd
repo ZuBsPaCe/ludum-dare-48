@@ -25,10 +25,10 @@ func _physics_process(delta: float) -> void:
 	rotation -= delta * 2 * PI * 0.75
 	var collision := move_and_collide(speed * delta * dir)
 	if collision != null:
-		if collision.collider.is_in_group("Minion"):
-			collision.collider.hurt()
+		if is_instance_valid(collision.collider):
+			if collision.collider.is_in_group("Minion"):
+				collision.collider.hurt()
+		else:
+			print("Arrow collided with a collider, which is not valid! What?")
 
-		State.arrows.erase(self)
-
-		queue_free()
-
+		die()

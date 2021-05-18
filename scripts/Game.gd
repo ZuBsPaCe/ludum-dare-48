@@ -2308,7 +2308,7 @@ func map_fill() -> void:
 		var monster_count := State.level_monster_count
 
 		if State.level == 10:
-			monster_count -= 20
+			monster_count -= 10
 
 		for i in range(monster_count):
 			var tile : Tile = monster_tiles[randi() % monster_tiles.size()]
@@ -2321,7 +2321,7 @@ func map_fill() -> void:
 
 		if State.level == 10:
 			for portal in State.end_portals:
-				for monster in spawn_monsters_from_portal(portal, 12):
+				for monster in spawn_monsters_from_portal(portal, 16):
 					monster.setup_monster(randf() < State.monster_archer_fraction, false, false, true)
 					_entity_container.add_child(monster)
 					portal.waiting_monsters.append(monster)
@@ -2835,13 +2835,13 @@ func switch_state(new_game_state):
 			$WorldMap.visible = false
 			$SpecialIntro.visible = true
 			_camera.zoom = Vector2(1.0, 1.0)
+			_camera.limit_right = 999999
+			_camera.limit_bottom = 999999
+			_camera.position = Vector2.ZERO
 			Input.set_mouse_mode(Input.MOUSE_MODE_HIDDEN)
 			$SpecialIntro.start()
 			title_music_target = -80
 			track1_target = -80.0
-			_camera.limit_right = 999999
-			_camera.limit_bottom = 999999
-			_camera.position = Vector2.ZERO
 
 
 		GameState.MERCHANT:
@@ -2850,13 +2850,14 @@ func switch_state(new_game_state):
 			$WorldMap.visible = false
 			$Merchant.visible = true
 			_camera.zoom = Vector2(1.0, 1.0)
+			_camera.limit_right = 999999
+			_camera.limit_bottom = 999999
+			_camera.position = Vector2.ZERO
 			Input.set_mouse_mode(Input.MOUSE_MODE_VISIBLE)
 			$Merchant.start()
 			title_music_target = -80
 			track1_target = -80.0
-			_camera.limit_right = 999999
-			_camera.limit_bottom = 999999
-			_camera.position = Vector2.ZERO
+
 
 		GameState.GAME:
 			_camera.zoom = Vector2(0.6, 0.6)
