@@ -488,10 +488,15 @@ func _process(delta: float) -> void:
 								current_tile.rally_highlight = rally_highlight
 
 						if _tiles.size() > 0:
+							# Tiles with higher rally_countdown first. Minions will prefer them.
+							# END_PORTAL tiles are always at the front.
+							_tiles.sort_custom(self, "sort_rally_tiles")
+
 							for last_tile in _rally_last_tiles:
 								if last_tile in _tiles:
 									continue
 
+								# We must add all tile types. All tiles could be opened after applying rally.
 								last_tile.rally_end_tiles.append_array(_tiles)
 								for minion in last_tile.minions:
 									minion.rally_immune = 0
@@ -749,7 +754,19 @@ func _process(delta: float) -> void:
 				game_reset()
 				switch_state(GameState.GAME)
 
+func sort_rally_tiles(a : Tile, b : Tile) -> bool:
+	if a.tile_type == TileType.END_PORTAL:
+		if b.tile_type != TileType.END_PORTAL:
+			return true
+		return a.id > b.id
+	elif b.tile_type == TileType.END_PORTAL:
+		return false
 
+	if a.rally_countdown > b.rally_countdown:
+		return true
+	elif a.rally_countdown < b.rally_countdown:
+		return false
+	return a.id > b.id
 
 
 func world_reset() -> void:

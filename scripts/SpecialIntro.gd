@@ -111,9 +111,15 @@ func initialize_offer():
 	var button1 = $CanvasLayer/Button1
 	var button2 = $CanvasLayer/Button2
 	var button3 = $CanvasLayer/Button3
-	button1.connect("pressed", self, "button1_pressed")
-	button2.connect("pressed", self, "button2_pressed")
-	button3.connect("pressed", self, "button3_pressed")
+
+	if !button1.is_connected("pressed", self, "button1_pressed"):
+		button1.connect("pressed", self, "button1_pressed")
+
+	if !button2.is_connected("pressed", self, "button2_pressed"):
+		button2.connect("pressed", self, "button2_pressed")
+
+	if !button3.is_connected("pressed", self, "button3_pressed"):
+		button3.connect("pressed", self, "button3_pressed")
 
 	button1.set_icon(minion_icon)
 	button1.set_count(5)

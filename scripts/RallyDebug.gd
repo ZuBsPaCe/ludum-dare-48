@@ -1,5 +1,7 @@
 extends Node2D
 
+const TileType = preload("res://scripts/TileType.gd").TileType
+
 func _ready() -> void:
 	if !visible:
 		set_process(false)
@@ -12,9 +14,14 @@ func _draw() -> void:
 
 	for i in range(map.rally_tiles.size() - 1, -1, -1):
 		var rally_tile = map.rally_tiles[i]
+		if rally_tile.tile_type != TileType.OPEN:
+			continue
+
 		if rally_tile.rally_end_tiles != null:
 			if rally_tile.rally_end_tiles.size() > 0:
 				for end_tile in rally_tile.rally_end_tiles:
+					if end_tile.tile_type != TileType.OPEN:
+						continue
 					draw_line(
 						rally_tile.coord.to_pos()+ Vector2(16,16),
 						end_tile.coord.to_pos()+ Vector2(16,16),

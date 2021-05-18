@@ -1,4 +1,4 @@
-[gd_scene load_steps=70 format=2]
+[gd_scene load_steps=71 format=2]
 
 [ext_resource path="res://scenes/Minion.tscn" type="PackedScene" id=1]
 [ext_resource path="res://scripts/Game.gd" type="Script" id=2]
@@ -58,6 +58,7 @@
 [ext_resource path="res://scenes/Sounds.tscn" type="PackedScene" id=56]
 [ext_resource path="res://art/music/success.ogg" type="AudioStream" id=57]
 [ext_resource path="res://scripts/MinionDebug.gd" type="Script" id=58]
+[ext_resource path="res://scripts/RallyDebug.gd" type="Script" id=59]
 
 [sub_resource type="Animation" id=1]
 resource_name = "HideStoryLabel"
@@ -929,8 +930,7 @@ editor_draw_limits = true
 [node name="Sounds" parent="GameCamera" instance=ExtResource( 56 )]
 
 [node name="RallyDebug" type="Node2D" parent="."]
-visible = false
-script = ExtResource( 42 )
+script = ExtResource( 59 )
 
 [node name="WaypointsDebug" type="Node2D" parent="."]
 visible = false

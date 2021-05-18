@@ -32,7 +32,8 @@ var increase_bomb_count : int
 
 var rally_radius : int
 var rally_duration : int
-var rally_immune : int
+var rally_immune : float
+var rally_immune_short : float
 
 var minion_view_distance : int
 var monster_view_distance : int
@@ -129,8 +130,9 @@ func world_reset() -> void:
 
 
 	rally_radius = 2
-	rally_duration = 15
-	rally_immune = 15
+	rally_duration = 30
+	rally_immune = 15.0
+	rally_immune_short = 2.0
 
 	monster_check_index = 0
 	minion_check_index = 0

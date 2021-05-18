@@ -80,6 +80,8 @@ var health := 1
 var anger := 0
 var dead := false
 
+var dig_priority := false
+
 var under_attack_cooldown := 0.0
 
 var _path_variation_x := 0.0
@@ -127,6 +129,8 @@ func setup_minion(archer = false, prisoner = false, king = false) -> void:
 
 	view_distance = State.minion_view_distance
 	view_distance_sq = view_distance * view_distance
+
+	dig_priority = randi() % 4 == 0
 
 	if !prisoner:
 		State.minions.append(self)
@@ -288,27 +292,70 @@ func _physics_process(delta: float) -> void:
 		rally_immune = max(rally_immune - delta, 0.0)
 
 	if faction == 0:
-		if tile.rally_countdown > 0.0 && can_start_rally() && tile.rally_time > 0.25 && rally_immune == 0.0:
+		if tile.rally_countdown > 0.0 && tile.rally_time > 0.25 && can_start_rally():
 			if tile.rally_end_tiles.size() == 0:
 				#rally_immune = State.rally_immune
 				pass
 			else:
-				var index := randi() % tile.rally_end_tiles.size()
-				var rally_end_tile : Tile
-				for i in tile.rally_end_tiles.size():
-					index = posmod(index + 1, tile.rally_end_tiles.size())
-					var current_rally_end_tile = tile.rally_end_tiles[index]
-					if current_rally_end_tile.tile_type == TileType.OPEN:
-						rally_end_tile = current_rally_end_tile
-						break
+				# rally_end_tiles are sorted by priority from END_PORTAL to large to low cooldown.
+				# 2 iterations. First one with larger ones. Second one with lower ones.
+				var path_found := false
+				var first_tile : Tile = tile.rally_end_tiles[0]
 
-				if rally_end_tile != null:
-					var path = State.map.astar.get_id_path(tile.id, rally_end_tile.id)
+				if first_tile.tile_type == TileType.END_PORTAL:
+					Helper.get_tile_neighbours_4(State.tile_circle, first_tile.x, first_tile.y)
+					var index := randi() % State.tile_circle.size()
+					var rally_end_tile = null
+					for i in State.tile_circle.size():
+						rally_end_tile = State.tile_circle[index]
+						if rally_end_tile.tile_type == TileType.OPEN:
+							var path = State.map.astar.get_id_path(tile.id, rally_end_tile.id)
+							if path.size() > 0 && path.size() < 25:
+								_rally(path)
+								path_found = true
+								break
+						index = posmod(index + 1, State.tile_circle.size())
 
-					if path.size() == 0 || path.size() > 25:
-						rally_immune = State.rally_immune
-					else:
-						_rally(path)
+				if !path_found:
+					var iteration_range := 5
+					var first_range := int(min(iteration_range, tile.rally_end_tiles.size()))
+					var second_range := tile.rally_end_tiles.size() - first_range
+
+					for rally_iteration in 2:
+						var start : int
+						var offset : int
+						var current_range : int
+
+						if rally_iteration == 0:
+							start = 0
+							offset = randi() % first_range
+							current_range = first_range
+						else:
+							if second_range == 0:
+								break
+							start = iteration_range
+							offset = randi() % second_range
+							current_range = second_range
+
+						var rally_end_tile : Tile
+
+						for i in iteration_range:
+							rally_end_tile = tile.rally_end_tiles[start + offset]
+							if rally_end_tile.tile_type == TileType.OPEN:
+								var path = State.map.astar.get_id_path(tile.id, rally_end_tile.id)
+								if path.size() > 0 && path.size() < 25:
+									_rally(path)
+									path_found = true
+									break
+
+							offset = posmod(offset + 1, current_range)
+
+						if path_found:
+							break
+
+				if !path_found:
+					# Don't check every frame. But check again soon, because new tiles could be dug until then.
+					rally_immune = State.rally_immune_short
 
 	if prisoner && next_task != null:
 		if next_task != MinionTask.IDLE && next_task != MinionTask.ROAM && next_task != MinionTask.MOVE:
@@ -438,6 +485,9 @@ func _physics_process(delta: float) -> void:
 
 			if task_cooldown.done:
 				if !_advance_path():
+					if tile.rally_end_tiles.size() == 0:
+						# 4.0 is a hack. But necessary because of odd dig/rally ping-pong behaviour...
+						rally_immune = tile.rally_countdown + 4.0
 					_set_next_task(MinionTask.IDLE)
 
 		MinionTask.SWARM:
@@ -538,7 +588,10 @@ func _advance_path() -> bool:
 	return true
 
 func can_start_rally() -> bool:
-	if task == MinionTask.DIG || task == MinionTask.RALLY || prisoner:
+	if rally_immune > 0:
+		return false
+
+	if task == MinionTask.RALLY || task == MinionTask.DIG || prisoner:
 		return false
 
 	if task == MinionTask.FIGHT || task == MinionTask.ATTACK:
@@ -554,6 +607,10 @@ func can_start_attack() -> bool:
 		return false
 
 	if task == MinionTask.DIG || task == MinionTask.RALLY:
+		# Adjust can_start_digging() if you adjust this.
+		return anger >= 2
+
+	if task == MinionTask.GO_DIG && dig_priority:
 		return anger >= 2
 
 	return true
@@ -565,12 +622,23 @@ func can_start_attack() -> bool:
 #		prisoner)
 
 func can_start_digging() -> bool:
-	return (
-		task != MinionTask.GO_DIG &&
-		task != MinionTask.DIG &&
-		task != MinionTask.ATTACK &&
-		task != MinionTask.FIGHT &&
-		!prisoner)
+	if prisoner:
+		return false
+
+	if task == MinionTask.RALLY:
+		return false
+
+	if task == MinionTask.GO_DIG ||	task == MinionTask.DIG:
+		return false
+
+	if dig_priority && anger < 2:
+		# Adjust can_start_attack() if you adjust this.
+		return true
+
+	if task == MinionTask.ATTACK ||	task == MinionTask.FIGHT:
+		return false
+
+	return true
 
 func is_digging() -> bool:
 	return (
@@ -655,6 +723,8 @@ func _attack(delta : float):
 	elif victim_lost_cooldown.done:
 		_victim = null
 		_set_next_task(MinionTask.IDLE)
+		if randi() % 2 == 0:
+			show_exclamation(false)
 	elif task_cooldown.running:
 		if was_striking:
 			# Continue walk animation
@@ -665,6 +735,8 @@ func _attack(delta : float):
 		# At last known pos. Victim gone...
 		_victim = null
 		_set_next_task(MinionTask.IDLE)
+		if randi() % 2 == 0:
+			show_exclamation(false)
 
 func hurt():
 	health -= 1
@@ -754,28 +826,22 @@ func freeze_once(attack : bool) -> void:
 		freeze_cooldown.restart(0.75 + randf() * 1.0)
 
 		if randi() % 3 == 0:
-			if attack:
-				exclamation.frame = randi() % 2
-			else:
-				exclamation.frame = 2
-			exclamation.visible = true
+			show_exclamation(attack)
 
 		animation_minion.play("Idle")
+
+func show_exclamation(attack : bool) -> void:
+	if attack:
+		exclamation.frame = randi() % 2
+	else:
+		exclamation.frame = 2
+	exclamation.visible = true
 
 func _move_near(near_tile : Tile):
 	path = PoolIntArray()
 	path.append(tile.id)
 	path.append(near_tile.id)
 	_set_next_task(MinionTask.MOVE)
-
-#func _rally_near(coord_x : int, coord_y : int):
-#	_last_rally_tiles.append(State.map.get_tile(coord_x, coord_y))
-#	if _last_rally_tiles.size() > 5:
-#		_last_rally_tiles.remove(0)
-#
-#	path = PoolVector2Array()
-#	path.append(_vary_pos_from_coord(coord_x, coord_y))
-#	_set_next_task(MinionTask.RALLY)
 
 func _rally(path : PoolIntArray):
 	self.path = path
