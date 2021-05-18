@@ -122,6 +122,7 @@ var _rally_last_mouse_pos := Vector2()
 var _rally_last_tiles := []
 
 var _level_done := false
+var _level_start := true
 
 var _loading := true
 var _regenerate_map := false
@@ -596,7 +597,7 @@ func _process(delta: float) -> void:
 
 						for entity in entities:
 							entity.show_blood_drop_effect(_explosion_container)
-							entity.die()
+							entity.hurt(State.monster_health)
 
 
 		game_traverse_dig_tiles()
@@ -720,6 +721,13 @@ func _process(delta: float) -> void:
 					show_story("Perfect!", true)
 					State.tutorial_step = TutorialStep.DONE
 
+		elif State.level == 10:
+			if _level_start:
+				#show_story("This cave is bigger than the ones before.")
+				show_story("You can see a giant, unpowered portal from afar...")
+				show_story("...guarded by something... something huge!")
+				show_story("There is only one way.")
+				show_story("Destroy all resistance and claim the portal yours!")
 
 
 		if _story_queue.size() > 0:
@@ -753,6 +761,8 @@ func _process(delta: float) -> void:
 			else:
 				game_reset()
 				switch_state(GameState.GAME)
+
+	_level_start = false
 
 func sort_rally_tiles(a : Tile, b : Tile) -> bool:
 	if a.tile_type == TileType.END_PORTAL:
@@ -1018,6 +1028,7 @@ func game_start() -> void:
 	_dig_traverse_cooldown.restart()
 
 	_level_done = false
+	_level_start = true
 
 	while true:
 		_regenerate_map = false
@@ -2252,7 +2263,9 @@ func map_fill() -> void:
 					end_portal.tile = tile
 					end_portal.position = coord.to_center_pos()
 					_entity_container.add_child(end_portal)
-					end_portal.set_active(true)
+
+					if State.level != 10:
+						end_portal.set_active(true)
 					State.end_portals.append(end_portal)
 
 				TileType.OPEN:
@@ -2292,25 +2305,32 @@ func map_fill() -> void:
 				_camera.position = tile.coord.to_center_pos()
 
 	if monster_tiles.size() > 0:
-		if State.world_node_type != NodeType.DEFEND:
-			var monster_count := State.level_monster_count
+		var monster_count := State.level_monster_count
 
-			for i in range(State.level_monster_count):
-				var tile : Tile = monster_tiles[randi() % monster_tiles.size()]
-				var monster : Minion = minion_scene.instance()
+		if State.level == 10:
+			monster_count -= 20
 
-				monster.setup_monster(randf() < State.monster_archer_fraction, randf() < 0.33)
+		for i in range(monster_count):
+			var tile : Tile = monster_tiles[randi() % monster_tiles.size()]
+			var monster : Minion = minion_scene.instance()
 
-				monster.position = tile.coord.to_random_pos()
-				_entity_container.add_child(monster)
-		else:
-			var monsters_per_portal := State.level_monster_count
+			monster.setup_monster(randf() < State.monster_archer_fraction, randf() < 0.33)
 
+			monster.position = tile.coord.to_random_pos()
+			_entity_container.add_child(monster)
+
+		if State.level == 10:
 			for portal in State.end_portals:
-				for monster in spawn_monsters_from_portal(portal, monsters_per_portal):
+				for monster in spawn_monsters_from_portal(portal, 12):
 					monster.setup_monster(randf() < State.monster_archer_fraction, false, false, true)
 					_entity_container.add_child(monster)
 					portal.waiting_monsters.append(monster)
+
+	if State.level == 10 &&	State.end_portals.size() > 0:
+		for monster in spawn_monsters_from_portal(State.end_portals[0], 1):
+			monster.setup_monster(false, false, true)
+			_entity_container.add_child(monster)
+
 
 
 	# We want to put the prison king far away.
@@ -2529,6 +2549,13 @@ func game_check_level_done():
 	if State.monsters.size() == 0:
 		all_monsters_dead = true
 
+	if State.level == 10 && all_monsters_dead && !State.end_portals[0].active:
+		State.end_portals[0].set_active(true)
+		show_story("You did it! The last last resistance has fallen!")
+		show_story("Insight, riches, eternal fame...")
+		show_story("The portal glows in the dim light of the cave.")
+		show_story("You hope for the best and step through...")
+
 	for minion_king in State.minion_kings:
 		if minion_king.prisoner:
 			minion_kings_in_prison = true
@@ -2577,6 +2604,9 @@ func game_check_level_done():
 
 func game_spawn_monsters() -> void:
 	if !_spawn_cooldown.started || _spawn_cooldown.running || _level_done || State.monsters.size() <= 6 || State.monsters.size() > 100:
+		return
+
+	if State.level == 10:
 		return
 
 	_spawn_cooldown.restart()

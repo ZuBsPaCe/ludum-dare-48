@@ -139,7 +139,7 @@ func setup_minion(archer = false, prisoner = false, king = false) -> void:
 		health = State.king_health
 		State.minion_kings.append(self)
 		State.minion_kings_created_count += 1
-		scale = Vector2(1.75, 1.75)
+		$Sprites.scale = Vector2(1.75, 1.75)
 	else:
 		health = State.minion_health
 
@@ -161,7 +161,7 @@ func setup_monster(archer = false, digger = false, king = false, swarm = false) 
 
 	if king:
 		health = State.king_health
-		scale = Vector2(1.75, 1.75)
+		$Sprites.scale = Vector2(1.75, 1.75)
 	else:
 		health = State.monster_health
 
@@ -303,18 +303,19 @@ func _physics_process(delta: float) -> void:
 				var first_tile : Tile = tile.rally_end_tiles[0]
 
 				if first_tile.tile_type == TileType.END_PORTAL:
-					Helper.get_tile_neighbours_4(State.tile_circle, first_tile.x, first_tile.y)
-					var index := randi() % State.tile_circle.size()
-					var rally_end_tile = null
-					for i in State.tile_circle.size():
-						rally_end_tile = State.tile_circle[index]
-						if rally_end_tile.tile_type == TileType.OPEN:
-							var path = State.map.astar.get_id_path(tile.id, rally_end_tile.id)
-							if path.size() > 0 && path.size() < 25:
-								_rally(path)
-								path_found = true
-								break
-						index = posmod(index + 1, State.tile_circle.size())
+					if State.level < 10 || State.end_portals[0].active:
+						Helper.get_tile_neighbours_4(State.tile_circle, first_tile.x, first_tile.y)
+						var index := randi() % State.tile_circle.size()
+						var rally_end_tile = null
+						for i in State.tile_circle.size():
+							rally_end_tile = State.tile_circle[index]
+							if rally_end_tile.tile_type == TileType.OPEN:
+								var path = State.map.astar.get_id_path(tile.id, rally_end_tile.id)
+								if path.size() > 0 && path.size() < 25:
+									_rally(path)
+									path_found = true
+									break
+							index = posmod(index + 1, State.tile_circle.size())
 
 				if !path_found:
 					var iteration_range := 5
@@ -738,19 +739,21 @@ func _attack(delta : float):
 		if randi() % 2 == 0:
 			show_exclamation(false)
 
-func hurt():
-	health -= 1
+func hurt(damage : int = 1):
+	if health <= 0:
+		return
 
-	if health >= 0:
-		anger += 1
+	health = max(0, health - damage)
 
-		State.sounds.play(AudioType.FIGHT, position)
+	State.sounds.play(AudioType.FIGHT, position)
 
-		show_blood_effect()
-		show_blood_drop_effect(State.entity_container)
+	show_blood_effect()
+	show_blood_drop_effect(State.entity_container)
 
 	if health == 0:
 		die()
+	else:
+		anger += 1
 
 func show_blood_effect() -> void:
 	var blood : Sprite = blood_scene.instance()

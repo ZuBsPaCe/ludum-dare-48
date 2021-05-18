@@ -930,6 +930,7 @@ editor_draw_limits = true
 [node name="Sounds" parent="GameCamera" instance=ExtResource( 56 )]
 
 [node name="RallyDebug" type="Node2D" parent="."]
+visible = false
 script = ExtResource( 59 )
 
 [node name="WaypointsDebug" type="Node2D" parent="."]
